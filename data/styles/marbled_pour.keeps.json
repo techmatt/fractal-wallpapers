@@ -1,0 +1,351 @@
+{
+  "schema": 1,
+  "name": "marbled_pour",
+  "reference": {
+    "image": "wallhaven_wallhaven-xl8gmd.png",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a digital marbling render, 3000x1500"
+  },
+  "folder": "fractal-drive-sync/style-keeps/marbled_pour",
+  "keeps": [
+    {
+      "id": "style_poured_paint_r1/marbled_pour/entries/mp_b_e_teal_marbling",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "marbled_pour/entries",
+          "key": "mp_b_e_teal_marbling"
+        }
+      ],
+      "label": "",
+      "image": "style_poured_paint_r1__mp_b_e_teal_marbling.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_df5d31a1",
+          "family": {
+            "c": [
+              "-0.7464215353014425",
+              "-0.17137095012889225"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-1.0718889294135205",
+            "center_im": "-0.11726541120807724",
+            "width": "0.05244815732082433"
+          },
+          "maxiter": 11005,
+          "note": "final139_general seat 813 (smooth_mean_angle, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 813,
+            "key": "df5d31a1ac11644d",
+            "p_spiral": 0.153273
+          },
+          "ink": 0.07212
+        },
+        "style": "marbled_pour",
+        "stack": "marbled_pour@71f09191",
+        "colormap": "teal_marbling",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/marbled_pour/forms_a/mp_a_f_broad",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "marbled_pour/forms_a",
+          "key": "mp_a_f_broad"
+        }
+      ],
+      "label": "broader bands: 10 sheets in place of 16",
+      "image": "style_poured_paint_r1__mp_a_f_broad.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "marbled_pour",
+        "stack": "marbled_pour@f807bdc6",
+        "colormap": "marbled_pour",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/marbled_pour/forms_a/mp_a_f_nostir",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "marbled_pour/forms_a",
+          "key": "mp_a_f_nostir"
+        }
+      ],
+      "label": "without its headline, the stir: the set's bands as flat inks",
+      "image": "style_poured_paint_r1__mp_a_f_nostir.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "marbled_pour",
+        "stack": "marbled_pour@99e6d842",
+        "colormap": "marbled_pour",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "marbled_pour@71f09191": {
+      "name": "marbled_pour",
+      "interior": {
+        "palette": 0.5
+      },
+      "tone": {
+        "median": 0.408,
+        "p10": 0.011
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.35,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 2.0,
+          "angle": 90.0,
+          "period": 2.0,
+          "largest": 0.2,
+          "steps": 4
+        },
+        {
+          "view": {
+            "turn": 220.0,
+            "zoom": 1.5,
+            "shift": [
+              -0.2,
+              0.1
+            ]
+          },
+          "strength": 2.0,
+          "angle": 90.0,
+          "period": 1.0,
+          "largest": 0.05,
+          "steps": 3
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "paper",
+          "levels": 14,
+          "taper": 0.9,
+          "hop": 0.0714,
+          "phase": 0.0357,
+          "shadow": {
+            "width": 0.003,
+            "offset": 0.0015,
+            "azimuth": 300.0,
+            "opacity": 0.8,
+            "color": {
+              "rgb": "#e6faf7"
+            }
+          }
+        }
+      ]
+    },
+    "marbled_pour@99e6d842": {
+      "name": "marbled_pour",
+      "interior": {
+        "palette": 0.5
+      },
+      "tone": {
+        "median": 0.589,
+        "p10": 0.153
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "paper",
+          "levels": 16,
+          "taper": 0.8,
+          "hop": 0.125,
+          "phase": 0.0625,
+          "shadow": {
+            "width": 0.004,
+            "offset": 0.0012,
+            "azimuth": 120.0,
+            "opacity": 0.5,
+            "color": {
+              "rgb": "#1c0806"
+            }
+          }
+        }
+      ]
+    },
+    "marbled_pour@f807bdc6": {
+      "name": "marbled_pour",
+      "interior": {
+        "palette": 0.5
+      },
+      "tone": {
+        "median": 0.589,
+        "p10": 0.153
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.35,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 4.0,
+          "angle": 90.0,
+          "period": 2.0,
+          "largest": 0.2,
+          "steps": 4
+        },
+        {
+          "view": {
+            "turn": 220.0,
+            "zoom": 1.5,
+            "shift": [
+              -0.2,
+              0.1
+            ]
+          },
+          "strength": 2.5,
+          "angle": 90.0,
+          "period": 2.0,
+          "largest": 0.05,
+          "steps": 3
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "paper",
+          "levels": 10,
+          "taper": 0.8,
+          "hop": 0.125,
+          "phase": 0.0625,
+          "shadow": {
+            "width": 0.004,
+            "offset": 0.0012,
+            "azimuth": 120.0,
+            "opacity": 0.5,
+            "color": {
+              "rgb": "#1c0806"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,1299 @@
+{
+  "schema": 1,
+  "name": "pour_cells",
+  "reference": {
+    "image": "wallhaven_wallhaven-exqwvk.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a photograph of an acrylic pour, 6000x4000"
+  },
+  "folder": "fractal-drive-sync/style-keeps/pour_cells",
+  "keeps": [
+    {
+      "id": "style_poured_paint_r1/pour_cells/entries/pc_a_e_crimson_cells",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/entries",
+          "key": "pc_a_e_crimson_cells"
+        }
+      ],
+      "label": "",
+      "image": "style_poured_paint_r1__pc_a_e_crimson_cells.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@78643c73",
+        "colormap": "crimson_cells",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/pour_cells/forms_a/pc_a_f_calm",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/forms_a",
+          "key": "pc_a_f_calm"
+        }
+      ],
+      "label": "a calmer pour: the stir at 1.2 over 2 steps",
+      "image": "style_poured_paint_r1__pc_a_f_calm.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@3546f6f9",
+        "colormap": "pour_cells",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/pour_cells/forms_a/pc_a_f_holes",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/forms_a",
+          "key": "pc_a_f_holes"
+        }
+      ],
+      "label": "the cells as dark holes with a pale rim (exqwvk's black cells)",
+      "image": "style_poured_paint_r1__pc_a_f_holes.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@dcb9dbc6",
+        "colormap": "pour_cells",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/pour_cells/forms_a/pc_a_f_ringed",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/forms_a",
+          "key": "pc_a_f_ringed"
+        }
+      ],
+      "label": "a pale ring inside each dark rim (yxlvkk's rimmed cells)",
+      "image": "style_poured_paint_r1__pc_a_f_ringed.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@559e0dad",
+        "colormap": "pour_cells",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/pour_cells/forms_a/pc_a_f_small",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/forms_a",
+          "key": "pc_a_f_small"
+        }
+      ],
+      "label": "smaller cells with a thin rim (largest 0.05 of the frame)",
+      "image": "style_poured_paint_r1__pc_a_f_small.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@4de2589c",
+        "colormap": "pour_cells",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/pour_cells/forms_b/pc_b_f_base",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/forms_b",
+          "key": "pc_b_f_base"
+        }
+      ],
+      "label": "the stack: a stirred pour, cells of every size, each a flat drop darkening to its rim",
+      "image": "style_poured_paint_r1__pc_b_f_base.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_71e305f0",
+          "family": {
+            "c": [
+              "-0.45709691767279576",
+              "-0.199309339142123"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "0.26195066562519664",
+              "-0.03188285542142037"
+            ],
+            "z_prev": [
+              "0.23987361417464126",
+              "0.45066347511034605"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.25337620512610465",
+            "center_im": "0.019520042863297414",
+            "width": "0.05170751794386484"
+          },
+          "maxiter": 11030,
+          "note": "final139_general seat 221 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 221,
+            "key": "71e305f066da5bbb",
+            "p_spiral": 0.015579
+          },
+          "ink": 0.09515
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@b9a970b3",
+        "colormap": "pour_cells",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/pour_cells/forms_b/pc_b_f_small",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/forms_b",
+          "key": "pc_b_f_small"
+        }
+      ],
+      "label": "smaller cells with a thin rim (largest 0.05 of the frame)",
+      "image": "style_poured_paint_r1__pc_b_f_small.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_71e305f0",
+          "family": {
+            "c": [
+              "-0.45709691767279576",
+              "-0.199309339142123"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "0.26195066562519664",
+              "-0.03188285542142037"
+            ],
+            "z_prev": [
+              "0.23987361417464126",
+              "0.45066347511034605"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.25337620512610465",
+            "center_im": "0.019520042863297414",
+            "width": "0.05170751794386484"
+          },
+          "maxiter": 11030,
+          "note": "final139_general seat 221 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 221,
+            "key": "71e305f066da5bbb",
+            "p_spiral": 0.015579
+          },
+          "ink": 0.09515
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@4de2589c",
+        "colormap": "pour_cells",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/pour_cells/locations/pc_loc_01_julia-multibrot4_0169f258",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/locations",
+          "key": "pc_loc_01_julia-multibrot4_0169f258"
+        }
+      ],
+      "label": "",
+      "image": "style_poured_paint_r1__pc_loc_01_julia-multibrot4_0169f258.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot4_0169f258",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.1914062500000001",
+            "center_im": "-0.58203125",
+            "width": "1.17719912436409"
+          },
+          "maxiter": 5619,
+          "note": "final139_general seat 820 (direct_trap_multiply, julia:multibrot4)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 820,
+            "key": "0169f2580b499bac",
+            "p_spiral": 0.024048
+          },
+          "ink": 0.08918
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@b9a970b3",
+        "colormap": "pour_cells",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/pour_cells/locations/pc_loc_04_phoenix_71e305f0",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/locations",
+          "key": "pc_loc_04_phoenix_71e305f0"
+        }
+      ],
+      "label": "",
+      "image": "style_poured_paint_r1__pc_loc_04_phoenix_71e305f0.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_71e305f0",
+          "family": {
+            "c": [
+              "-0.45709691767279576",
+              "-0.199309339142123"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "0.26195066562519664",
+              "-0.03188285542142037"
+            ],
+            "z_prev": [
+              "0.23987361417464126",
+              "0.45066347511034605"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.25337620512610465",
+            "center_im": "0.019520042863297414",
+            "width": "0.05170751794386484"
+          },
+          "maxiter": 11030,
+          "note": "final139_general seat 221 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 221,
+            "key": "71e305f066da5bbb",
+            "p_spiral": 0.015579
+          },
+          "ink": 0.09515
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@b9a970b3",
+        "colormap": "pour_cells",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/pour_cells/locations/pc_loc_06_phoenix_2d843082",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/locations",
+          "key": "pc_loc_06_phoenix_2d843082"
+        }
+      ],
+      "label": "",
+      "image": "style_poured_paint_r1__pc_loc_06_phoenix_2d843082.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_2d843082",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.2392225561786449",
+            "center_im": "0.7922945504579708",
+            "width": "0.14321298448372002"
+          },
+          "maxiter": 9266,
+          "note": "final139_general seat 96 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 96,
+            "key": "2d8430827c4c5f05",
+            "p_spiral": 0.106666
+          },
+          "ink": 0.04507
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@b9a970b3",
+        "colormap": "pour_cells",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/pour_cells/locations/pc_loc_07_phoenix_43558166",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/locations",
+          "key": "pc_loc_07_phoenix_43558166"
+        }
+      ],
+      "label": "",
+      "image": "style_poured_paint_r1__pc_loc_07_phoenix_43558166.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_43558166",
+          "family": {
+            "c": [
+              "-0.45709691767279576",
+              "-0.199309339142123"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "0.26195066562519664",
+              "-0.03188285542142037"
+            ],
+            "z_prev": [
+              "0.23987361417464126",
+              "0.45066347511034605"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.278290889591097",
+            "center_im": "0.10249887978994043",
+            "width": "0.33319688173738865"
+          },
+          "maxiter": 7804,
+          "note": "final139_general seat 38 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 38,
+            "key": "435581662762f4b0",
+            "p_spiral": 0.004805
+          },
+          "ink": 0.09725
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@b9a970b3",
+        "colormap": "pour_cells",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/pour_cells/locations/pc_loc_11_julia-multibrot3_7e312206",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/locations",
+          "key": "pc_loc_11_julia-multibrot3_7e312206"
+        }
+      ],
+      "label": "",
+      "image": "style_poured_paint_r1__pc_loc_11_julia-multibrot3_7e312206.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@b9a970b3",
+        "colormap": "pour_cells",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "pour_cells@3546f6f9": {
+      "name": "pour_cells",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.254,
+        "p10": 0.064
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.5,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 1.2,
+          "angle": 90.0,
+          "period": 3.0,
+          "largest": 0.12,
+          "steps": 2
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "warp": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              },
+              "view": {
+                "turn": 60.0,
+                "zoom": 0.7,
+                "shift": [
+                  0.1,
+                  0.2
+                ]
+              }
+            },
+            "amount": 0.35
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.35,
+              "spacing": 1.0,
+              "read": "step",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003,
+              "hit": 1
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "phase": 0.35,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.35,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003,
+              "hit": 1
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "power": 2.0,
+          "opacity": 1.0
+        }
+      ]
+    },
+    "pour_cells@4de2589c": {
+      "name": "pour_cells",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.254,
+        "p10": 0.064
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.5,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 3.0,
+          "angle": 90.0,
+          "period": 3.0,
+          "largest": 0.12,
+          "steps": 4
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "warp": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              },
+              "view": {
+                "turn": 60.0,
+                "zoom": 0.7,
+                "shift": [
+                  0.1,
+                  0.2
+                ]
+              }
+            },
+            "amount": 0.35
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.25,
+              "spacing": 1.0,
+              "read": "step",
+              "escaped": true,
+              "largest": 0.05,
+              "smallest": 0.003,
+              "hit": 1
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "phase": 0.35,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 0.9
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.25,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.05,
+              "smallest": 0.003,
+              "hit": 1
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "power": 6.0,
+          "opacity": 0.95
+        }
+      ]
+    },
+    "pour_cells@559e0dad": {
+      "name": "pour_cells",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.254,
+        "p10": 0.064
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.5,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 3.0,
+          "angle": 90.0,
+          "period": 3.0,
+          "largest": 0.12,
+          "steps": 4
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "warp": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              },
+              "view": {
+                "turn": 60.0,
+                "zoom": 0.7,
+                "shift": [
+                  0.1,
+                  0.2
+                ]
+              }
+            },
+            "amount": 0.35
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.35,
+              "spacing": 1.0,
+              "read": "step",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003,
+              "hit": 1
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "phase": 0.35,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.35,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003,
+              "hit": 1
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "power": 3.0,
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.35,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003,
+              "hit": 1
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "power": 14.0,
+          "opacity": 0.8,
+          "blend": "screen"
+        }
+      ]
+    },
+    "pour_cells@78643c73": {
+      "name": "pour_cells",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.148,
+        "p10": 0.093
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.5,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 3.0,
+          "angle": 90.0,
+          "period": 3.0,
+          "largest": 0.12,
+          "steps": 4
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "warp": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              },
+              "view": {
+                "turn": 60.0,
+                "zoom": 0.7,
+                "shift": [
+                  0.1,
+                  0.2
+                ]
+              }
+            },
+            "amount": 0.35
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.35,
+              "spacing": 1.0,
+              "read": "step",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003,
+              "hit": 1
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "phase": 0.35,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.35,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003,
+              "hit": 1
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "power": 2.0,
+          "opacity": 1.0
+        }
+      ]
+    },
+    "pour_cells@b9a970b3": {
+      "name": "pour_cells",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.254,
+        "p10": 0.064
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.5,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 3.0,
+          "angle": 90.0,
+          "period": 3.0,
+          "largest": 0.12,
+          "steps": 4
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "warp": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              },
+              "view": {
+                "turn": 60.0,
+                "zoom": 0.7,
+                "shift": [
+                  0.1,
+                  0.2
+                ]
+              }
+            },
+            "amount": 0.35
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.35,
+              "spacing": 1.0,
+              "read": "step",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003,
+              "hit": 1
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "phase": 0.35,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.35,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003,
+              "hit": 1
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "power": 2.0,
+          "opacity": 1.0
+        }
+      ]
+    },
+    "pour_cells@dcb9dbc6": {
+      "name": "pour_cells",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.254,
+        "p10": 0.064
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.5,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 3.0,
+          "angle": 90.0,
+          "period": 3.0,
+          "largest": 0.12,
+          "steps": 4
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "warp": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              },
+              "view": {
+                "turn": 60.0,
+                "zoom": 0.7,
+                "shift": [
+                  0.1,
+                  0.2
+                ]
+              }
+            },
+            "amount": 0.35
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.35,
+              "spacing": 1.0,
+              "read": "step",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003,
+              "hit": 1
+            }
+          },
+          "palette": {
+            "cycles": 0.08,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.35,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003,
+              "hit": 1
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "power": 10.0,
+          "opacity": 1.0,
+          "blend": "screen"
+        }
+      ]
+    }
+  }
+}

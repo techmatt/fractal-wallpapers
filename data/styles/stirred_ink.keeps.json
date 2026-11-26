@@ -9,6 +9,209 @@
   "folder": "fractal-drive-sync/style-keeps/stirred_ink",
   "keeps": [
     {
+      "id": "style_poured_paint_r1/marbled_pour/forms_a/mp_a_baseline_stirred_ink",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "marbled_pour/forms_a",
+          "key": "mp_a_baseline_stirred_ink"
+        },
+        {
+          "row": "pour_cells/forms_a",
+          "key": "pc_a_baseline_stirred_ink"
+        }
+      ],
+      "label": "baseline: stirred_ink, the nearest mode",
+      "image": "style_poured_paint_r1__mp_a_baseline_stirred_ink.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@8eff4d0e",
+        "colormap": "stirred_ink",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/marbled_pour/forms_b/mp_b_baseline_stirred_ink",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "marbled_pour/forms_b",
+          "key": "mp_b_baseline_stirred_ink"
+        }
+      ],
+      "label": "baseline: stirred_ink, the nearest mode",
+      "image": "style_poured_paint_r1__mp_b_baseline_stirred_ink.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_df5d31a1",
+          "family": {
+            "c": [
+              "-0.7464215353014425",
+              "-0.17137095012889225"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-1.0718889294135205",
+            "center_im": "-0.11726541120807724",
+            "width": "0.05244815732082433"
+          },
+          "maxiter": 11005,
+          "note": "final139_general seat 813 (smooth_mean_angle, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 813,
+            "key": "df5d31a1ac11644d",
+            "p_spiral": 0.153273
+          },
+          "ink": 0.07212
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@8eff4d0e",
+        "colormap": "stirred_ink",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/pour_cells/forms_b/pc_b_baseline_stirred_ink",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "pour_cells/forms_b",
+          "key": "pc_b_baseline_stirred_ink"
+        }
+      ],
+      "label": "baseline: stirred_ink, the nearest mode",
+      "image": "style_poured_paint_r1__pc_b_baseline_stirred_ink.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_71e305f0",
+          "family": {
+            "c": [
+              "-0.45709691767279576",
+              "-0.199309339142123"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "0.26195066562519664",
+              "-0.03188285542142037"
+            ],
+            "z_prev": [
+              "0.23987361417464126",
+              "0.45066347511034605"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.25337620512610465",
+            "center_im": "0.019520042863297414",
+            "width": "0.05170751794386484"
+          },
+          "maxiter": 11030,
+          "note": "final139_general seat 221 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 221,
+            "key": "71e305f066da5bbb",
+            "p_spiral": 0.015579
+          },
+          "ink": 0.09515
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@8eff4d0e",
+        "colormap": "stirred_ink",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_poured_paint_r1/stirred_ink/golden_sand/si_b_e_golden_sand",
+      "picker": "style_poured_paint_r1",
+      "picked": [
+        {
+          "row": "stirred_ink/golden_sand",
+          "key": "si_b_e_golden_sand"
+        }
+      ],
+      "label": "",
+      "image": "style_poured_paint_r1__si_b_e_golden_sand.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_df5d31a1",
+          "family": {
+            "c": [
+              "-0.7464215353014425",
+              "-0.17137095012889225"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-1.0718889294135205",
+            "center_im": "-0.11726541120807724",
+            "width": "0.05244815732082433"
+          },
+          "maxiter": 11005,
+          "note": "final139_general seat 813 (smooth_mean_angle, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 813,
+            "key": "df5d31a1ac11644d",
+            "p_spiral": 0.153273
+          },
+          "ink": 0.07212
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@c3de1066",
+        "colormap": "golden_sand",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_retrospective_082/stirred_ink/kept/r1_si_strong_7e31",
       "picker": "style_retrospective_082",
       "picked": [
@@ -757,6 +960,136 @@
         }
       ]
     },
+    "stirred_ink@8eff4d0e": {
+      "name": "stirred_ink",
+      "interior": {
+        "palette": 0.05
+      },
+      "tone": {
+        "median": 0.471,
+        "p10": 0.22
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.35,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 3.0,
+          "angle": 90.0,
+          "period": 2.0,
+          "largest": 0.2,
+          "steps": 3
+        },
+        {
+          "view": {
+            "turn": 220.0,
+            "zoom": 1.5,
+            "shift": [
+              -0.2,
+              0.1
+            ]
+          },
+          "strength": 2.0,
+          "angle": 90.0,
+          "period": 2.0,
+          "largest": 0.04,
+          "steps": 3
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.6,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 0.9,
+            "azimuth": 120.0,
+            "elevation": 42.0,
+            "ambient": 0.5,
+            "diffuse": 0.5,
+            "specular": 0.7,
+            "shininess": 10.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          },
+          "opacity": 1.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "transform": "log"
+            },
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.03,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "screen",
+          "opacity": 0.95,
+          "color": {
+            "palette": 0.98
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.3,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.8
+          }
+        }
+      ]
+    },
     "stirred_ink@ba33ceaa": {
       "name": "stirred_ink",
       "interior": {
@@ -796,6 +1129,136 @@
           "period": 2.0,
           "largest": 0.04,
           "steps": 4
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.6,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 0.9,
+            "azimuth": 120.0,
+            "elevation": 42.0,
+            "ambient": 0.5,
+            "diffuse": 0.5,
+            "specular": 0.7,
+            "shininess": 10.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          },
+          "opacity": 1.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "transform": "log"
+            },
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.03,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "screen",
+          "opacity": 0.95,
+          "color": {
+            "palette": 0.98
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.3,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.8
+          }
+        }
+      ]
+    },
+    "stirred_ink@c3de1066": {
+      "name": "stirred_ink",
+      "interior": {
+        "palette": 0.05
+      },
+      "tone": {
+        "median": 0.424,
+        "p10": 0.084
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.35,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 3.0,
+          "angle": 90.0,
+          "period": 2.0,
+          "largest": 0.2,
+          "steps": 3
+        },
+        {
+          "view": {
+            "turn": 220.0,
+            "zoom": 1.5,
+            "shift": [
+              -0.2,
+              0.1
+            ]
+          },
+          "strength": 2.0,
+          "angle": 90.0,
+          "period": 2.0,
+          "largest": 0.04,
+          "steps": 3
         }
       ],
       "layers": [

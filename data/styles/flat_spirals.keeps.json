@@ -1,0 +1,929 @@
+{
+  "schema": 1,
+  "name": "flat_spirals",
+  "reference": {
+    "image": "wallhaven_wallhaven-d67kpg.png",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a dense spiral tiling in a few flat teal and navy colours, unsigned, 2560x1440"
+  },
+  "folder": "fractal-drive-sync/style-keeps/flat_spirals",
+  "keeps": [
+    {
+      "id": "style_flat_graphic_r1/flat_spirals/entries/fs_e_coral_spirals_1",
+      "picker": "style_flat_graphic_r1",
+      "picked": [
+        {
+          "row": "flat_spirals/entries",
+          "key": "fs_e_coral_spirals_1"
+        }
+      ],
+      "label": "coral_spirals (wallhaven-wej3pr): coral red and ice",
+      "image": "style_flat_graphic_r1__fs_e_coral_spirals_1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_15c7b042",
+          "family": {
+            "c": [
+              "0.41691379606409645",
+              "0.006939104737155305"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.026963167117301234",
+            "center_im": "0.04947124138531044",
+            "width": "0.0011711325161998082"
+          },
+          "maxiter": 17587,
+          "note": "final139_general seat 162 (smooth, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 162,
+            "key": "15c7b04209de9ae4",
+            "p_spiral": 0.855724
+          }
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@07ed964c",
+        "colormap": "coral_spirals",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_flat_graphic_r1/flat_spirals/entries/fs_e_ember_spirals_1",
+      "picker": "style_flat_graphic_r1",
+      "picked": [
+        {
+          "row": "flat_spirals/entries",
+          "key": "fs_e_ember_spirals_1"
+        }
+      ],
+      "label": "ember_spirals (wallhaven-d6yv9m): ember orange on navy",
+      "image": "style_flat_graphic_r1__fs_e_ember_spirals_1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_6b1bdae7",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.16178301637142078",
+            "center_im": "-0.6877169088209115",
+            "width": "0.052420582794577786"
+          },
+          "maxiter": 3000,
+          "note": "final139_general seat 4 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 4,
+            "key": "6b1bdae793b83fac",
+            "p_spiral": 0.920601
+          }
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@df7d1a03",
+        "colormap": "ember_spirals",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_flat_graphic_r1/flat_spirals/entries/fs_e_slate_rosettes_0",
+      "picker": "style_flat_graphic_r1",
+      "picked": [
+        {
+          "row": "flat_spirals/entries",
+          "key": "fs_e_slate_rosettes_0"
+        }
+      ],
+      "label": "slate_rosettes (wallhaven-7pvqqv): denser discs as rosettes",
+      "image": "style_flat_graphic_r1__fs_e_slate_rosettes_0.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "00_julia-multibrot6_9cf619af",
+          "family": {
+            "c": [
+              "0.6768149646310875",
+              "0.03142641012857843"
+            ],
+            "degree": 6,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6976021029860747",
+            "center_im": "0.16697627061124376",
+            "width": "0.0006634180709363431"
+          },
+          "maxiter": 18571,
+          "note": "final139_general seat 848 (threads, julia:multibrot6)"
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@eab651ca",
+        "colormap": "slate_rosettes",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_flat_graphic_r1/flat_spirals/entries/fs_e_slate_rosettes_1",
+      "picker": "style_flat_graphic_r1",
+      "picked": [
+        {
+          "row": "flat_spirals/entries",
+          "key": "fs_e_slate_rosettes_1"
+        }
+      ],
+      "label": "slate_rosettes (wallhaven-7pvqqv): denser discs as rosettes",
+      "image": "style_flat_graphic_r1__fs_e_slate_rosettes_1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "02_julia-multibrot3_b4307aa3",
+          "family": {
+            "c": [
+              "0.118076218180586",
+              "0.7935778714194577"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.7999937459218279",
+            "center_im": "-0.2685633247535766",
+            "width": "0.1788914760514211"
+          },
+          "maxiter": 8881,
+          "note": "final139_general seat 500 (smooth_stripe, julia:multibrot3)"
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@eab651ca",
+        "colormap": "slate_rosettes",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_flat_graphic_r1/flat_spirals/entries/fs_e_umber_spirals_0",
+      "picker": "style_flat_graphic_r1",
+      "picked": [
+        {
+          "row": "flat_spirals/entries",
+          "key": "fs_e_umber_spirals_0"
+        }
+      ],
+      "label": "umber_spirals (wallhaven-m35mmk): umber, rust and mint",
+      "image": "style_flat_graphic_r1__fs_e_umber_spirals_0.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "mandelbrot_159646a8",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "0.2863105097588509",
+            "center_im": "-0.48128350505110695",
+            "width": "0.00009487290451631547"
+          },
+          "maxiter": 21938,
+          "note": "final139_general seat 231 (smooth_stripe, mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 231,
+            "key": "159646a83c9ad8ac",
+            "p_spiral": 0.963965
+          }
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@7f83177d",
+        "colormap": "umber_spirals",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_flat_graphic_r1/flat_spirals/forms_a/fs_a_f_dense",
+      "picker": "style_flat_graphic_r1",
+      "picked": [
+        {
+          "row": "flat_spirals/forms_a",
+          "key": "fs_a_f_dense"
+        }
+      ],
+      "label": "denser, smaller discs (radius 0.3, largest 0.03)",
+      "image": "style_flat_graphic_r1__fs_a_f_dense.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_6b1bdae7",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.16178301637142078",
+            "center_im": "-0.6877169088209115",
+            "width": "0.052420582794577786"
+          },
+          "maxiter": 3000,
+          "note": "final139_general seat 4 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 4,
+            "key": "6b1bdae793b83fac",
+            "p_spiral": 0.920601
+          }
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@24ecc43a",
+        "colormap": "flat_spirals",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_flat_graphic_r1/flat_spirals/forms_a/fs_a_f_hues",
+      "picker": "style_flat_graphic_r1",
+      "picked": [
+        {
+          "row": "flat_spirals/forms_a",
+          "key": "fs_a_f_hues"
+        }
+      ],
+      "label": "hue families from a turned, zoomed-out copy (a view warp)",
+      "image": "style_flat_graphic_r1__fs_a_f_hues.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_6b1bdae7",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.16178301637142078",
+            "center_im": "-0.6877169088209115",
+            "width": "0.052420582794577786"
+          },
+          "maxiter": 3000,
+          "note": "final139_general seat 4 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 4,
+            "key": "6b1bdae793b83fac",
+            "p_spiral": 0.920601
+          }
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@b86657e5",
+        "colormap": "flat_spirals",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_flat_graphic_r1/flat_spirals/forms_b/fs_b_f_dense",
+      "picker": "style_flat_graphic_r1",
+      "picked": [
+        {
+          "row": "flat_spirals/forms_b",
+          "key": "fs_b_f_dense"
+        }
+      ],
+      "label": "denser, smaller discs (radius 0.3, largest 0.03)",
+      "image": "style_flat_graphic_r1__fs_b_f_dense.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_15c7b042",
+          "family": {
+            "c": [
+              "0.41691379606409645",
+              "0.006939104737155305"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.026963167117301234",
+            "center_im": "0.04947124138531044",
+            "width": "0.0011711325161998082"
+          },
+          "maxiter": 17587,
+          "note": "final139_general seat 162 (smooth, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 162,
+            "key": "15c7b04209de9ae4",
+            "p_spiral": 0.855724
+          }
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@24ecc43a",
+        "colormap": "flat_spirals",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_flat_graphic_r1/flat_spirals/locations/fs_loc_02_multibrot3_5ada26e6",
+      "picker": "style_flat_graphic_r1",
+      "picked": [
+        {
+          "row": "flat_spirals/locations",
+          "key": "fs_loc_02_multibrot3_5ada26e6"
+        }
+      ],
+      "label": "",
+      "image": "style_flat_graphic_r1__fs_loc_02_multibrot3_5ada26e6.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "multibrot3_5ada26e6",
+          "family": {
+            "degree": 3,
+            "kind": "multibrot"
+          },
+          "viewport": {
+            "center_re": "-0.09178950064086099",
+            "center_im": "0.7700986225660835",
+            "width": "0.0000002750176304330305"
+          },
+          "maxiter": 32054,
+          "note": "final139_general seat 49 (tia, multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 49,
+            "key": "5ada26e6eedcec78",
+            "p_spiral": 0.994495
+          }
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@f65283b7",
+        "colormap": "flat_spirals",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_flat_graphic_r1/flat_spirals/locations/fs_loc_04_julia-multibrot3_0111cda1",
+      "picker": "style_flat_graphic_r1",
+      "picked": [
+        {
+          "row": "flat_spirals/locations",
+          "key": "fs_loc_04_julia-multibrot3_0111cda1"
+        }
+      ],
+      "label": "",
+      "image": "style_flat_graphic_r1__fs_loc_04_julia-multibrot3_0111cda1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_0111cda1",
+          "family": {
+            "c": [
+              "-0.46842560684005435",
+              "0.5240780256173229"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.303539953470547",
+            "center_im": "-0.49453963711664745",
+            "width": "0.0721391066324939"
+          },
+          "maxiter": 10453,
+          "note": "final139_general seat 451 (smooth, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 451,
+            "key": "0111cda1acd27fe5",
+            "p_spiral": 0.961333
+          }
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@f65283b7",
+        "colormap": "flat_spirals",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_flat_graphic_r1/flat_spirals/locations/fs_loc_06_julia-mandelbrot_51ed3c1b",
+      "picker": "style_flat_graphic_r1",
+      "picked": [
+        {
+          "row": "flat_spirals/locations",
+          "key": "fs_loc_06_julia-mandelbrot_51ed3c1b"
+        }
+      ],
+      "label": "",
+      "image": "style_flat_graphic_r1__fs_loc_06_julia-mandelbrot_51ed3c1b.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_51ed3c1b",
+          "family": {
+            "c": [
+              "-0.077108179088327433499270858715229571",
+              "-0.65166022922271097926973577262015080"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.22724077952342966",
+            "center_im": "-0.44678111111193264",
+            "width": "0.2680681903457122"
+          },
+          "maxiter": 8181,
+          "note": "final139_general seat 328 (smooth, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 328,
+            "key": "51ed3c1b38420be1",
+            "p_spiral": 0.983943
+          }
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@f65283b7",
+        "colormap": "flat_spirals",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_flat_graphic_r1/flat_spirals/locations/fs_loc_09_mandelbrot_8bd15b44",
+      "picker": "style_flat_graphic_r1",
+      "picked": [
+        {
+          "row": "flat_spirals/locations",
+          "key": "fs_loc_09_mandelbrot_8bd15b44"
+        }
+      ],
+      "label": "",
+      "image": "style_flat_graphic_r1__fs_loc_09_mandelbrot_8bd15b44.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "mandelbrot_8bd15b44",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.5190249832561113",
+            "center_im": "0.5133724788376811",
+            "width": "0.0003122284464611231"
+          },
+          "maxiter": 2484,
+          "note": "final139_general seat 92 (smooth, mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 92,
+            "key": "8bd15b441a741224",
+            "p_spiral": 0.988381
+          }
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@f65283b7",
+        "colormap": "flat_spirals",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "flat_spirals@07ed964c": {
+      "name": "flat_spirals",
+      "interior": {
+        "palette": 0.5
+      },
+      "tone": {
+        "median": 0.551,
+        "p10": 0.298
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "opacity": 1.0,
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.15,
+              "hit": 1,
+              "read": "step",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.05
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 5.0
+          }
+        }
+      ]
+    },
+    "flat_spirals@24ecc43a": {
+      "name": "flat_spirals",
+      "interior": {
+        "palette": 0.5
+      },
+      "tone": {
+        "median": 0.487,
+        "p10": 0.071
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "opacity": 1.0,
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "step",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.03
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 5.0
+          }
+        }
+      ]
+    },
+    "flat_spirals@7f83177d": {
+      "name": "flat_spirals",
+      "interior": {
+        "palette": 0.5
+      },
+      "tone": {
+        "median": 0.353,
+        "p10": 0.158
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "opacity": 1.0,
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.15,
+              "hit": 1,
+              "read": "step",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.05
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 5.0
+          }
+        }
+      ]
+    },
+    "flat_spirals@b86657e5": {
+      "name": "flat_spirals",
+      "interior": {
+        "palette": 0.5
+      },
+      "tone": {
+        "median": 0.487,
+        "p10": 0.071
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0
+          },
+          "warp": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              },
+              "view": {
+                "zoom": 0.3,
+                "turn": 40.0
+              }
+            },
+            "amount": 0.5
+          }
+        },
+        {
+          "kind": "palette",
+          "opacity": 1.0,
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.15,
+              "hit": 1,
+              "read": "step",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.05
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 5.0
+          }
+        }
+      ]
+    },
+    "flat_spirals@df7d1a03": {
+      "name": "flat_spirals",
+      "interior": {
+        "palette": 0.5
+      },
+      "tone": {
+        "median": 0.245,
+        "p10": 0.087
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "opacity": 1.0,
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.15,
+              "hit": 1,
+              "read": "step",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.05
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 5.0
+          }
+        }
+      ]
+    },
+    "flat_spirals@eab651ca": {
+      "name": "flat_spirals",
+      "interior": {
+        "palette": 0.5
+      },
+      "tone": {
+        "median": 0.451,
+        "p10": 0.118
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "opacity": 1.0,
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "step",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.03
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 5.0
+          }
+        }
+      ]
+    },
+    "flat_spirals@f65283b7": {
+      "name": "flat_spirals",
+      "interior": {
+        "palette": 0.5
+      },
+      "tone": {
+        "median": 0.487,
+        "p10": 0.071
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "opacity": 1.0,
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.15,
+              "hit": 1,
+              "read": "step",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.05
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 5.0
+          }
+        }
+      ]
+    }
+  }
+}

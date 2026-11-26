@@ -2920,7 +2920,9 @@
             "style_retrospective_082/tri_mosaic/kept/r1_tm_inlay_fc13",
             "style_retrospective_082/tri_mosaic/kept/r1_tm_fine_70e1",
             "style_retrospective_082/tri_mosaic/levers/r1_tm_plates_thin_3bb3",
-            "style_retrospective_082/tri_mosaic/levers/r1_tm_shards_m43_fc13"
+            "style_retrospective_082/tri_mosaic/levers/r1_tm_shards_m43_fc13",
+            "style_flat_graphic_r1/cube_facets/forms_a/cf_a_baseline",
+            "style_flat_graphic_r1/cube_facets/forms_b/cf_b_baseline"
           ],
           "score": 3
         },
@@ -2994,7 +2996,10 @@
             "style_stirred_ink_r1/stirred_ink/locations/loc__08_julia-multibrot3_84b3a609_stirred_ink",
             "style_retrospective_082/stirred_ink/kept/r1_si_wide_7e31",
             "style_retrospective_082/stirred_ink/kept/r1_si_strong_7e31",
-            "style_retrospective_082/stirred_ink/levers/r1_si_strong_rays_f_7e31"
+            "style_retrospective_082/stirred_ink/levers/r1_si_strong_rays_f_7e31",
+            "style_poured_paint_r1/marbled_pour/forms_a/mp_a_baseline_stirred_ink",
+            "style_poured_paint_r1/marbled_pour/forms_b/mp_b_baseline_stirred_ink",
+            "style_poured_paint_r1/pour_cells/forms_b/pc_b_baseline_stirred_ink"
           ],
           "score": 4
         },
@@ -3022,7 +3027,9 @@
             "/tone/median": 0.424,
             "/tone/p10": 0.084
           },
-          "keeps": [],
+          "keeps": [
+            "style_poured_paint_r1/stirred_ink/golden_sand/si_b_e_golden_sand"
+          ],
           "reference": "whispers-on-golden-sand-25.jpg"
         }
       ]
@@ -3144,26 +3151,6 @@
             "style_cut_paper_poster_r1/gouache_cut/formulations/gouache_a__g_stack__00_phoenix_f7199609"
           ],
           "score": 3
-        },
-        {
-          "colormap": "lichen_crust",
-          "values": {
-            "/post/0/hop": 0.375,
-            "/post/0/levels": 20,
-            "/post/0/ragged/accent/share": 0.25,
-            "/post/0/ragged/azimuth": 35.0,
-            "/post/0/ragged/length": 0.015,
-            "/post/0/ragged/reach": 0.008,
-            "/post/0/ragged/width": 0.002,
-            "/post/0/shadow/offset": 0.0015,
-            "/post/0/shadow/opacity": 0.6,
-            "/post/0/shadow/width": 0.004,
-            "/post/0/taper": 0.92,
-            "/tone/median": 0.293,
-            "/tone/p10": 0.108
-          },
-          "keeps": [],
-          "reference": "wallhaven_wallhaven-m9v5l9.png"
         }
       ]
     },
@@ -4252,6 +4239,9 @@
     },
     {
       "style": "flat_spirals",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
       "item": "088",
       "reference": "wallhaven_wallhaven-d67kpg.png",
       "references": [
@@ -4263,10 +4253,89 @@
         "wallhaven_wallhaven-7pvqqv.png"
       ],
       "what": "Flat poster spirals: the set's bands as hard flat inks, packed with flat discs of every size winding along each spiral arm, no gradients and no light (umber and mint, coral and ice, ember on navy, ash clouds without discs, and slate rosettes as palette entries).",
-      "palettes": []
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_flat_graphic_r1/flat_spirals/locations/fs_loc_04_julia-multibrot3_0111cda1",
+          "caption": "Teal and ice bands as hard flat rings round a cubic Julia set's spiral, packed with flat discs along each ring"
+        }
+      ],
+      "public": {
+        "name": "flat-spirals",
+        "palette": "flat_spirals",
+        "knobs": []
+      },
+      "kept": "12 tiles: f_dense at both seats, f_hues, locations fs_loc_02, 04, 06 and 09; entries coral_spirals, ember_spirals, slate_rosettes (both seats) and umber_spirals",
+      "note": "Matt: round one 4/5 (2026-11-26), its own mode (no bronze_packing merge); ash_clouds kept nothing and leaves the set and the library.",
+      "palettes": [
+        {
+          "colormap": "flat_spirals",
+          "values": {},
+          "keeps": [
+            "style_flat_graphic_r1/flat_spirals/forms_a/fs_a_f_dense",
+            "style_flat_graphic_r1/flat_spirals/forms_a/fs_a_f_hues",
+            "style_flat_graphic_r1/flat_spirals/forms_b/fs_b_f_dense",
+            "style_flat_graphic_r1/flat_spirals/locations/fs_loc_02_multibrot3_5ada26e6",
+            "style_flat_graphic_r1/flat_spirals/locations/fs_loc_04_julia-multibrot3_0111cda1",
+            "style_flat_graphic_r1/flat_spirals/locations/fs_loc_06_julia-mandelbrot_51ed3c1b",
+            "style_flat_graphic_r1/flat_spirals/locations/fs_loc_09_mandelbrot_8bd15b44"
+          ],
+          "score": 4
+        },
+        {
+          "colormap": "coral_spirals",
+          "values": {
+            "/tone/median": 0.551,
+            "/tone/p10": 0.298
+          },
+          "keeps": [
+            "style_flat_graphic_r1/flat_spirals/entries/fs_e_coral_spirals_1"
+          ],
+          "score": 4
+        },
+        {
+          "colormap": "ember_spirals",
+          "values": {
+            "/tone/median": 0.245,
+            "/tone/p10": 0.087
+          },
+          "keeps": [
+            "style_flat_graphic_r1/flat_spirals/entries/fs_e_ember_spirals_1"
+          ],
+          "score": 4
+        },
+        {
+          "colormap": "slate_rosettes",
+          "values": {
+            "/layers/1/channel/bubble/largest": 0.03,
+            "/layers/1/channel/bubble/radius": 0.3,
+            "/tone/median": 0.451,
+            "/tone/p10": 0.118
+          },
+          "keeps": [
+            "style_flat_graphic_r1/flat_spirals/entries/fs_e_slate_rosettes_0",
+            "style_flat_graphic_r1/flat_spirals/entries/fs_e_slate_rosettes_1"
+          ],
+          "score": 4
+        },
+        {
+          "colormap": "umber_spirals",
+          "values": {
+            "/tone/median": 0.353,
+            "/tone/p10": 0.158
+          },
+          "keeps": [
+            "style_flat_graphic_r1/flat_spirals/entries/fs_e_umber_spirals_0"
+          ],
+          "score": 4
+        }
+      ]
     },
     {
       "style": "cube_facets",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
       "item": "088",
       "reference": "wallhaven_wallhaven-nrl8ym.png",
       "references": [
@@ -4274,10 +4343,53 @@
         "wallhaven_wallhaven-n61olx.jpg"
       ],
       "what": "Stacked cubes seen corner-on: a mosaic of triangles shaded as three cube faces, calm large cubes far from the set splitting into ever smaller cubes along it, small cubes inlaid in each face (crimson and white cubes as a palette entry).",
-      "palettes": []
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_flat_graphic_r1/cube_facets/locations/cf_loc_14_julia-mandelbrot_e696b870",
+          "caption": "Large calm cubes in slate and sand splitting into ever smaller cubes along a Julia set's gold edge"
+        }
+      ],
+      "public": {
+        "name": "cube-facets",
+        "palette": "cube_facets",
+        "knobs": []
+      },
+      "kept": "6 tiles: f_seams, f_coarse (seat b), crimson_cubes and locations cf_loc_07, 14, 22, 27 and 32 (plus the two tri_mosaic baseline tiles, kept to that mode)",
+      "note": "Matt: round one 3/5 (2026-11-26).",
+      "palettes": [
+        {
+          "colormap": "cube_facets",
+          "values": {},
+          "keeps": [
+            "style_flat_graphic_r1/cube_facets/forms_a/cf_a_f_seams",
+            "style_flat_graphic_r1/cube_facets/forms_b/cf_b_f_coarse",
+            "style_flat_graphic_r1/cube_facets/locations/cf_loc_07_phoenix_be08d977",
+            "style_flat_graphic_r1/cube_facets/locations/cf_loc_14_julia-mandelbrot_e696b870",
+            "style_flat_graphic_r1/cube_facets/locations/cf_loc_22_phoenix_bd143ae4",
+            "style_flat_graphic_r1/cube_facets/locations/cf_loc_27_julia-multibrot3_70e1da1e",
+            "style_flat_graphic_r1/cube_facets/locations/cf_loc_32_julia-multibrot3_f1cad9d4"
+          ],
+          "score": 3
+        },
+        {
+          "colormap": "crimson_cubes",
+          "values": {
+            "/tone/median": 0.357,
+            "/tone/p10": 0.038
+          },
+          "keeps": [
+            "style_flat_graphic_r1/cube_facets/entries/cf_e_crimson_cubes_0"
+          ],
+          "score": 3
+        }
+      ]
     },
     {
       "style": "marbled_pour",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
       "item": "089",
       "reference": "wallhaven_wallhaven-xl8gmd.png",
       "references": [
@@ -4285,10 +4397,62 @@
         "wallhaven_wallhaven-dp6vvj.jpg"
       ],
       "what": "Marbled paint: flat inks poured in hard-edged bands and combed into folds, hooks and S-curls that tighten towards the set, a thin dark vein along each edge, no light and no gradient (red, cream and blue-grey; teal marbling with white rims as a palette entry).",
-      "palettes": []
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_poured_paint_r1/marbled_pour/forms_a/mp_a_f_broad",
+          "caption": "Red, cream and blue-grey inks combed into broad hooks and S-curls, tightening into fine marbling at the set"
+        }
+      ],
+      "public": {
+        "name": "marbled-pour",
+        "palette": "marbled_pour",
+        "knobs": []
+      },
+      "kept": "3 tiles: f_broad and f_nostir at seat a, teal_marbling at seat b (plus three stirred_ink baseline tiles, kept to that mode); no location kept",
+      "note": "Matt: round one 4/5 (2026-11-26), poured paint; no location tile kept.",
+      "palettes": [
+        {
+          "colormap": "marbled_pour",
+          "values": {},
+          "keeps": [
+            "style_poured_paint_r1/marbled_pour/forms_a/mp_a_f_broad",
+            "style_poured_paint_r1/marbled_pour/forms_a/mp_a_f_nostir"
+          ],
+          "score": 4
+        },
+        {
+          "colormap": "teal_marbling",
+          "values": {
+            "/post/0/hop": 0.0714,
+            "/post/0/levels": 14,
+            "/post/0/phase": 0.0357,
+            "/post/0/shadow/azimuth": 300.0,
+            "/post/0/shadow/color": {
+              "rgb": "#e6faf7"
+            },
+            "/post/0/shadow/offset": 0.0015,
+            "/post/0/shadow/opacity": 0.8,
+            "/post/0/shadow/width": 0.003,
+            "/post/0/taper": 0.9,
+            "/stir/0/strength": 2.0,
+            "/stir/1/period": 1.0,
+            "/stir/1/strength": 2.0,
+            "/tone/median": 0.408,
+            "/tone/p10": 0.011
+          },
+          "keeps": [
+            "style_poured_paint_r1/marbled_pour/entries/mp_b_e_teal_marbling"
+          ],
+          "score": 4
+        }
+      ]
     },
     {
       "style": "pour_cells",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
       "item": "089",
       "reference": "wallhaven_wallhaven-exqwvk.jpg",
       "references": [
@@ -4296,7 +4460,51 @@
         "wallhaven_wallhaven-yxlvkk.jpg"
       ],
       "what": "An acrylic pour with cells: streams of teal and copper paint dragged into folds and veils, studded with round cells of every size, each a flat drop darkening to its rim, stretched along the flow (navy and crimson as a palette entry).",
-      "palettes": []
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_poured_paint_r1/pour_cells/locations/pc_loc_04_phoenix_71e305f0",
+          "caption": "Teal and copper paint dragged into folds round a phoenix set, studded with round cells along the flow"
+        }
+      ],
+      "public": {
+        "name": "pour-cells",
+        "palette": "pour_cells",
+        "knobs": []
+      },
+      "kept": "12 tiles: f_small, f_holes, f_ringed, f_calm at seat a, f_base and f_small at seat b, crimson_cells, locations pc_loc_01, 04, 06, 07 and 11",
+      "note": "Matt: round one 4/5 (2026-11-26), poured paint.",
+      "palettes": [
+        {
+          "colormap": "pour_cells",
+          "values": {},
+          "keeps": [
+            "style_poured_paint_r1/pour_cells/forms_a/pc_a_f_small",
+            "style_poured_paint_r1/pour_cells/forms_a/pc_a_f_holes",
+            "style_poured_paint_r1/pour_cells/forms_a/pc_a_f_ringed",
+            "style_poured_paint_r1/pour_cells/forms_a/pc_a_f_calm",
+            "style_poured_paint_r1/pour_cells/forms_b/pc_b_f_base",
+            "style_poured_paint_r1/pour_cells/forms_b/pc_b_f_small",
+            "style_poured_paint_r1/pour_cells/locations/pc_loc_01_julia-multibrot4_0169f258",
+            "style_poured_paint_r1/pour_cells/locations/pc_loc_04_phoenix_71e305f0",
+            "style_poured_paint_r1/pour_cells/locations/pc_loc_06_phoenix_2d843082",
+            "style_poured_paint_r1/pour_cells/locations/pc_loc_07_phoenix_43558166",
+            "style_poured_paint_r1/pour_cells/locations/pc_loc_11_julia-multibrot3_7e312206"
+          ],
+          "score": 4
+        },
+        {
+          "colormap": "crimson_cells",
+          "values": {
+            "/tone/median": 0.148,
+            "/tone/p10": 0.093
+          },
+          "keeps": [
+            "style_poured_paint_r1/pour_cells/entries/pc_a_e_crimson_cells"
+          ],
+          "score": 4
+        }
+      ]
     }
   ]
 }
