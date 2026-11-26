@@ -139,17 +139,6 @@ def apply(stack: dict[str, Any], values: dict[str, Any]) -> dict[str, Any]:
     return stack
 
 
-def _targets_of(knob: dict[str, Any]) -> list[tuple[str, float, float]]:
-    """A knob's targets as `(pointer, scale, offset)`."""
-    out = []
-    for target in knob["set"]:
-        target = {"path": target} if isinstance(target, str) else target
-        out.append(
-            (target["path"], float(target.get("scale", 1.0)), float(target.get("offset", 0.0)))
-        )
-    return out
-
-
 def _is_number(node: Any) -> bool:
     return isinstance(node, (int, float)) and not isinstance(node, bool)
 
@@ -168,7 +157,7 @@ def knob_readings(
 
     tuned = apply(stack, values) if values else stack
     readings = []
-    for pointer, scale, offset in _targets_of(knob):
+    for pointer, scale, offset in styles.knob_targets(knob):
         own = [node[key] for node, key in styles.targets(stack, pointer)]
         found = styles.targets(tuned, pointer)
         if len(found) != len(own):
@@ -191,7 +180,7 @@ def knob_rest(stack: dict[str, Any], values: dict[str, Any], knob: dict[str, Any
     """
     from fractal_wallpapers import styles
 
-    pointer, scale, offset = _targets_of(knob)[0]
+    pointer, scale, offset = styles.knob_targets(knob)[0]
     tuned = apply(stack, values) if values else stack
     found = styles.targets(tuned, pointer)
     own = styles.targets(stack, pointer)
@@ -202,7 +191,8 @@ def knob_rest(stack: dict[str, Any], values: dict[str, Any], knob: dict[str, Any
         return knob["default"]
     rest = float(f"{(value - offset) / scale:.12g}")
     whole = all(
-        path.rsplit("/", 1)[-1] in styles.INTEGER_MEMBERS for path, _, _ in _targets_of(knob)
+        path.rsplit("/", 1)[-1] in styles.INTEGER_MEMBERS
+        for path, _, _ in styles.knob_targets(knob)
     )
     return round(rest) if whole else rest
 

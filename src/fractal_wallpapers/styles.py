@@ -354,14 +354,20 @@ def knob_shape(knob: Any) -> str | None:
     return None
 
 
-def knob_writes(knob: dict[str, Any], value: float) -> list[tuple[str, float]]:
-    """What a knob at `value` writes: `(pointer, number)` per target, `scale·value + offset`."""
-    writes = []
+def knob_targets(knob: dict[str, Any]) -> list[tuple[str, float, float]]:
+    """A knob's targets as `(pointer, scale, offset)`, a bare pointer at scale 1, offset 0."""
+    out = []
     for target in knob["set"]:
         target = {"path": target} if isinstance(target, str) else target
-        number = float(target.get("scale", 1.0)) * value + float(target.get("offset", 0.0))
-        writes.append((target["path"], number))
-    return writes
+        out.append(
+            (target["path"], float(target.get("scale", 1.0)), float(target.get("offset", 0.0)))
+        )
+    return out
+
+
+def knob_writes(knob: dict[str, Any], value: float) -> list[tuple[str, float]]:
+    """What a knob at `value` writes: `(pointer, number)` per target, `scale·value + offset`."""
+    return [(pointer, scale * value + offset) for pointer, scale, offset in knob_targets(knob)]
 
 
 def check_public(document: dict[str, Any]) -> list[str]:
