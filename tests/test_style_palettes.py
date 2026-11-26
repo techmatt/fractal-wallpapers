@@ -102,6 +102,55 @@ def test_a_row_holds_its_set_to_its_keeps_and_its_score_to_its_best_palette():
     assert style_palettes.check_row(row, STACK, keeps) == ["m: palette magma names keep 'b' twice"]
 
 
+#: A knob writing the tone's median through a scale, and one writing both glows' opacity.
+KNOBS = [
+    {
+        "name": "bright",
+        "label": "",
+        "what": "",
+        "default": 0.4,
+        "range": [0.3, 0.7],
+        "set": [{"path": "/tone/median", "scale": 0.5, "offset": 0.0}],
+    },
+    {
+        "name": "glow",
+        "label": "",
+        "what": "",
+        "default": 0.5,
+        "range": [0.0, 1.0],
+        "set": ["/layers/1/opacity", {"path": "/layers/2/opacity", "scale": 1.0, "offset": 0.2}],
+    },
+]
+
+
+def test_an_entry_value_outside_its_knobs_range_refuses():
+    """Matt's ruling (2026-11-25): a slider moved off an entry can always come back."""
+    row, keeps = _row()
+    assert style_palettes.check_row(row, STACK, keeps, knobs=KNOBS) == []
+    row["palettes"][1]["values"] = {"/tone/median": 0.4}  # bright 0.8
+    assert style_palettes.check_row(row, STACK, keeps, knobs=KNOBS) == [
+        "m: palette magma sets knob 'bright' at 0.8, outside its range 0.3..0.7"
+    ]
+    # Every member the knob writes is read back, not only the first.
+    row["palettes"][1]["values"] = {"/layers/2/opacity": 0.1}  # glow -0.1
+    assert style_palettes.check_row(row, STACK, keeps, knobs=KNOBS) == [
+        "m: palette magma sets knob 'glow' at -0.1, outside its range 0..1"
+    ]
+
+
+def test_a_knob_rests_at_its_first_members_tuned_value_on_an_entry():
+    """What the website's `knobRest` reads, which the bundle's `rests` carry."""
+    assert style_palettes.knob_rests(STACK, {}, KNOBS) == {}
+    values = {"/tone/median": 0.225, "/layers/2/opacity": 0.9}
+    # glow's first member is untouched, so it rests at its default though its second moved.
+    assert style_palettes.knob_rests(STACK, values, KNOBS) == {"bright": 0.45}
+    assert style_palettes.knob_rest(STACK, {"/layers/1/opacity": 0.3}, KNOBS[1]) == 0.3
+    whole = {"name": "n", "default": 1, "range": [0, 9], "set": [{"path": "/layers/0/levels"}]}
+    stack = copy.deepcopy(STACK)
+    stack["layers"][0]["levels"] = 1
+    assert style_palettes.knob_rest(stack, {"/layers/0/levels": 2.5}, whole) == 2  # half to even
+
+
 def test_a_kept_tile_lays_its_map_into_the_set_once():
     row, _ = _row()
     other = copy.deepcopy(STACK)

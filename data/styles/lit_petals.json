@@ -51,7 +51,7 @@
         "default": 0.323,
         "range": [
           0.28,
-          0.38
+          0.456
         ],
         "set": [
           "/tone/median"

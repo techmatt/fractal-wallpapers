@@ -105,7 +105,7 @@ def row(
     Two things it must always be able to do, and both are what the `recipe` block
     is here whole for:
 
-    * **The recipe key stays recomputable.** [`recipes.of_row`] rebuilds the
+    * **The recipe key stays recomputable.** [`recipes.of_record`] rebuilds the
       dataclass off `recipe` alone and [`recipes.key_of`] digests it back to
       `key`. `tests/test_candidate_ledger.py` holds that over the live store.
     * **The picture stays re-renderable from the row alone.** The same rebuilt

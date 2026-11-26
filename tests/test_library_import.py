@@ -86,18 +86,18 @@ def test_a_converted_file_is_shaped_like_a_tracked_one() -> None:
 
 
 @pytest.mark.slow
-def test_the_conversion_reproduces_every_map_that_is_already_tracked() -> None:
+def test_the_conversion_reproduces_every_map_that_is_already_tracked(
+    extraction_source_checkout,
+) -> None:
     """The one check that says the rule is the same rule.
 
-    Skipped rather than failed where the source library is not on this machine:
-    CI has no copy of it, and a test that cannot read its input has not found a
-    defect.
+    Skipped rather than failed where the source library is not on this machine
+    (`conftest.EXTRACTION_SOURCE_ENV` unset, or naming no library): CI has no copy
+    of it, and a test that cannot read its input has not found a defect.
     """
-    from pathlib import Path
-
     from fractal_wallpapers.paths import colormap_dir
 
-    source = Path("C:/Code/fractal-maker")
+    source = extraction_source_checkout
     if not (source / library_import.POOL).is_file():
         pytest.skip("the source colormap library is not on this machine")
 

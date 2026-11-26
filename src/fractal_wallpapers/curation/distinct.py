@@ -117,7 +117,7 @@ METRIC = (
 
 #: The radii the sheet shows near pairs at. **Candidates to look at and not a
 #: setting.** They bracket the two numbers already set in a comparable space —
-#: [`gallery.RADIUS`] at 0.07, whose calibration read put nearest-neighbour
+#: [`rules.GEOMETRY_RADIUS`] at 0.07, whose calibration read put nearest-neighbour
 #: distances at a median of 0.024 — from well inside it to well outside.
 RADII = (0.02, 0.04, 0.07, 0.10)
 

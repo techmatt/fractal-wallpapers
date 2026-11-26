@@ -337,7 +337,7 @@ def twin(stored: dict, to_mode: str) -> recipes.Recipe:
     * `mode_params` is emptied. `renders.FIELD_IDENTITY` holds it and the target
       mode's settings space is not the source's, so carrying a setting across
       would name a picture the engine would not draw. It is also what keeps a
-      twin on [`colorize.render`]'s shared-field path — see [`_shared_field`],
+      twin on [`colorize.render`]'s shared-field path — see [`colorize._shared_field`],
       which sends a candidate with settings down the full render, once per map
       instead of once per place.
     * `autolevel` is re-derived through [`recipes.live_stamp`] rather than

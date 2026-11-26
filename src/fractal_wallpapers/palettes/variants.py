@@ -182,7 +182,7 @@ def phase(document: dict, thousandths: int) -> tuple[list, str]:
     The closing stop is dropped, the rest are rolled by whole positions, and a
     new closing stop is written back — so the result is a ramp of exactly the
     same length carrying exactly the same colours in a different order. The dose
-    a caller asks for is rounded to a whole stop and [`realised`] says what
+    a caller asks for is rounded to a whole stop and [`derive`]'s `variant.landed` says what
     actually landed, because a 511-stop map cannot be rotated by an eighth.
     """
     stops = _stops_of(document)

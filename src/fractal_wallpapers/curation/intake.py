@@ -102,7 +102,7 @@ while meaning the other is how a population and its denominator come apart.
 The junk floor acts, here, at the one site that draws the colorize pool. What
 comes with it is arithmetic rather than judgement:
 
-* [`release_cap`] — a partition may release at most a quarter of its floor-passing
+* [`floors.release_cap`] — a partition may release at most a quarter of its floor-passing
   supply, so a thin partition ships nothing rather than its own least-bad row;
 * [`slots`] — the release mix apportioned into whole slots, with a guaranteed
   floor of one for any partition that has something worth keeping. Both go

@@ -283,7 +283,9 @@ def test_a_complete_cache_is_measured_against_the_store_and_not_a_stale_plan(
 
 
 @pytest.mark.slow
-def test_a_regenerated_picture_is_the_picture_that_was_judged(shipped_render_cache) -> None:
+def test_a_regenerated_picture_is_the_picture_that_was_judged(
+    shipped_render_cache, extraction_source_checkout
+) -> None:
     """The check that found the one defect the recipe transfer had.
 
     An edge-transfer floor two orders of magnitude too small left a third of the
@@ -291,14 +293,14 @@ def test_a_regenerated_picture_is_the_picture_that_was_judged(shipped_render_cac
     else — invisible to every other test here, because the pictures were still
     fractals and the head would still have trained on them.
 
-    Skipped where the source project or a complete cache is absent: CI has
-    neither, and a check that cannot read its input has not found a defect.
+    Skipped where the source project (`conftest.EXTRACTION_SOURCE_ENV`) or a
+    complete cache is absent: CI has neither, and a check that cannot read its
+    input has not found a defect.
     """
     pytest.importorskip("numpy")
     pytest.importorskip("PIL")
-    from pathlib import Path
 
-    source = Path("C:/Code/fractal-maker")
+    source = extraction_source_checkout
     if not (source / "data").is_dir():
         pytest.skip("the source project is not on this machine")
     for head in finished.HEADS:

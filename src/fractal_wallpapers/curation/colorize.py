@@ -1392,7 +1392,7 @@ def annotate(record: dict) -> dict:
     Tri-state either way, and `None` on a failed render for the reason the cut
     itself is tri-state: a crash has no score to compare and recording it as a
     failure to clear would make the two indistinguishable. The *seating* decision
-    is not tri-state — see [`floors.Bar.seats`] — and it is taken at selection,
+    is not tri-state — see [`cuts.Bar.acts`] — and it is taken at selection,
     not here.
     """
     if record.get("head") is None:

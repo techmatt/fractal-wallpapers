@@ -139,6 +139,86 @@ def apply(stack: dict[str, Any], values: dict[str, Any]) -> dict[str, Any]:
     return stack
 
 
+def _targets_of(knob: dict[str, Any]) -> list[tuple[str, float, float]]:
+    """A knob's targets as `(pointer, scale, offset)`."""
+    out = []
+    for target in knob["set"]:
+        target = {"path": target} if isinstance(target, str) else target
+        out.append(
+            (target["path"], float(target.get("scale", 1.0)), float(target.get("offset", 0.0)))
+        )
+    return out
+
+
+def _is_number(node: Any) -> bool:
+    return isinstance(node, (int, float)) and not isinstance(node, bool)
+
+
+def knob_readings(
+    stack: dict[str, Any], values: dict[str, Any], knob: dict[str, Any]
+) -> list[float]:
+    """Every setting of `knob` an entry's tuned members read back to: each member the
+    knob writes that the entry moves off the stack's own value, as `(value − offset) /
+    scale`. Empty when the entry tunes none of them.
+
+    These are the values a slider must reach for the entry's own picture to sit on its
+    range, so each lies inside it (`check_row`; Matt's ruling, 2026-11-25).
+    """
+    from fractal_wallpapers import styles
+
+    tuned = apply(stack, values) if values else stack
+    readings = []
+    for pointer, scale, offset in _targets_of(knob):
+        own = [node[key] for node, key in styles.targets(stack, pointer)]
+        found = styles.targets(tuned, pointer)
+        if len(found) != len(own):
+            own = [None] * len(found)  # a value replaced a whole subtree: every member counts
+        for (node, key), base in zip(found, own, strict=True):
+            if _is_number(node[key]) and node[key] != base:
+                readings.append(float(f"{(node[key] - offset) / scale:.12g}"))
+    return readings
+
+
+def knob_rest(stack: dict[str, Any], values: dict[str, Any], knob: dict[str, Any]) -> float:
+    """What `knob` rests at on an entry: the setting the entry's picture is, which a page
+    shows on the slider while the reader has set nothing.
+
+    The entry's tuned value of the knob's **first** member read back through it, where
+    the entry moves that member; else the knob's `default`. The website's `knobRest`
+    (`explorer/style.js`) reads it the same way, to twelve significant digits and rounded
+    half to even where every member the knob writes is whole (`styles.INTEGER_MEMBERS`).
+    A knob writing several members an entry tuned apart rests at its first member's.
+    """
+    from fractal_wallpapers import styles
+
+    pointer, scale, offset = _targets_of(knob)[0]
+    tuned = apply(stack, values) if values else stack
+    found = styles.targets(tuned, pointer)
+    own = styles.targets(stack, pointer)
+    if not found or not own:
+        return knob["default"]
+    value, base = found[0][0][found[0][1]], own[0][0][own[0][1]]
+    if not _is_number(value) or value == base:
+        return knob["default"]
+    rest = float(f"{(value - offset) / scale:.12g}")
+    whole = all(
+        path.rsplit("/", 1)[-1] in styles.INTEGER_MEMBERS for path, _, _ in _targets_of(knob)
+    )
+    return round(rest) if whole else rest
+
+
+def knob_rests(
+    stack: dict[str, Any], values: dict[str, Any], knobs: list[dict[str, Any]]
+) -> dict[str, float]:
+    """`{knob name: rest}` for each knob an entry rests off its default (`knob_rest`)."""
+    rests = {}
+    for knob in knobs:
+        rest = knob_rest(stack, values, knob)
+        if rest != knob["default"]:
+            rests[knob["name"]] = rest
+    return rests
+
+
 def entry_for(row: dict[str, Any], colormap: str) -> dict[str, Any] | None:
     """The row's palette entry for `colormap`, or None."""
     return next((e for e in row.get("palettes", []) if e["colormap"] == colormap), None)
@@ -219,11 +299,14 @@ def check_row(
     keeps: dict[str, Any],
     *,
     maps: set[str] | None = None,
+    knobs: list[dict[str, Any]] | None = None,
 ) -> list[str]:
-    """Each way a row's palette set disagrees with its stack, keeps and score.
+    """Each way a row's palette set disagrees with its stack, keeps, score and knobs.
 
     `maps` is the library's map names (`library_maps`), read here when not given: a
-    caller checking many rows reads them once.
+    caller checking many rows reads them once. `knobs` is the style's public knobs: every
+    setting an entry's tuned members read back to (`knob_readings`) lies in its knob's
+    range, so a slider moved off the entry can always come back to it.
     """
     from fractal_wallpapers import styles
 
@@ -254,6 +337,17 @@ def check_row(
             apply(stack, values)
         except styles.StyleError as refusal:
             problems.append(f"{name}: palette {colormap}: {refusal}")
+        else:
+            for knob in knobs or []:
+                if styles.knob_shape(knob) is not None:
+                    continue  # styles.check_public names it
+                low, high = knob["range"]
+                for reading in sorted(set(knob_readings(stack, values, knob))):
+                    if not low - 1e-9 <= reading <= high + 1e-9:
+                        problems.append(
+                            f"{name}: palette {colormap} sets knob '{knob['name']}' at "
+                            f"{reading:g}, outside its range {low:g}..{high:g}"
+                        )
         if "score" in entry and not is_score(entry["score"]):
             problems.append(f"{name}: palette {colormap} scores {entry['score']}, not 1 to 5")
         named = entry.get("keeps", [])

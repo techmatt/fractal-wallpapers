@@ -1894,7 +1894,7 @@ class Channel:
                 "great_cut": money.GREAT_CUT,
             },
         }
-        # Through [`ledger.Ledger.header`] and not [`write`], which is what puts
+        # Through [`ledger.Ledger.header`] and not [`ledger.Ledger.write`], which is what puts
         # the invocation and the ledger tiers on it: both are facts about any run
         # record, and a leg kind that assembled its own header would have to
         # remember them.

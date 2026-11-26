@@ -119,7 +119,7 @@ PHASES: tuple[float, ...] = (0.05, 0.25, 0.5)
 #: rotate`* is the leg that exists because of it.
 BASE_PHASE = 0.0
 
-#: Oklab ΔE at or above which a pixel counts as **moved**, for [`compare`]'s
+#: Oklab ΔE at or above which a pixel counts as **moved**, for [`difference`]'s
 #: `moved` share. 0.02, which is the scale a just-noticeable difference is usually
 #: quoted at in this space — Oklab's L runs 0 to 1, so this is two parts in a
 #: hundred of the whole lightness range. It is a **reporting** threshold and

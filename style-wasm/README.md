@@ -68,18 +68,21 @@ shown: [{keep, caption, location, colormap, stack}]}], colormaps: {name: file}}`
 per published row of `data/styles/catalog.json` (`style_wasm.bundle`'s docstring). `tier` is
 `curated` (the *Custom* list) or `lab` (*Custom (lab)*); a lab mode's `knobs` may be empty,
 and a shown example has no `keep` (a draft's place, drawn with the mode's own stack).
-`palettes` is `[{colormap, was, values, score}]`, the mode's own map first (values `{}`,
+`palettes` is `[{colormap, was, values, rests, score}]`, the mode's own map first (values `{}`,
 there whether or not a keep was drawn in it) and then each kept entry; the page writes `values` over `stack` at their
 pointers (`style_palettes.apply`) before opening a session, and switches entries with
-`recolour`. `aliases` are old style names merged into the mode (`styles.alias_of`): a link
+`recolour`. `rests` is `{knob: value}` where a knob rests off its `default` on that entry:
+the entry's tuned first member read back through the knob (`style_palettes.knob_rest`, the
+website's `knobRest`), always inside the knob's range, so a slider moved off the entry can
+come back to its picture. `aliases` are old style names merged into the mode (`styles.alias_of`): a link
 naming one opens the entry whose `was` it is, else the mode's default. A shown keep carries the stack it
 was drawn with.
 
 ## Parity: which run is owed
 
 `style wasm-parity` and `style wasm-speed` hold the module to the native engine under Node
-(`style_wasm.py`). The whole run is 38 to 48 minutes at `--workers 3` (six threads with the
-native side; 223 jobs, 083's reading): a detached run of its own, so owe it only where
+(`style_wasm.py`). The whole run is 38 to 48 minutes at its default three workers, the
+render pool's count and its cap (six threads with the native side; 223 jobs, 083's reading): a detached run of its own, so owe it only where
 nothing cheaper covers the change. What a change owes, after its last code edit:
 
 | The change | Owed |

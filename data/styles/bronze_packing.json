@@ -30,7 +30,7 @@
         "default": 0.12,
         "range": [
           0.06,
-          0.16
+          0.6
         ],
         "set": [
           "/layers/2/channel/bubble/largest",

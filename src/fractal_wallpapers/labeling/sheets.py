@@ -182,14 +182,14 @@ LABEL_FILTER = "lanczos3"
 #: a sitting is about — a batch cut to ask about one axis of the recipe wants the
 #: fine head's reading of the **candidate**, which is a column no scorer here can
 #: produce because this page serves 1280x720 and that head was fitted at the
-#: ledger's 640x360. [`grade_source`] already takes its order off the plan for
+#: ledger's 640x360. [`gallery_grade_source`] already takes its order off the plan for
 #: exactly that reason; this is the same arrangement on the other source.
 #:
 #: **It moves the ORDER and never the prefill.** `suggestion` and
 #: `suggestion_score` stay the scoring head's own decode on this source, because
 #: they are a tier on *this* store's scale and a number off another head is not
 #: one. A row the plan has no `order_score` for sorts after every row it does —
-#: [`curation.solve.at_fine_bar`]'s rule, which [`grade_source.order`] already
+#: [`curation.solve.at_fine_bar`]'s rule, which [`gallery_grade_source.order`] already
 #: spends on the same column.
 ORDERINGS: tuple[str, ...] = ("rank", "top", "plan")
 
@@ -1015,7 +1015,7 @@ def finished_source(
 
         A row with no order score sorts after every row that has one, which only
         `plan` can produce — the two scored readings are on every row by
-        construction. [`grade_source.order`]'s rule on the same column, and
+        construction. [`gallery_grade_source.order`]'s rule on the same column, and
         [`curation.solve.at_fine_bar`]'s before that: an unread row is the head
         having no opinion rather than a low one.
         """

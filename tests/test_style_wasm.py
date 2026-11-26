@@ -26,6 +26,13 @@ def test_the_bundle_carries_every_published_mode_whole():
         # The set a page cycles opens at the mode's own map, kept in or not.
         assert mode["palettes"][0]["colormap"] == mode["palette"], row["style"]
         assert mode["palettes"][0]["values"] == {}, row["style"]
+        # Each entry names what a knob rests at there, inside the knob's range: the slider
+        # can come back to the entry's own picture (Matt's ruling, 2026-11-25).
+        ranges = {knob["name"]: knob["range"] for knob in mode["knobs"]}
+        for entry in mode["palettes"]:
+            for name, rest in entry.get("rests", {}).items():
+                low, high = ranges[name]
+                assert low <= rest <= high, (row["style"], entry["colormap"], name)
         # A merged style's old name resolves on the page as `styles.alias_of` resolves it.
         assert mode["aliases"] == row.get("aliases", [])
         for alias in mode["aliases"]:
@@ -158,6 +165,12 @@ def test_a_cost_read_draws_each_style_at_its_deepest_kept_seat(tmp_path):
         style_wasm.cost_jobs([name], seat="no such seat")
     with pytest.raises(style_wasm.StyleWasmError, match="render pool"):
         style_wasm.cost(tmp_path, [name], workers=style_wasm.COST_WORKERS + 1)
+    # A parity run and a recolour check are held to the same pool (Matt, 2026-11-25).
+    assert style_wasm.PARITY_WORKERS == engine.POOL_WORKERS
+    with pytest.raises(style_wasm.StyleWasmError, match="render pool"):
+        style_wasm.parity(tmp_path, names=[name], workers=style_wasm.PARITY_WORKERS + 1)
+    with pytest.raises(style_wasm.StyleWasmError, match="render pool"):
+        style_wasm.recolour_check(tmp_path, [name], workers=0)
     # A merged style's old name opens as its mode at the entry that was it, so it is read
     # at the mode's seats in that entry's stack and map.
     row = next(r for r in style_wasm.published_rows() if r.get("aliases"))

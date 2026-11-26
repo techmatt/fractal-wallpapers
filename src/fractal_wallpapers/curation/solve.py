@@ -3554,7 +3554,7 @@ def _config(
         # a publish path, `tentative.refuse_forced` — must see that on the record.
         "force_fill": bool(force_fill),
         # On `config` for the spiral cap's reason below: this block is what
-        # [`tentative.manifest`] carries WHOLE into the tracked manifest, and
+        # [`tentative.manifest_of`] carries WHOLE into the tracked manifest, and
         # whether a gallery seated one wallpaper per PLACE or one per near-cluster
         # is not something a reader should have to infer from a date. `None` is a
         # pass that ran no pre-selection at all and folded nothing.
@@ -3606,7 +3606,7 @@ def _config(
         "fine_weights_is": SCHEMA_NOTES["fine_weights_is"],
         # **On `config` and not only in the `spiral` block**, because `config` is
         # the block a tentative gallery's tracked manifest carries whole
-        # ([`tentative.manifest`]) and the `spiral` block is not. Until 2026-09-04
+        # ([`tentative.manifest_of`]) and the `spiral` block is not. Until 2026-09-04
         # the cap lived only in the untracked solve record, so no tracked gallery
         # could say whether it had run capped: a reader had to infer it from a zero
         # in the `spiral` refusal column, which a cap that ran and did not bind
@@ -3614,7 +3614,7 @@ def _config(
         "spiral_cap": None if spiral_cap is None else float(spiral_cap),
         "spiral_cap_default": DEFAULT_SPIRAL_CAP,
         # On `config` for the spiral cap's reason above, and not only in the
-        # `rules` block: this is what [`tentative.manifest`] carries WHOLE into a
+        # `rules` block: this is what [`tentative.manifest_of`] carries WHOLE into a
         # tracked manifest. `{}` means no per-mode ceiling ran, which is every
         # record before 2026-09-05.
         "mode_ceilings": {
@@ -3623,7 +3623,7 @@ def _config(
         "mode_ceilings_default": dict(sorted(DEFAULT_MODE_CEILINGS.items())),
         "mode_ceilings_is": SCHEMA_NOTES["mode_ceilings_is"],
         # On `config` for the spiral cap's reason: this block is what
-        # [`tentative.manifest`] carries WHOLE into the tracked manifest, and the
+        # [`tentative.manifest_of`] carries WHOLE into the tracked manifest, and the
         # `augment` block beside it is not tracked at all. A gallery that cannot
         # say whether the chain stage ran is a gallery whose seat count cannot be
         # compared with any other.
@@ -3648,7 +3648,7 @@ def _config(
         "bars_are": SCHEMA_NOTES["bars_are"]
         + (SCHEMA_NOTES["bars_are.relaxed"] if theme is not None else ""),
         # `k` and `kf` are ONE PAIR and are written together, on `config` — which
-        # is the block [`tentative.manifest`] carries whole into a tracked
+        # is the block [`tentative.manifest_of`] carries whole into a tracked
         # manifest, the same reason `spiral_cap` and `fold` sit there. A record
         # predating either field cannot say whether it ran under it, and this pair
         # will be read back for months: `k: 2` is a record taken before

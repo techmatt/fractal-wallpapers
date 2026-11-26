@@ -210,7 +210,7 @@ def plan_paths() -> list[Path]:
     """Every plan a drop of this store was cut from, over every draw and batch.
 
     **The one thing here that is not regenerable, and the store cannot say so
-    itself.** A row carries [`leveled`] as a *boolean* — whether the candidate's
+    itself.** A row carries `leveled` as a *boolean* — whether the candidate's
     `<stem>.leveled/` colormap was on disk when the plan was cut, and so whether
     the sheet's picture went through it or through the plain map — and never the
     directory. The path lives only on the plan unit, so these files are the only

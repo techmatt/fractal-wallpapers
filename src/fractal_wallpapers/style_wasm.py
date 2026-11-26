@@ -57,8 +57,9 @@ SPEED_SUPERSAMPLE = DRAFT_SUPERSAMPLE
 #: job (one keep's tiled draw), the module's work over the workers, and the native side
 #: (at `PARITY_NATIVE_THREADS`). The whole run, 223 jobs, reads 38 to 48 minutes at
 #: `--workers 3` (six threads with the native side), and is never shorter than its
-#: longest job (`style-wasm/README.md`'s *Parity: which run is owed*).
-PARITY_WORKERS = 5
+#: longest job (`style-wasm/README.md`'s *Parity: which run is owed*). The render pool's
+#: count, and its cap as `style cost`'s (Matt, 2026-11-25).
+PARITY_WORKERS = engine.POOL_WORKERS
 
 #: Threads the native engine takes for its side of a parity run (`RAYON_NUM_THREADS`,
 #: unless the caller's environment already sets one): uncapped it takes every core beside
@@ -165,12 +166,14 @@ def bundle() -> dict[str, Any]:
 
     A mode is its public name, its tier (`curated` or `lab`, which a page lists apart) and
     palette, its palette set (`palettes`: each kept map and the values tuned for it, which a
-    page cycles), its knobs (the style file's `public.knobs` whole: label, line, default,
-    range, and where each writes; a lab mode's may be empty), the stack, and the pictures
-    the catalog shows, each with the location and map it was drawn at: the places a page
-    can open the mode at, known to hold the look (a lab example's is a draft's).
+    page cycles, and `rests`, what a knob rests at on that entry where not its default,
+    `style_palettes.knob_rest`), its knobs (the style file's `public.knobs` whole: label,
+    line, default, range, and where each writes; a lab mode's may be empty), the stack,
+    and the pictures the catalog shows, each with the location and map it was drawn at:
+    the places a page can open the mode at, known to hold the look (a lab example's is a
+    draft's).
     """
-    from fractal_wallpapers import style_catalog, styles
+    from fractal_wallpapers import style_catalog, style_palettes, styles
 
     modes, maps = [], {}
     for row in published_rows():
@@ -190,10 +193,14 @@ def bundle() -> dict[str, Any]:
         # the mode's own map, there whether or not a keep was drawn in it (a lab mode shows
         # an example), so the page can always switch back to it.
         palettes = []
+        knobs = (document.get("public") or {}).get("knobs") or []
         for index, entry in enumerate(row["palettes"]):
             if index and not entry.get("keeps"):
                 continue  # still in its first round: not a kept palette yet
             maps.setdefault(entry["colormap"], colormap_of(entry["colormap"]))
+            # What each knob rests at on this entry, where not its `default`: the entry's
+            # own setting, which the slider shows untouched and can always come back to.
+            rests = style_palettes.knob_rests(document["style"], entry.get("values") or {}, knobs)
             palettes.append(
                 {
                     "colormap": entry["colormap"],
@@ -201,6 +208,7 @@ def bundle() -> dict[str, Any]:
                     # page resolves a link naming that style to this entry.
                     **({"was": entry["was"]} if entry.get("was") else {}),
                     "values": entry.get("values") or {},
+                    **({"rests": rests} if rests else {}),
                     **({"score": entry["score"]} if "score" in entry else {}),
                 }
             )
@@ -217,7 +225,7 @@ def bundle() -> dict[str, Any]:
                 "aliases": row.get("aliases") or [],
                 "variant": row["variant"],
                 "what": row.get("what", document["description"]),
-                "knobs": (document.get("public") or {}).get("knobs") or [],
+                "knobs": knobs,
                 "stack": document["style"],
                 "shown": shown,
             }
@@ -482,6 +490,15 @@ def parity_jobs(
     return jobs, natives
 
 
+def within_pool(workers: int) -> None:
+    """Refuse a Node worker count past the render pool's (`engine.POOL_WORKERS`)."""
+    if not 1 <= workers <= PARITY_WORKERS:
+        raise StyleWasmError(
+            f"--workers {workers}: a parity run draws on 1 to {PARITY_WORKERS} Node threads "
+            "(the render pool's count)"
+        )
+
+
 def parity(
     folder: Path,
     resolution: tuple[int, int] = PARITY_RESOLUTION,
@@ -510,6 +527,7 @@ def parity(
     """
     from fractal_wallpapers.engine import THREADS_ENV
 
+    within_pool(workers)
     jobs, natives = parity_jobs(resolution, supersample, names)
     queued = longest_first(jobs, folder)
     node = start_node(queued, folder, workers)
@@ -624,7 +642,7 @@ def recolour_jobs(
 def recolour_check(
     folder: Path,
     names: list[str] | None = None,
-    workers: int = 3,
+    workers: int = PARITY_WORKERS,
     resolution: tuple[int, int] = RECOLOUR_RESOLUTION,
     supersample: int = PARITY_SUPERSAMPLE,
 ) -> list[dict[str, Any]]:
@@ -633,6 +651,7 @@ def recolour_check(
     the frame gathered, which the page meets by measuring afresh: slower, never wrong).
     Rows also in `recolour.jsonl`.
     """
+    within_pool(workers)
     jobs = recolour_jobs(names, resolution, supersample)
     if not jobs:
         raise StyleWasmError("no published mode here has a second palette entry to recolour")

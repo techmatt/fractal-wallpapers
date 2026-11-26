@@ -238,7 +238,7 @@ GEOMETRY_RADIUS = 0.07
 #: **Four.** The bound is the triangle inequality applied per direction and per
 #: block of quantiles — the mean of `|a - b|` is at least `|mean a - mean b|` —
 #: so one block is the distance between the two clouds' mean colours, and
-#: [`pixel_clouds.QUANTILES`] blocks is the metric itself. Every setting in
+#: [`palettes.groups.QUANTILES`] blocks is the metric itself. Every setting in
 #: between is sound; the question is only how much it settles.
 #:
 #: Measured over 79,800 pairs drawn from a pool's top two thousand: one block

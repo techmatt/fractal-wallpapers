@@ -20,7 +20,9 @@ seen, and no reading here may be quoted as one.
 
 Same architecture as the render judge — [`head.build`] on the small backbone, the
 four-tier CORN ordinal classifier — and the weights start at
-`models/render/render.fp16.pt`, the shipped **weights-v6** artifact.
+`models/render/render.fp16.pt`, the shipped render artifact: a fit records the
+release tag `models/weights.json` ships it under ([`source_tag`]), never a spelling
+of its own.
 
 **Never a shared trunk.** A trunk this fit moved would be a judge flip: the pool's
 `p_ge4` column would move under it, which empties the seating pool and forces a
@@ -1327,7 +1329,7 @@ INHERITANCE = {
             "key": "pretrained",
             "why": (
                 "the backbone is not re-initialised from ImageNet at all — it starts at the "
-                "shipped weights-v6 artifact, which is what makes this a second stage rather "
+                "shipped render artifact, which is what makes this a second stage rather "
                 "than a second judge"
             ),
         },
@@ -1344,6 +1346,23 @@ INHERITANCE = {
 
 def source_path() -> Path:
     return repo_root() / SOURCE
+
+
+def source_tag() -> str:
+    """The release tag the shipped render artifact is under, read off the manifest.
+
+    A fit's `initialised_from.tag` says which published bytes it started from, so it
+    is the manifest's word for them and never a literal here: a literal outlives the
+    tag it names, which is how fits came to record a tag no release carried.
+    """
+    manifest = json.loads(roster.manifest_path().read_text(encoding="utf-8"))
+    row = manifest.get("heads", {}).get("render")
+    if not row or not row.get("tag"):
+        raise GradeTrainingError(
+            f"{tracked_name(roster.manifest_path())} names no tag for the render head, "
+            f"which this head is initialised from; a fit cannot say which bytes it started at."
+        )
+    return row["tag"]
 
 
 def initial_state() -> tuple[dict, dict]:
@@ -2090,7 +2109,7 @@ def fit(
         "initialised_from": {
             "artifact": str(SOURCE).replace("\\", "/"),
             "run": shipped.get("run"),
-            "tag": "weights-v6",
+            "tag": source_tag(),
             "says": "a COPY. Never a shared trunk — a moved trunk is a judge flip",
         },
         "freezing": freezing,
@@ -2453,7 +2472,7 @@ def _fit_drop_high_asymmetric(
         "initialised_from": {
             "artifact": str(SOURCE).replace("\\", "/"),
             "run": shipped.get("run"),
-            "tag": "weights-v6",
+            "tag": source_tag(),
             "says": "a COPY. Never a shared trunk — a moved trunk is a judge flip",
         },
         "freezing": freezing,
@@ -2716,7 +2735,7 @@ def _rank_key_baseline(stopping, labels) -> dict:
     `curation.rank_key` is what a seating ranks on today, and `p_ge4` is only one
     of its four columns. A head that beat the judge's column and lost to the key
     would have improved nothing anybody ships, which is the correction
-    [`curation.render_grade`] made for the render judge and the same one applies
+    [`render_grade`] made for the render judge and the same one applies
     here.
 
     The columns are read off the stores the key itself reads — the location
@@ -3681,7 +3700,7 @@ def load_checkpoint(path: Path, device: str = "auto"):
 #: What the winning arm has to do, and the two incumbents it has to do it against.
 #: Both are quantities a seating already has: `candidate_p_ge4` is the column the
 #: gate emits, `rank_key` is what the seating currently ranks on. **Both, and not
-#: the easier of the two** — [`curation.render_grade`] made exactly this
+#: the easier of the two** — [`render_grade`] made exactly this
 #: correction for the render judge, and it applies unchanged here: an arm that
 #: beat the column and lost to the key would have improved nothing that ships.
 GATED_INCUMBENTS = ("candidate_p_ge4", "rank_key")

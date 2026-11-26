@@ -56,7 +56,10 @@ A published mode exposes three to five knobs in its file's `public` block:
 Every value a knob writes at its `default` is the stack's own (`styles.check_public`).
 `range` spans what Matt kept without breaking the look, read off a sweep of each knob's
 ends at a kept location, and **never past the size where a large shape starts hiding
-the finer scales** (step 6). `set` is pointers into the stack
+the finer scales** (step 6), except that it **covers every value a palette entry tunes**
+(Matt, 2026-11-25): each tuned member read back through the knob lies in it
+(`style_palettes.check_row`), so a slider moved off an entry can return to it, at the
+entry's `rests` in the bundle. `set` is pointers into the stack
 (list indices as numbers, `*` for every member), each written as `scale·value + offset`.
 
 ## The catalog

@@ -713,6 +713,25 @@ def shipped_render_cache():
     return SimpleNamespace(plan=plan, missing=missing)
 
 
+#: The environment variable naming the extraction source's checkout (the
+#: build-era sibling project the colormap library and the judged renders came
+#: from). Read rather than written into a test as an absolute path, which only one
+#: machine ever had; unset, the checks that compare against the source skip.
+EXTRACTION_SOURCE_ENV = "FRACTAL_MAKER_SOURCE"
+
+
+@pytest.fixture(scope="session")
+def extraction_source_checkout() -> Path:
+    """The extraction source's checkout, or a skip when it is not on this machine."""
+    raw = os.environ.get(EXTRACTION_SOURCE_ENV, "").strip()
+    if not raw:
+        pytest.skip(f"{EXTRACTION_SOURCE_ENV} is unset: no extraction source to compare against")
+    source = Path(raw)
+    if not source.is_dir():
+        pytest.skip(f"{EXTRACTION_SOURCE_ENV} names {source}, which is not a directory here")
+    return source
+
+
 @pytest.fixture(scope="session")
 def shipped_label_pool():
     """`render_folds.pool()` and the deal over it, derived **once** for the session.

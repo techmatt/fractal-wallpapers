@@ -1696,7 +1696,7 @@ function draw() {
   document.getElementById("picked").textContent = picked.size;
 }
 
-//: which of [`shown`] the full-size view is on, or -1 when it is closed.
+//: which of `shown` the full-size view is on, or -1 when it is closed.
 let at = -1;
 
 function openAt(i) {

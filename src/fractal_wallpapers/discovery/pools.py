@@ -201,7 +201,7 @@ def classic_phoenix_pool() -> list[dict]:
 
     It is a row rather than a typed seed because a row is what carries a place.
     Nothing is read off disk: the constants are the registry's, so the point the
-    walk is rooted at and the point [`partition_of_family`] resolves against
+    walk is rooted at and the point [`partitions.partition_of_family`] resolves against
     cannot drift apart.
     """
     from fractal_wallpapers.supply.partitions import CLASSIC_PHOENIX_POINT

@@ -3333,7 +3333,7 @@ def clears_its_bar(row: dict, table: dict) -> bool:
     """Whether one made candidate clears its own mode's rule.
 
     A mode the table has never heard of falls to the default column, which is the
-    same direction [`curation.labeling.registry`] fails in: the strict reading is
+    same direction [`labeling.registry`] fails in: the strict reading is
     the safe one when the population cannot answer for itself.
 
     The mode is the one the row **routes as** — [`mode_policy.routed_mode`] — for

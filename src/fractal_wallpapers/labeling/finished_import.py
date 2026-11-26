@@ -442,7 +442,7 @@ def recipe_of(params: dict, dropped: bool, cyclic: bool, rolloff: dict | None = 
 
     Until 2026-09-11 a `cycles != 1` or a `phase != 0` on a sequential map was
     refused here, on the argument that folding a repeated traversal is two seam
-    fixes fighting. It is not. [`mirror`] in `engine/src/colormap.rs` writes the
+    fixes fighting. It is not. `mirror` in `engine/src/colormap.rs` writes the
     opening colour again at position 1.0, so the folded table **opens and closes
     on the same colour** and a repeat of it has no junction to fix. Measured over
     the whole tracked library: on all 156 sequential maps the folded table's wrap

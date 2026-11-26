@@ -335,7 +335,7 @@ def refuse_a_member_answered_twice(row: dict, block: dict, where: str) -> str | 
 
     A member answered two ways with two values is two answers about one picture,
     and there is no defensible way to pick between them — exactly the argument
-    [`refuse_two_descriptions`] in `fractal_wallpapers.cli.draw_commands` makes
+    [`cli.draw_commands.refuse_two_descriptions`] makes
     for a record plus a flag that contradicts it. Agreeing twice is not an error
     and is not refused: a writer that repeats itself is still only saying one
     thing, and the corpora do repeat themselves.

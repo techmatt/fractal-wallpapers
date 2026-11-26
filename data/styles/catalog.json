@@ -3509,7 +3509,7 @@
         "knobs": []
       },
       "kept": "2 tiles: cw_soft at the formulations seat and cw_wide_ember at the phoenix seat; no palette entry and no location kept; round two (style_november_r2): wide_ember at seat e756; library maps tempest_plumes, gilded_leaves and twilight on soft (rings 0.6)",
-      "note": "Matt: round one 2/5 (2026-11-22); kept cw_soft and cw_wide_ember (phoenix seat), no entries (bone_whorl, unfolding_whorl and noir_whorl leave the set and the library), no locations. Round two (2026-11-24): kept wide_ember at seat e756; library maps tempest_plumes, gilded_leaves and twilight on soft (rings 0.6); Scores unchanged.",
+      "note": "Matt: round one 2/5 (2026-11-22); kept cw_soft and cw_wide_ember (phoenix seat), no entries (bone_whorl, unfolding_whorl and noir_whorl leave the set and the library), no locations. Round two (2026-11-24): kept wide_ember at seat e756; library maps tempest_plumes, gilded_leaves and twilight on soft (rings 0.6); Scores unchanged. Default (2026-11-25, 087): the kept soft reading (rings 0.6) is the published stack, as light_shafts did.",
       "palettes": [
         {
           "colormap": "chrome_whorl",
@@ -3523,27 +3523,21 @@
         },
         {
           "colormap": "tempest_plumes",
-          "values": {
-            "/layers/1/light/rings": 0.6
-          },
+          "values": {},
           "keeps": [
             "style_november_r2/chrome_whorl/maps/cw2_map_tempest_plumes"
           ]
         },
         {
           "colormap": "gilded_leaves",
-          "values": {
-            "/layers/1/light/rings": 0.6
-          },
+          "values": {},
           "keeps": [
             "style_november_r2/chrome_whorl/maps/cw2_map_gilded_leaves"
           ]
         },
         {
           "colormap": "twilight",
-          "values": {
-            "/layers/1/light/rings": 0.6
-          },
+          "values": {},
           "keeps": [
             "style_november_r2/chrome_whorl/maps/cw2_map_twilight"
           ]

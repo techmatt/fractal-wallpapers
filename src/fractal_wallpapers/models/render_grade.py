@@ -95,7 +95,7 @@ import json
 import random
 from pathlib import Path
 
-# Aliased because `mine` is a loop variable in [`paired_folds`] — the ordinary
+# Aliased because `mine` is a loop variable in [`per_mode`] — the ordinary
 # English word for *this side of a pair* — and the bare name would be shadowed
 # there. The alias is at the import so the reading site still says `mine`.
 from fractal_wallpapers.curation import mine as mine_module

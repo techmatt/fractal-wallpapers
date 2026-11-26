@@ -196,7 +196,7 @@ def add_commands(subcommands) -> None:
         help="the fine-tier head: an order inside the render judge's own flat top",
         description=(
             "A separate network, same architecture as the shipped render judge and "
-            "initialised from its weights-v6 artifact, fitted on the gallery-grade store's "
+            "initialised from its shipped artifact, fitted on the gallery-grade store's "
             "1..4 verdicts at the ledger's 640x360 candidate geometry. It is STAGE TWO of a "
             "cascade behind p_ge4 and its output is undefined on a row that never cleared "
             "the gate — never a pool-wide ranker. It SHIPS since 2026-09-14 — `ship`, and "

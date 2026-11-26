@@ -40,7 +40,7 @@ however it dies, so a stale lock cannot exist; [`PID_NAME`] beside it names the
 holder. A second `run` against a held directory refuses and names the pid, which
 is what a resuming session attaches its waiter to.
 
-**Pause is a file**, [`PAUSE_NAME`]: the gate [`run_pass`] asks before each row
+**Pause is a file**, [`PAUSE_NAME`]: the gate [`release.run_pass`] asks before each row
 declines, the rows in flight finish and are written, and the driver exits clean.
 A start refuses while it exists, so resuming is deleting it and relaunching.
 **An immediate stop is killing the driver's own pid**: it holds a kill-on-close

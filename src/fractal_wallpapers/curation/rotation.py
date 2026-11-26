@@ -479,7 +479,7 @@ def protections(log=print) -> dict:
 def holder_of(row: dict, held: dict) -> str | None:
     """Which of [`protections`]' five holds this ledger row, or `None`.
 
-    First one wins and the order is [`store.RETAINED_PROTECTIONS`]', so a row
+    First one wins and the order is [`candidate_ledger.RETAINED_PROTECTIONS`]', so a row
     held by two reasons is counted once and always under the same one — which is
     what makes the census add up to the rows rather than to the reasons.
 
@@ -2292,7 +2292,7 @@ def mine(
         "blocks_skipped": skipped,
         "blocks_done": 0,
         # **What came back, against `blocks_done`'s what went out.** Filled from
-        # [`decided`] at the end, and the record's `resume_from_block` is this
+        # `decided` at the end, and the record's `resume_from_block` is this
         # plus `blocks_skipped`. See [`decided_blocks`].
         "blocks_decided": 0,
         "shots_visited": 0,

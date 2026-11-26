@@ -249,7 +249,7 @@ def merge_report(rows_file: Path, report: dict, log=print) -> dict:
 
     Takes the leg's **rows file** and not its name, so [`mine.merge`] and
     [`depth.merge`] reach it over their own path accessors rather than over a
-    third spelling of *where this leg lives* — the shape [`_prune_meta`]'s
+    third spelling of *where this leg lives* — the shape [`sweep._prune_meta`]'s
     afternoon of reading an empty store argues for.
 
     It returns the report so a caller can write it and return it in one line, and

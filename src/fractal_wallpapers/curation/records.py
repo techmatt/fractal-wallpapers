@@ -90,7 +90,7 @@ because nothing released so far was chosen against a pool.
 A release can be wrong, and it is a person who finds out. When that happens the
 row keeps `verdict: released` — that *is* what the run decided, and a store that
 edited it would lose the only evidence the release path had a defect — and gains
-a [`rejected`] block saying who rejected it, when, and against what. Scores are
+a `rejected` block saying who rejected it, when, and against what. Scores are
 untouched, nothing is deleted, and [`served`] is what every listing reads instead
 of the raw verdict.
 

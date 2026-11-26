@@ -60,7 +60,7 @@
         "label": "Brightness",
         "what": "the frame's median lightness, which the tone pass holds the picture to",
         "default": 0.442,
-        "range": [0.36, 0.52],
+        "range": [0.201, 0.52],
         "set": ["/tone/median"]
       }
     ]

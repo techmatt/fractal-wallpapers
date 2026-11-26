@@ -85,28 +85,22 @@ of the style ones is `fractal-wallpapers style sweep` (`data/styles/CHECKS.md`'s
   kind of node (a number over a colour passes, then fails at the engine or on the page).
   Recommend comparing kinds in `check_row`.
 
-- **A knob turned on a palette entry overwrites the entry's values** (085): the page writes
-  an entry's `values` over the stack and a knob then writes `scale·value + offset` over
-  the same member, on both sides (`styles.with_knobs`, the module's `with_knobs`). Twelve
-  entries set a knob-owned member no single in-range setting reproduces (veil-drift's
-  `brightness` on nine soft_veils entries, `disc_size` on brass-foam's greenhorn,
-  soft-petals' golden_egg_petals, molten-folds' interstellar_webs, glass-beads'
-  bead_strands), so a visitor on one who touches the slider jumps to another picture and
-  cannot get back; twenty more are reachable but the bundle lists the mode's default.
-  Options: the bundle carries per-entry knob defaults (the inverse of the entry's value,
-  the knob marked fixed on that entry where no in-range value draws it); `check_row`
-  refuses such entries; or a knob never writes a member the active entry sets. Recommend
-  the first: no picture changes, and the page seeds its sliders per entry. *(Matt's call)*
+- **Ten entries tune a knob's members apart** (087): a knob writing several members
+  reads back to more than one setting on the entry (veil-drift's Brightness on nine
+  soft_veils entries, glass-beads' bead_strands Strand fade 1.33 and 1.5). The page holds
+  the entry's picture at rest (a setting at the entry's `rests` is no setting), but any
+  slider setting, and native `--knob` at the rest value, writes every member alike, so
+  no setting *off* rest draws the entry's spread. Every reading lies in range
+  (`check_row`). Options: leave it (the page's rest covers the return); or split such a
+  knob per member. Recommend leaving it. *(Matt's call)*
 - **A recolour to an entry that switches a layer off is refused** though the kept frame
   holds every lane it needs (`drawn` drops a layer at opacity 0, so its reads shrink).
   No shipped entry does it; recommend accepting a subset of the gathered reads when one
   does.
-- **Two entries draw readings no kept tile shows**: feather_plumes' starlight_plumes took
+- **An entry draws a reading no kept tile shows**: feather_plumes' starlight_plumes took
   its dim-barbs lever's barbs but not the long masks that lever was drawn on (the row
-  records the choice), and chrome_whorl's published stack (rings 1.0, edge 0.2) is none
-  of its kept formulations (soft, wide_ember), where light_shafts made its kept lever the
-  default. Recommend chrome_whorl take soft as its default, as light_shafts did; leave
-  starlight_plumes as recorded. *(Matt's call)*
+  records the choice). Recommend leaving it as recorded. *(Matt's call;* chrome_whorl's
+  twin of this took its kept soft reading as its default, 087.)
 
 ### Won't fix
 

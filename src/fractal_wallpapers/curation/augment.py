@@ -142,7 +142,7 @@ DEFAULT_DEPTH = 2
 #: 61**. It bound at the 0.70 rung on 2026-09-07 with sweep 2 still finding
 #: chains, and the seat count that pass reported was a budget artifact. See
 #: `curation/GALLERY.md`'s *A narrowed view is a different cost regime, and the
-#: budget DOES bind there*, and read [`exhaustive`] before believing a short one.
+#: budget DOES bind there*, and read `exhaustive` before believing a short one.
 #:
 #: **n=2000 has not been measured on this path** and the budget is expected to
 #: bind there: the prototype this came from searched 574 s at that rung without

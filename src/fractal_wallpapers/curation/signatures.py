@@ -35,8 +35,8 @@ What the reverted read-ahead was trying to buy, without having to predict anythi
 identical gallery. Not what it was built for and worth stating plainly, because the
 reason is structural rather than a tuning problem.
 
-[`Twins.within`] asks [`reduced_of`] for the candidate's reduced form and then, for
-the fraction the bound cannot settle, asks [`pixel_clouds.Clouds`] for that **same
+[`rules.Twins.within`] asks [`rules.Twins.reduced_of`] for the candidate's reduced form
+and then, for the fraction the bound cannot settle, asks [`pixel_clouds.Clouds`] for that **same
 key's** full cloud a few lines later. Without a sidecar the first call decodes the
 picture into the Clouds read cache, so the second is a cache hit. With one, the
 first call never touches Clouds, so the second is a cold decode. The store removes

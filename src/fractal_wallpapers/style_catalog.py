@@ -163,7 +163,8 @@ def check(catalog: dict[str, Any]) -> list[str]:
         if not row.get("item"):
             problems.append(f"{name}: names no item")
         keeps = keeps_of(name)
-        problems += style_palettes.check_row(row, document["style"], keeps, maps=maps)
+        knobs = (document.get("public") or {}).get("knobs") or []
+        problems += style_palettes.check_row(row, document["style"], keeps, maps=maps, knobs=knobs)
         for alias in row.get("aliases", []):
             if alias in aliases or alias in files:
                 problems.append(f"{name}: alias {alias} is another style or another alias")

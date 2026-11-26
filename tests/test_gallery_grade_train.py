@@ -984,3 +984,17 @@ def test_the_note_says_a_clones_rows_will_differ_and_that_it_is_correct():
     assert said is trainer.SCHEMA_NOTES["weights_are"], "the sentence has one copy"
     assert "fp16" in said.lower() and "FP32" in said
     assert "not a mismatch" in said
+
+
+def test_a_fit_records_the_tag_its_starting_artifact_ships_under(tmp_path, monkeypatch):
+    """`initialised_from.tag` is read off the manifest's render row: fits once
+    recorded a literal that outlived the tag it named. A manifest with no render
+    tag refuses rather than recording nothing."""
+    document = json.loads(roster.manifest_path().read_text(encoding="utf-8"))
+    assert trainer.source_tag() == document["heads"]["render"]["tag"] == roster.TAG
+
+    bare = tmp_path / "weights.json"
+    bare.write_text(json.dumps({"schema": 1, "heads": {}}), encoding="utf-8", newline="\n")
+    monkeypatch.setattr(roster, "manifest_path", lambda: bare)
+    with pytest.raises(trainer.GradeTrainingError, match="no tag for the render head"):
+        trainer.source_tag()

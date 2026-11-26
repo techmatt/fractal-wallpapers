@@ -99,7 +99,7 @@ BACKBONE = "mobilenetv4_conv_medium.e250_r384_in12k"
 #: backbone the strange corpus is not starving at — and the pooled head that
 #: shipped came out of it. `palette` is distilled and was small from the start
 #: (`palette_head.BACKBONE`). `gallery_grade` is the render judge's own artifact
-#: continued — it is initialised from `weights-v6` — so it is small for that
+#: continued — it is initialised from the shipped render artifact — so it is small for that
 #: reason and would be wrong on any other. Only `location` is [`BACKBONE`].
 #:
 #: **Experiment checkpoints are deliberately not covered.** `render_train` trains

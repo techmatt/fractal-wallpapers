@@ -193,8 +193,7 @@ parallel runner*).
 - **Never repoint a census constant at today's reading.** A census that went red because
   a store deletes by design gets a ratchet (`test_leveled_identity.py` is the example).
 - **Zero skips is normal; a skip is a short render cache**, a store condition (`--slow
-  -rs` names them). After `label ingest`, run `renders plan` then `renders build
-  --workers 3`.
+  -rs` names them). After `label ingest`, run `renders plan` then `renders build`.
 - **A reading compares only with one on the same install** (`tests/README.md`'s *What
   "the fast-lane count" means*): an interpreter without `torch` silently collects a
   smaller suite.
@@ -249,7 +248,9 @@ header, the load budget and waiting. This repository adds:
 
 ## Build-era workflow *(delete this section at publication)*
 
-`C:\Code\fractal-maker`, the extraction source, is gone; its checks skip here as on CI.
+The extraction source (`fractal-maker`) is gone; its checks read its checkout from
+`FRACTAL_MAKER_SOURCE` (`tests/conftest.py`'s `extraction_source_checkout`) and skip when
+it is unset, as on CI.
 What only read it goes at publication with its test and subcommand; each is still read
 by something live, so deleting one means deciding what its reader does instead:
 
