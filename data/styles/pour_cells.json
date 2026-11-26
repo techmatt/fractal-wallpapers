@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "name": "pour_cells",
+  "description": "an acrylic pour with cells: streams of paint dragged into folds and veils, studded with round cells of every size, each a flat drop of another colour inside a dark rim, stretched along the flow",
+  "reference": {
+    "image": "wallhaven_wallhaven-exqwvk.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a photograph of an acrylic pour, 6000x4000"
+  },
+  "suggested_colormap": "pour_cells",
+  "reuses": [
+    "stirred_ink's stir, one pass along the level lines of a turned copy",
+    "the smooth count through the map by rank, warped by a turned copy's count",
+    "the bubble trap's lattice (ring_pools' discs), read as `step` for each cell's flat colour and as an inverted `height` for its rim"
+  ],
+  "adds": [],
+  "notes": [
+    "From wallhaven-exqwvk (item 089, triage group 11, poured paint), with wallhaven-yxlvkk as the entry crimson_cells. No new engine member. The pour is one stir pass (strength 3 over 4 steps, period 3) carrying the smooth count by rank, warped by a turned copy's count so the streams change colour across the folds. The cells are a bubble lattice (radius 0.35 at spacing 1, between 0.003 and 0.1 of the frame): its `step` read through the map at a third of a turn on is each cell's flat colour, and an inverted `height` glow at power 2 in the map's black darkens each cell towards its rim. The stir bends the round cells along the flow. ring_pools drew the same lattice's `height` through four cycles (tight contour rings): here a cell is one flat drop, never rings.",
+    "Reachable by one escape loop: yes. The frame's loop, the stir's four, the warp's view and the trap's own loop, no light, so no Jacobian.",
+    "Round one's readings: f_small (round one's first stack: radius 0.25, largest 0.05, a rim at power 6 that hardly showed at draft size), f_holes (the cells as dark holes under a pale rim, exqwvk's black cells), f_ringed (a pale ring screened inside the dark rim, yxlvkk's), f_calm (the stir at 1.2 over 2 steps), f_nocells (the pour alone). crimson_cells is the stack in its own map at yxlvkk's dark key (tone 0.148/0.093).",
+    "Tone held at all 14 picker tiles as shipped (median 0.251 to 0.257 against 0.254); crimson_cells at both its seats against yxlvkk.",
+    "Explorer cost (089, beside renders: an upper bound): 51 s as WebAssembly on one thread at 1280x800 ss2 at its deepest formulation seat (phoenix_71e305f0, maxiter 11,030)."
+  ],
+  "style": {
+    "name": "pour_cells",
+    "interior": {"palette": 0.0},
+    "tone": {"median": 0.254, "p10": 0.064},
+    "stir": [
+      {"view": {"turn": 100.0, "zoom": 0.5, "shift": [0.13, -0.17]},
+       "strength": 3.0, "angle": 90.0, "period": 3.0, "largest": 0.12, "steps": 4}
+    ],
+    "layers": [
+      {"kind": "palette", "channel": {"field": {"kind": "smooth"}},
+       "palette": {"transfer": {"kind": "rank"}},
+       "warp": {"channel": {"field": {"kind": "smooth"},
+                            "view": {"turn": 60.0, "zoom": 0.7, "shift": [0.1, 0.2]}},
+                "amount": 0.35}},
+      {"kind": "palette",
+       "channel": {"bubble": {"center": [0.5, 0.5], "radius": 0.35, "spacing": 1.0,
+                              "read": "step", "escaped": true,
+                              "largest": 0.1, "smallest": 0.003, "hit": 1}},
+       "palette": {"cycles": 1.0, "phase": 0.35, "transfer": {"kind": "rank"}},
+       "opacity": 1.0},
+      {"kind": "glow",
+       "channel": {"bubble": {"center": [0.5, 0.5], "radius": 0.35, "spacing": 1.0,
+                              "read": "height", "escaped": true,
+                              "largest": 0.1, "smallest": 0.003, "hit": 1},
+                   "invert": true},
+       "color": {"palette": 0.0}, "power": 2.0, "opacity": 1.0}
+    ]
+  }
+}

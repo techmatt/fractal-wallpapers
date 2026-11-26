@@ -297,3 +297,9 @@
 {"schema": 1, "kind": "admitted", "map": "ember_spirals", "group": "map:ember_spirals", "joined": false, "nearest": "map:grace-25", "m1": 0.0648}
 {"schema": 1, "kind": "admitted", "map": "ash_clouds", "group": "map:ash_clouds", "joined": false, "nearest": "map:umber_spirals", "m1": 0.054038}
 {"schema": 1, "kind": "admitted", "map": "slate_rosettes", "group": "map:slate_rosettes", "joined": false, "nearest": "map:02598_asgardrealmofthegods_2560x1600", "m1": 0.061093}
+{"schema": 1, "kind": "admitted", "map": "marbled_pour", "group": "map:marbled_pour", "joined": false, "nearest": "map:wallhaven_wallhaven-xl8gmd", "m1": 0.0544}
+{"schema": 1, "kind": "admitted", "map": "teal_marbling", "group": "map:teal_marbling", "joined": false, "nearest": "m62", "m1": 0.041055}
+{"schema": 1, "kind": "admitted", "map": "lichen_crust", "group": "map:lichen_crust", "joined": false, "nearest": "map:Cobalt & Coal", "m1": 0.062045}
+{"schema": 1, "kind": "admitted", "map": "pour_cells", "group": "map:pour_cells", "joined": false, "nearest": "map:Coral in the Trench", "m1": 0.043933}
+{"schema": 1, "kind": "admitted", "map": "crimson_cells", "group": "map:crimson_cells", "joined": false, "nearest": "map:Sapphire & Dusk Rose", "m1": 0.072553}
+{"schema": 1, "kind": "admitted", "map": "golden_sand", "group": "map:golden_sand", "joined": false, "nearest": "map:whispers-on-golden-sand-25", "m1": 0.086917}

@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "name": "marbled_pour",
+  "description": "marbled paint: flat inks poured in hard-edged bands and combed into folds, hooks and S-curls that tighten towards the set, no light and no gradient",
+  "reference": {
+    "image": "wallhaven_wallhaven-xl8gmd.png",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a digital marbling render, 3000x1500"
+  },
+  "suggested_colormap": "marbled_pour",
+  "reuses": [
+    "stirred_ink's stir: two passes along the level lines of turned copies of the fractal",
+    "the paper pass's flat sheets cut from the smooth count, each one ink of the map (gouache_cut's hop)"
+  ],
+  "adds": [],
+  "notes": [
+    "From wallhaven-xl8gmd (item 089, triage group 11, poured paint), with wallhaven-dp6vvj as the entry teal_marbling. No new engine member: stirred_ink's stir carries the frame, and the paper pass cuts the stirred smooth count into 16 flat sheets on its rank, each one ink of the map (`hop` 0.125 reads the eight inks' middles in turn, so neighbouring bands are far apart on it), so every band is a flat ink with a hard edge and the stir combs the bands into marbling. A thin `shadow` (0.004, colour a dark umber) lays a dark vein along each edge. No light, no gradient, no crest: that is what keeps it apart from stirred_ink, whose one glossy ink is lit along the folds.",
+    "Reachable by one escape loop: yes. The frame's loop plus the stir's seven (two passes, 4 and 3 steps), no light, so no Jacobian; the paper pass reads the height the frame already has.",
+    "Round one's readings: f_broad (10 sheets: broader bands, closest to xl8gmd's), f_strong (the stir at 7 over 8 steps and 4 over 4), f_flat (no vein), f_nostir (the set's bands as flat inks: poster_curls' look). A dry-brush `ragged` comb (reach 0.012) frayed every edge into noise in the lace and left the drafts. teal_marbling (dp6vvj) walks its map end to end over 14 sheets (`hop` 1/14), a white vein thrown away from the light, and a gentler stir (strength 2 and 2, the fine pass at period 1).",
+    "Tone: with equal-area sheets each ink is an eighth of the frame, so the map carries the reference's spread and the tone pass only nudges it. Three re-tunes in round one (creams lowered to L* about 0.82, the dark umber made the first, far-field ink) took the white share from up to 0.15 to 0 and held 6 of 14 picker tiles; the rest miss p10 high (0.21 to 0.24 against 0.153) and three p90 low, at lace-heavy seats where the stirred lace's fine bands average into mid-tone speckle that no tone curve spreads at both ends. Round two's levers: fewer seats in the lace, or the creams back up (p90 now has headroom).",
+    "Explorer cost (089, beside renders: an upper bound): 47 s as WebAssembly on one thread at 1280x800 ss2 at its deepest formulation seat (julia-mandelbrot_df5d31a1, maxiter 11,005), whole frame with the paper pass; the paper pass is within the noise of that reading (54 s without it, read just after)."
+  ],
+  "style": {
+    "name": "marbled_pour",
+    "interior": {"palette": 0.5},
+    "tone": {"median": 0.589, "p10": 0.153},
+    "stir": [
+      {"view": {"turn": 100.0, "zoom": 0.35, "shift": [0.13, -0.17]},
+       "strength": 4.0, "angle": 90.0, "period": 2.0, "largest": 0.2, "steps": 4},
+      {"view": {"turn": 220.0, "zoom": 1.5, "shift": [-0.2, 0.1]},
+       "strength": 2.5, "angle": 90.0, "period": 2.0, "largest": 0.05, "steps": 3}
+    ],
+    "layers": [
+      {"kind": "palette", "channel": {"field": {"kind": "smooth"}},
+       "palette": {"transfer": {"kind": "rank"}}}
+    ],
+    "post": [
+      {"kind": "paper", "levels": 16, "taper": 0.95, "hop": 0.125, "phase": 0.0625,
+       "shadow": {"width": 0.004, "offset": 0.0012, "azimuth": 120.0, "opacity": 0.5,
+                  "color": {"rgb": "#1c0806"}}}
+    ]
+  }
+}

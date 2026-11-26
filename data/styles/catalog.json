@@ -2954,7 +2954,8 @@
         "meditation-25.jpg",
         "vibe-25.jpg",
         "wallhaven_wallhaven-5gqrp3.jpg",
-        "polished-25.jpg"
+        "polished-25.jpg",
+        "whispers-on-golden-sand-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -3108,7 +3109,8 @@
       "item": "061",
       "reference": "wallhaven_wallhaven-4omjp5.jpg",
       "references": [
-        "wallhaven_wallhaven-4omjp5.jpg"
+        "wallhaven_wallhaven-4omjp5.jpg",
+        "wallhaven_wallhaven-m9v5l9.png"
       ],
       "variant": "current",
       "show": [
@@ -4243,6 +4245,28 @@
         "wallhaven_wallhaven-n61olx.jpg"
       ],
       "what": "Stacked cubes seen corner-on: a mosaic of triangles shaded as three cube faces, calm large cubes far from the set splitting into ever smaller cubes along it, small cubes inlaid in each face (crimson and white cubes as a palette entry).",
+      "palettes": []
+    },
+    {
+      "style": "marbled_pour",
+      "item": "089",
+      "reference": "wallhaven_wallhaven-xl8gmd.png",
+      "references": [
+        "wallhaven_wallhaven-xl8gmd.png",
+        "wallhaven_wallhaven-dp6vvj.jpg"
+      ],
+      "what": "Marbled paint: flat inks poured in hard-edged bands and combed into folds, hooks and S-curls that tighten towards the set, a thin dark vein along each edge, no light and no gradient (red, cream and blue-grey; teal marbling with white rims as a palette entry).",
+      "palettes": []
+    },
+    {
+      "style": "pour_cells",
+      "item": "089",
+      "reference": "wallhaven_wallhaven-exqwvk.jpg",
+      "references": [
+        "wallhaven_wallhaven-exqwvk.jpg",
+        "wallhaven_wallhaven-yxlvkk.jpg"
+      ],
+      "what": "An acrylic pour with cells: streams of teal and copper paint dragged into folds and veils, studded with round cells of every size, each a flat drop darkening to its rim, stretched along the flow (navy and crimson as a palette entry).",
       "palettes": []
     }
   ]

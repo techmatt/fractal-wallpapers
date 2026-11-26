@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "crimson_cells",
+  "kind": "sequential",
+  "source": "an acrylic pour in a midnight navy, indigo, denim blue, plum, crimson, rose and a pale pink: the albedo of pour_cells' crimson_cells entry, from wallhaven-yxlvkk's navy and crimson pour with cells",
+  "stops": [
+    [0.0, [8, 10, 34]],
+    [0.2, [22, 28, 76]],
+    [0.38, [42, 64, 128]],
+    [0.56, [84, 48, 98]],
+    [0.72, [172, 30, 64]],
+    [0.88, [222, 112, 136]],
+    [1.0, [236, 206, 214]]
+  ]
+}

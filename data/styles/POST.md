@@ -109,6 +109,8 @@ lattice: the shapes are the set's bands.
 | `ragged` | `{reach, length, width, azimuth, accent}`: a dry brush's edge. Each sample takes the sheet of a sample up to `reach` away along the stroke (`azimuth`), every bristle (`width` across) its own distance, the wobble running `length` along; an `accent` (`{color, share}`) paints that share of the strokes (in [0, 1]) its own colour where they moved an edge. `reach` is 0 to 0.5 frame widths, and 1e-5 ≤ `width` ≤ `length` ≤ 4 |
 | `opacity` | how much of the paper is laid over the picture beneath, in [0, 1] |
 
+Under a stir the height is the stirred count, so the sheets are combed with everything
+else: flat inks marbled into folds (`marbled_pour`).
 A sample whose orbit never escaped keeps the picture beneath (the stack's `interior`),
 lies over every sheet (under them all when the height is inverted), and is never
 dragged by the brush, so the set's own edge stays whole. The pass costs no escape loop

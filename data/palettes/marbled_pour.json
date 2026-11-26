@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "name": "marbled_pour",
+  "kind": "sequential",
+  "source": "eight flat marbling inks in pour order, a dark umber, cream, oxblood, pale blue-grey, vermilion, a warm ivory, a deep slate and an apricot: the albedo of the marbled_pour style, from wallhaven-xl8gmd's red and cream marbled swirls",
+  "stops": [
+    [0.0, [52, 18, 16]],
+    [0.121, [52, 18, 16]],
+    [0.129, [222, 200, 160]],
+    [0.246, [222, 200, 160]],
+    [0.254, [92, 20, 18]],
+    [0.371, [92, 20, 18]],
+    [0.379, [184, 200, 196]],
+    [0.496, [184, 200, 196]],
+    [0.504, [184, 52, 34]],
+    [0.621, [184, 52, 34]],
+    [0.629, [214, 206, 184]],
+    [0.746, [214, 206, 184]],
+    [0.754, [120, 138, 144]],
+    [0.871, [120, 138, 144]],
+    [0.879, [224, 150, 92]],
+    [1.0, [224, 150, 92]]
+  ]
+}

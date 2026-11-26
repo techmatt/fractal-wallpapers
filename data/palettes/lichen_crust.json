@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "name": "lichen_crust",
+  "kind": "sequential",
+  "source": "eight flat crust inks, a brown black, dusty rose grey, navy, pale ice blue, a rust, slate, teal and a hot orange at the top for the accent: the albedo of marbled_pour's lichen_crust entry, from wallhaven-m9v5l9's corroded, lichen-like crust",
+  "stops": [
+    [0.0, [30, 22, 24]],
+    [0.121, [30, 22, 24]],
+    [0.129, [204, 186, 184]],
+    [0.246, [204, 186, 184]],
+    [0.254, [18, 36, 64]],
+    [0.371, [18, 36, 64]],
+    [0.379, [196, 232, 238]],
+    [0.496, [196, 232, 238]],
+    [0.504, [96, 48, 36]],
+    [0.621, [96, 48, 36]],
+    [0.629, [54, 66, 86]],
+    [0.746, [54, 66, 86]],
+    [0.754, [36, 112, 150]],
+    [0.871, [36, 112, 150]],
+    [0.879, [236, 112, 36]],
+    [1.0, [236, 112, 36]]
+  ]
+}

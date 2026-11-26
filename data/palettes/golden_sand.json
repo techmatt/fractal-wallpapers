@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "golden_sand",
+  "kind": "sequential",
+  "source": "a deep ultramarine through royal blue, azure and sky, then a dark umber, ochre and a sand gold: the albedo of stirred_ink's golden_sand entry, from whispers-on-golden-sand-25's gold and blue liquid swirls",
+  "stops": [
+    [0.0, [4, 8, 70]],
+    [0.16, [8, 30, 170]],
+    [0.32, [30, 110, 232]],
+    [0.46, [90, 190, 246]],
+    [0.56, [70, 52, 30]],
+    [0.72, [150, 104, 46]],
+    [0.88, [214, 160, 82]],
+    [1.0, [242, 214, 156]]
+  ]
+}

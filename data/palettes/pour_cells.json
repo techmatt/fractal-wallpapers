@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "pour_cells",
+  "kind": "sequential",
+  "source": "an acrylic pour, a black through deep teal, cyan and a grey-white, then an umber, copper and salmon: the albedo of the pour_cells style, from wallhaven-exqwvk's teal and copper pour with cells",
+  "stops": [
+    [0.0, [6, 6, 8]],
+    [0.16, [10, 46, 56]],
+    [0.32, [22, 136, 156]],
+    [0.44, [56, 196, 214]],
+    [0.54, [150, 164, 168]],
+    [0.66, [62, 36, 28]],
+    [0.82, [196, 98, 60]],
+    [1.0, [236, 164, 128]]
+  ]
+}
