@@ -21,10 +21,9 @@ publish yet at `POST_SEAT` (a style named on the command line whatever its stack
 module under Node (`style-wasm/js/node-render.mjs`), and refuse without a built module,
 naming the build.
 
-**Which parity run is owed.** A change to the engine's style path or to the module
-(`engine/src/style.rs`, `style-wasm/`, `styles.spec_of`'s rules) owes the full run, no
-names. A change to one style (its stack, knobs, keeps or catalog row) owes that style's
-alone: `style wasm-parity <name>`.
+**Which parity run is owed** is `style-wasm/README.md`'s *Parity: which run is owed*:
+the full run after engine style-path or module code, `style wasm-parity <name>` after one
+style's change, `--member <name>` ([`knob_writers`]) after a name-list edit.
 """
 
 from __future__ import annotations
@@ -37,6 +36,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+from fractal_wallpapers import engine
 from fractal_wallpapers.styles import DRAFT_RESOLUTION, DRAFT_SUPERSAMPLE
 
 #: The bundle's shape. A page reads it and nothing else of this checkout.
@@ -272,7 +272,7 @@ def native_rgb(
     `knobs` turned after the record's projection, as `style render --knob` turns them."""
     from PIL import Image
 
-    from fractal_wallpapers import engine, locations, styles
+    from fractal_wallpapers import locations, styles
 
     row = locations.one_location(dict(location), "a keep's record", drawing=True)
     row["render"] = {
@@ -667,7 +667,7 @@ def recolour_check(
 COST_BAR_SECONDS = 300
 
 #: The most Node threads a cost read draws on: the render pool's three (CLAUDE.md).
-COST_WORKERS = 3
+COST_WORKERS = engine.POOL_WORKERS
 
 
 def kept_seats(name: str) -> list[dict[str, Any]]:

@@ -81,8 +81,8 @@ from pathlib import Path
 
 from fractal_wallpapers import engine
 
-#: How many worker processes a release pass uses by default.
-DEFAULT_WORKERS = 3
+#: How many worker processes a release pass uses by default: the render pool.
+DEFAULT_WORKERS = engine.POOL_WORKERS
 
 #: How much longer than its own deadline a worker gets before the parent stops
 #: waiting and kills it. Generous, because it is the backstop *behind* the

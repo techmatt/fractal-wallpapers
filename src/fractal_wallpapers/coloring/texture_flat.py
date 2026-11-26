@@ -66,6 +66,7 @@ import time
 from functools import partial
 from pathlib import Path
 
+from fractal_wallpapers import engine
 from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import repo_root
 
@@ -108,7 +109,7 @@ KEY_LENGTH = 16
 
 #: The render pool this machine allows. See `CLAUDE.md`: more than three engines
 #: at once makes the desktop unusable while the leg runs.
-MEASURE_WORKERS = 3
+MEASURE_WORKERS = engine.POOL_WORKERS
 
 
 class RegisterError(RuntimeError):
@@ -293,7 +294,6 @@ def probe(job: dict) -> dict:
     here. Nothing downstream reads it: a probe at a geometry the pool does not use
     would otherwise leave a picture nobody can name.
     """
-    from fractal_wallpapers import engine
     from fractal_wallpapers.models import renders
 
     output = Path(job["output"])

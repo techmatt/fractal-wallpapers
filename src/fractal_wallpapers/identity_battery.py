@@ -61,7 +61,7 @@ EDGE_MODES = (
 
 #: The render pool's shape (CLAUDE.md): three engines at a time, below-normal priority,
 #: which `engine.run` sets.
-WORKERS = 3
+WORKERS = engine.POOL_WORKERS
 
 #: Threads each engine is told to use (`RAYON_NUM_THREADS`), so three engines take six
 #: of a twelve-thread box and leave the desktop the rest. Uncapped, each engine took

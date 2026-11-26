@@ -64,6 +64,11 @@ ENGINE_BINARY_NAME = "fractal-engine"
 #: engine takes every core. Each fan-out sets its own cap through it.
 THREADS_ENV = "RAYON_NUM_THREADS"
 
+#: The render pool (CLAUDE.md's *Storage and the box*): at most three engines, or
+#: sweeps sized like a leg, at once; more makes this desktop unusable. [`run`] sets
+#: the priority; every pool-sized default reads this count rather than restating it.
+POOL_WORKERS = 3
+
 #: Release first: a debug-built engine is ten times slower, so finding one is a
 #: fallback for a fresh checkout, not a configuration.
 BUILD_PROFILES = ("release", "debug")

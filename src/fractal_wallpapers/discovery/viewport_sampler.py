@@ -187,7 +187,7 @@ CHUNK = 256
 
 #: Probes running at once. The render pool is three workers on this machine, and
 #: a refinement is a render leg in miniature.
-PROBE_WORKERS = 3
+PROBE_WORKERS = engine.POOL_WORKERS
 
 #: The partitions this channel serves: every parameter plane, and the pinned
 #: plane. A `julia:*` twin is the one kind left out — its fresh supply is a

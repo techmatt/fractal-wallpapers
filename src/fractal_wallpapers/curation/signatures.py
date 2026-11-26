@@ -121,6 +121,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
+from fractal_wallpapers import engine
 from fractal_wallpapers.curation import candidate_ledger, durability
 from fractal_wallpapers.labeling import store as label_store
 
@@ -139,7 +140,7 @@ CHUNK = 64
 #: How many workers sweep by default. **Three**, the same number every leg that
 #: drives the engine uses, for the same reason: this is a decode-bound sweep of
 #: thousands of JPEGs and it should not make the desktop unusable.
-WORKERS = 3
+WORKERS = engine.POOL_WORKERS
 
 
 class SignatureError(RuntimeError):
