@@ -680,7 +680,7 @@ def sweep_fields(directory: Path, keep: int = FIELDS_KEPT, protect: set | None =
     `protect` names fields that are the *pass's* rather than one candidate's, and
     it exists for one of them: the palette head's smooth field at each location is
     read again after the attempt leg is over — a re-seat asks for another colour at
-    a seat, and [`curation.gallery`] resolves a candidate recolour's name through
+    a seat, and the seating leg resolves a candidate recolour's name through
     it. Sweeping those would turn a name lookup into an iteration pass, thousands
     of times.
     """

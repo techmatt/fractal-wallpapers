@@ -121,7 +121,6 @@ same constant, read from the light end.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import subprocess
 from collections.abc import Callable
@@ -132,6 +131,7 @@ from fractal_wallpapers.models import head, metrics, scoring, train
 from fractal_wallpapers.models.roster import HEADS, manifest_path
 from fractal_wallpapers.models.roster import TAG as roster_TAG
 from fractal_wallpapers.paths import repo_root, tracked_name
+from fractal_wallpapers.storage import sha256_of
 
 #: The schema of the weights manifest.
 SCHEMA = 1
@@ -455,14 +455,6 @@ def candidate_path(name: str = "location") -> Path:
 def candidate_record_path(name: str = "location") -> Path:
     """What the staged candidate is, tracked beside the untracked weights."""
     return shipment_for(name).directory(name) / "candidate.json"
-
-
-def sha256_of(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def halve(state: dict) -> dict:

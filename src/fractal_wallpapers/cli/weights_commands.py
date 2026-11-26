@@ -3,24 +3,15 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import urllib.error
 import urllib.request
-from pathlib import Path
 
 from fractal_wallpapers.models.roster import manifest_path
 from fractal_wallpapers.paths import repo_root, tracked_name
+from fractal_wallpapers.storage import sha256_of
 
 RELEASE_URL = "https://github.com/techmatt/fractal-wallpapers/releases/download/{tag}/{asset}"
-
-
-def sha256_of(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 #: What a manifest row has to say before a release can be cut from it. An asset

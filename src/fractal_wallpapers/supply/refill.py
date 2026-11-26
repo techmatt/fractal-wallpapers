@@ -67,11 +67,7 @@ batches with eight empty queues and no refills, reporting nothing. Deferral is a
 statement: *this partition is below its mark, and here is why no draw can help.*
 
 **Every registered partition is either served or deferred with a reason.** There
-is no third state. `phoenix:classic` was one until 2026-09-02 — refused a channel
-first and unconditionally, on the ground that a leg outside the walk filled it —
-and because that refusal also took it out of the starvation census, its being
-empty everywhere downstream went unreported for the life of the project. A
-partition nothing can feed is starved and says so.
+is no third state. A partition nothing can feed is starved and says so.
 """
 
 from __future__ import annotations
@@ -80,6 +76,7 @@ import time
 from pathlib import Path
 
 from fractal_wallpapers.discovery import pools
+from fractal_wallpapers.discovery.walk import Limits
 from fractal_wallpapers.supply import proven as proven_channel
 from fractal_wallpapers.supply import twins
 from fractal_wallpapers.supply.partitions import (
@@ -90,22 +87,14 @@ from fractal_wallpapers.supply.partitions import (
     partition_of_family,
 )
 
-#: A partition below this many frontier nodes is starved.
-LOW_WATER = 8
+#: A partition below this many frontier nodes is starved: one batch of nodes.
+LOW_WATER = Limits.batch
 
 #: Batches a partition waits between refills.
 COOLDOWN = 10
 
 #: Refill seconds may not exceed this share of the loop's wall clock.
 SHARE = 0.25
-
-#: Why a starved partition gets no refill, by partition. Empty, and that is the
-#: news: the three higher-degree Julia twins were the whole of this table, and
-#: [`fractal_wallpapers.supply.twins`] is the channel they were missing. A run
-#: with no twin channel wired in says so through [`NO_TWIN_CHANNEL`] instead,
-#: because "this run was built without it" and "no such channel exists" are
-#: different statements and only one of them used to be sayable.
-DEFERRAL: dict = {}
 
 #: Why a Julia twin gets no refill when the run holds no twin channel at all.
 NO_TWIN_CHANNEL = (
@@ -390,8 +379,6 @@ class Refill:
         row by construction, because the plane is one pinned parameter point and
         the only thing a fresh root there can vary is the frame.
         """
-        if partition in DEFERRAL:
-            return False
         if partition in ("julia:mandelbrot", "phoenix", CLASSIC_PHOENIX):
             return True
         if is_dynamical(partition):
@@ -497,9 +484,7 @@ class Refill:
                 continue
             if self.has_channel(partition) and self._open(partition):
                 continue
-            if partition in DEFERRAL:
-                reason = DEFERRAL[partition]
-            elif self._is_twin(partition):
+            if self._is_twin(partition):
                 reason = self.twins.starvation(partition, drawn=self.cursor.get(partition, 0))
             elif self._is_sampler(partition):
                 reason = self.sampler.starvation(partition, drawn=self.cursor.get(partition, 0))
@@ -744,7 +729,6 @@ def _seed_partition(row: dict) -> str | None:
 
 __all__ = [
     "COOLDOWN",
-    "DEFERRAL",
     "LOW_WATER",
     "NO_SEED_FILE",
     "NO_TWIN_CHANNEL",

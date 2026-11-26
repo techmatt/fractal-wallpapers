@@ -71,6 +71,7 @@ from __future__ import annotations
 import json
 from pathlib import Path, PurePosixPath
 
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import repo_root
 
 #: The schema every row of the log carries.
@@ -168,12 +169,6 @@ def append(record: dict, path: Path | None = None) -> Path:
     return where
 
 
-def _now() -> str:
-    from fractal_wallpapers.labeling import store
-
-    return store.now()
-
-
 def reading(path: Path | None = None) -> dict:
     """`{mark, deleted, marked_at}`, each resolved **per counter**.
 
@@ -218,7 +213,7 @@ def advance(counts: dict, why: str, when: str | None = None, path: Path | None =
     record = {
         "schema": LOG_SCHEMA,
         "event": MARK,
-        "at": _now() if when is None else str(when),
+        "at": label_store.now() if when is None else str(when),
         "why": why,
         "counts": grown,
     }
@@ -246,7 +241,7 @@ def record_loss(
     record = {
         "schema": LOG_SCHEMA,
         "event": DELETED,
-        "at": _now() if when is None else str(when),
+        "at": label_store.now() if when is None else str(when),
         "why": why,
         "counts": taken,
     }

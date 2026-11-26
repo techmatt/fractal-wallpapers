@@ -84,7 +84,7 @@ def tasks_of(run: str, rows: list[dict], directory: Path) -> list[release.Task]:
 
     **The levelling decision is rebuilt with the rest of the task and never taken
     again.** A release row carries the whole stamp of the render that shipped
-    ([`records.release_row`]), so a task built from the record inherits the curve
+    ([`records.decision`]), so a task built from the record inherits the curve
     the picture on disk was made through. Re-deriving here would make the parity
     check compare two renders that had each measured themselves at release
     geometry — a fair comparison of the wrong picture, and it would pass.

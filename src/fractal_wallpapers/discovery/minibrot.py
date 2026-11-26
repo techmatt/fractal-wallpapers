@@ -214,8 +214,8 @@ MAX_SOLVES = 24
 ENCLOSE_K = 2.0
 
 #: The tight reading of [`ENCLOSE_K`]: the smallest cut that reads all 202 tuned
-#: descent rows enclosed, which was the default until 2026-09-22. Kept as a named
-#: cut so a census summary still reports the count at it.
+#: descent rows enclosed. Kept as a named cut so a census summary still reports
+#: the count at it.
 TIGHT_ENCLOSE_K = 0.82
 
 #: How far under [`bulb_scale`] a chain entry may sit and still be read as a bulb
@@ -275,24 +275,6 @@ def examples_path():
     from fractal_wallpapers.paths import hot_root
 
     return hot_root() / "discovery" / EXAMPLES_NAME
-
-
-def read_examples(path=None) -> tuple[dict, list[dict]]:
-    """`(the summary row, every row after it)`, or `({}, [])` where nothing is written.
-
-    Empty rather than raising, because the caller that matters is a writeup asking
-    what the census found: a missing file means nobody has run `minibrots examples`
-    on this box, which is a thing to say in one line and not a traceback.
-    """
-    where = Path(examples_path() if path is None else path)
-    if not where.is_file():
-        return {}, []
-    rows = [
-        json.loads(line) for line in where.read_text(encoding="utf-8").splitlines() if line.strip()
-    ]
-    if not rows or "summary" not in rows[0]:
-        return {}, rows
-    return rows[0], rows[1:]
 
 
 def enclosing_at(row: dict, k: float, *, bulb_slack: float = BULB_SLACK):

@@ -49,10 +49,10 @@ verdict prefilled, or ordered the rows by its score. The third is not a fact abo
 the draw at all but a pin: `eval_only` says a batch was bought as an instrument and
 may never train, and it outranks whatever the other two imply. Eval-eligibility is
 derived from all three and never stored — `eval_only or (score_unconditioned and
-not anchored)` — and a batch nobody registered fails closed to neither. Both
-shipped instruments, `blind_minibrot` and `blind_modes`, are eligible by the pin
-alone: neither draw was score-unconditioned, so the two flags on their own would
-put both of them train-side.
+not anchored)` — and a batch nobody registered fails closed to neither. The
+finished stores' instruments (`blind_minibrot`, `blind_modes`, `blind_palettes_20260905`,
+and `seated_and_head_top` in both) are eligible by the pin alone: none of those draws was
+score-unconditioned, so the two flags on their own would put them train-side.
 
 **That fail-closed is an object, and a contradiction is worse than an omission.**
 `registry.UNREGISTERED` is what an unregistered batch reads as — not

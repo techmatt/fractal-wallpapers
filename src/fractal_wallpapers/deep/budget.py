@@ -6,14 +6,14 @@ allowed, take out what is not walking time, and divide by what a seat costs end
 to end. This module is that division, and the only place a per-seat number
 lives.
 
-The reason it exists is a measured failure. `deep_run1` was given eight hours
+The reason it exists is a measured failure. The first deep run was given eight hours
 and spent **two hours ten minutes** of them. Its seat count was picked by hand
 from conservative estimates, the frontier emptied at 470 of 2000 node slots, and
 the run finished with three quarters of its budget unspent — which is not a run
 that stopped early, it is a run that was **sized wrong before it started**. The
 fix is to stop guessing: every number below was read off that run's own record.
 
-## What one seat cost, at `deep_run1`'s measurements
+## What one seat cost, at the first deep run's measurements
 
 Thirty-two seats, an idle machine, the shipped location head:
 
@@ -28,13 +28,13 @@ evaluation 254 frames / 741 admissions   0.34    x 12.8 s a frame x 23.2 a seat 
 **The evaluation frames are two thirds of it and they are not optional.** `deep
 walk` does not draw a finished frame — the evaluation pass is what follows it —
 but a run that spends its whole budget walking is a run with no time left to look
-at what it found, and `deep_run1` spent 61 of its 130 minutes there. So the
+at what it found, and the first deep run spent 61 of its 130 minutes there. So the
 reserve is taken out of the budget before the seats are counted, and a walk-only
 run says so explicitly rather than getting the room by accident.
 
-These frames were called the *gallery* until 2026-08-22. They are not one: a
-gallery is a set of pictures somebody chose to look at, and these are the frames
-a deep run books so it can be evaluated at all. The word now belongs to
+These frames are not a *gallery*: a gallery is a set of pictures somebody chose
+to look at, and these are the frames a deep run books so it can be evaluated at
+all. The word belongs to
 `curation.records.GALLERY`, which is the collection a picture is in.
 
 ## The reserve is priced off admissions, because admissions are measured
@@ -52,7 +52,7 @@ with the frames it promised still payable.
 [`MARGIN_SHARE`] is estimate error, and it scales: every figure above is
 `n = 1`, and a run at four times the seats is four times as exposed to each of
 them being wrong. [`FIXED_RESERVE`] is the part that does *not* scale — staging,
-the checks, the readouts and the report, which `deep_run1` measured at about
+the checks, the readouts and the report, which the first deep run measured at about
 half an hour whatever the machine was doing. One number for both would be too
 small for the first at eight hours and most of the budget at one.
 """
@@ -67,13 +67,13 @@ from dataclasses import dataclass, field
 #: point estimate with no spread behind it. Fifteen per cent is a seat count
 #: rounded down rather than a promise the arithmetic cannot keep — and the
 #: failure it guards is asymmetric: an over-seated run overruns its budget, an
-#: under-seated one merely leaves room, which is the mistake `deep_run1` made
+#: under-seated one merely leaves room, which is the mistake the first deep run made
 #: and the cheaper of the two by a wide margin.
 MARGIN_SHARE = 0.15
 
 #: Seconds held back for the work that is not seats, whatever the budget is.
 #:
-#: Staging, the pre-flight checks, the readouts and the writing: `deep_run1`
+#: Staging, the pre-flight checks, the readouts and the writing: the first deep run
 #: spent about thirty minutes there against seventy-five of compute, and none of
 #: it moves when the seat count does.
 FIXED_RESERVE = 1800.0
@@ -81,7 +81,7 @@ FIXED_RESERVE = 1800.0
 
 @dataclass(frozen=True)
 class Costs:
-    """What one seat costs, in seconds, from `deep_run1`'s own record.
+    """What one seat costs, in seconds, from the first deep run's own record.
 
     Every field is a division of two numbers that run reported. They are
     defaults and not constants: a run that measures its own may hand a different

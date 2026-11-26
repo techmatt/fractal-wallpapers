@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from fractal_wallpapers import engine, style_catalog, style_wasm, styles
+from fractal_wallpapers import engine, style_catalog, style_keeps, style_wasm, styles
 
 
 def test_the_bundle_carries_every_published_mode_whole():
@@ -36,7 +36,7 @@ def test_the_bundle_carries_every_published_mode_whole():
         assert mode["shown"], f"{row['style']} opens nowhere"
         assert [s.get("keep") for s in mode["shown"]] == [s.get("keep") for s in row["show"]]
         keeps = style_catalog.keeps_of(row["style"])
-        stacks = style_wasm.keep_stacks(row["style"])
+        stacks = style_keeps.read_record(row["style"])["stacks"]
         for shown, item in zip(mode["shown"], row["show"], strict=True):
             assert shown["colormap"] in document["colormaps"]
             if "keep" not in item:  # a lab example: its draft's place, the mode's stack
@@ -87,6 +87,20 @@ def test_a_named_parity_run_lists_only_that_style_s_jobs():
     assert all(job["same_as"] in frames for job in jobs if "same_as" in job)
     with pytest.raises(style_wasm.StyleWasmError):
         style_wasm.parity_jobs(names=["no_such_style"])
+
+
+def test_a_member_names_the_published_modes_whose_knobs_write_it():
+    """`wasm-parity --member` draws exactly the modes a knob of which writes that member."""
+    from fractal_wallpapers import styles
+
+    for row in style_wasm.published_rows():
+        knobs = (styles.load(row["style"]).get("public") or {}).get("knobs") or []
+        pointers = [pointer for knob in knobs for pointer, _ in styles.knob_writes(knob, 0.0)]
+        if pointers:
+            member = pointers[0].rsplit("/", 1)[-1]
+            assert row["style"] in style_wasm.knob_writers([member])
+            break
+    assert style_wasm.knob_writers(["no_such_member"]) == []
 
 
 def test_the_module_s_integer_members_are_the_ones_the_style_files_write_as_integers():

@@ -12,7 +12,8 @@ fractal-wallpapers style picker <plan.json>  # a picker (step 6)
 fractal-wallpapers style keep <name> <picker>.choices.json  # save a picker's keeps
 fractal-wallpapers style refs [--unused <triage>.choices.json [--sheet <dir>]]  # references named; triage `yes` rows no row names
 fractal-wallpapers style gallery | bundle  # custom-modes/; the page's modes
-fractal-wallpapers style wasm-parity [names…] | wasm-speed  # vs native: whole after an engine change, <name> after a style's (CLAUDE.md); frame time
+fractal-wallpapers style wasm-parity [names…] | wasm-speed  # vs native: what is owed is style-wasm/README.md's table; frame time
+fractal-wallpapers style cost <name…> [--seat <seat>]  # explorer cost, against the 5-minute bar (CHECKS.md)
 fractal-wallpapers style sweep --out <dir> [names…]  # the checker (CHECKS.md)
 ```
 
@@ -123,14 +124,14 @@ zoomed in, and its structure reads as the fractal's own (`docs/rulings.md`). Bac
 5. **Hold the tonal balance.** Set the stack's `tone` to the reference's median and p10
    (`style tones <name>` prints them) and check renders with `style tones <name>
    <pictures…>`. A picture **misses** when its median is over 0.03, p10 over 0.05 or p90
-   over 0.10 off, or its near-white or near-black share over 0.05 above the reference's
-   (`styles.TONE_BAND`). A stack whose every render misses p90 is re-tuned (narrower
+   over 0.10 off, or its near-white or near-black share (lightness over 0.9, under 0.1: a
+   dark navy ground is black) over 0.05 above the reference's (`styles.TONE_BAND`, `WHITE_ALLOWANCE`,
+   `BLACK_ALLOWANCE`). Picker
+   JPGs read directly; check three guide renders before a forty-seat location run. A stack whose every render misses p90 is re-tuned (narrower
    glows, less fog), not its locations dropped; on a dark reference keep the ground in
    the map's dark end, since a layer sinking it to black makes the pass lift the rest.
    The pass holds the median, so dimming one glow or light can leave p90 where the seat
-   puts it (081's glass_orbs, 082's lace_holes drafts, each under 0.02); in 082's drafts
-   the ground's `cycles` moved it (bead_strands, 1 to 0.65: p90 0.686 to 0.639 at
-   `--draft`), keeping the ground off the map's bright end.
+   puts it; lowering the ground's `cycles` (keeping it off the map's bright end) moves it.
    Check at `--draft`, on the stack as shipped. A palette entry is held to **its own**
    reference: `style tones <mode> <pictures…> --reference <entry map>`.
 6. **Round one: a picker of about twenty tiles**: **formulations**, four to six readings
@@ -196,8 +197,9 @@ Spare time goes to further readings, drawn before the checks: the checks and the
   review run once, after the last code change.
 Checks: the tone check on the stack as shipped; `style wasm-parity <name>`, never the whole run
   (an engine member only this style sets adds `identity`, 0 differ, not the whole run).
-Module and explorer-cost times are read on a quiet box only when the item holds one
+Module and explorer-cost times (CHECKS.md, **Explorer cost**) are read on a quiet box only when the item holds one
   (`locks: [quiet]`, which Matt must allow explicitly); otherwise they are marked upper bounds.
 The report header carries one `pick: <manifest path>` line per picker.
+Tables go in out/keep/<item>/ and the report; experiments/ is git-excluded here, never committed.
 Follow data/styles/README.md's *A new style from a reference image*. Commit when done.
 ```

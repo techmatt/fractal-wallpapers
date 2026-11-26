@@ -40,7 +40,7 @@ def renders_plan(args: argparse.Namespace) -> int:
 
 
 def renders_default_workers() -> int:
-    """The render pool, read off the module rather than restated in a help string."""
+    """The build's default engine count, read off the module rather than restated in help."""
     from fractal_wallpapers.models import renders
 
     return renders.DEFAULT_WORKERS
@@ -692,9 +692,10 @@ def add_commands(subcommands) -> None:
         "--workers",
         type=int,
         default=renders_default_workers(),
-        help=f"engines this build drives at once (default {renders_default_workers()}, this "
-        "machine's render pool; 1 renders in this process). Each is spawned below normal "
-        "priority whatever this is set to",
+        help=f"engines this build drives at once (default {renders_default_workers()}: one "
+        "engine already fills every core, and the render pool's three is a ceiling; 1 "
+        "renders in this process). Each is spawned below normal priority whatever this is "
+        "set to",
     )
     building.set_defaults(handler=renders_build)
 

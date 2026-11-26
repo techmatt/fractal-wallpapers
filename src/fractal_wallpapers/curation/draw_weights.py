@@ -121,8 +121,8 @@ def converted(
     recorded leg of that band. Mixing bands here is the one way to get this badly
     wrong: `phoenix:classic` reads 1.2-1.5 s in the near band and 17-31 s on a deep
     breadth arm, so a breadth leg seeded from a near-band price would ask for
-    twenty times the turns the ruling wants. [`curation.hunt.Price.seed_for`] is
-    what keeps them apart and it refuses rather than guessing.
+    twenty times the turns the ruling wants. [`curation.hunt.Price.banded`] is
+    what keeps them apart.
 
     The arithmetic, and it is one line of algebra. A partition drawing `w` turns at
     `p` seconds a candidate spends `w * p` of the clock, so seconds share

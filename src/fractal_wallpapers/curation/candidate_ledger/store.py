@@ -513,13 +513,6 @@ def write_scores(rows) -> tuple[Path, int, int]:
 #: 99.3% of today's live release seats where keep 5 costs 1.385x and holds 100%;
 #: **retention is not retroactive, so an error toward 4 is permanent** and that
 #: asymmetry is what chose 5.
-#:
-#: It was one of two until 2026-08-29 — `retention.KEEP_PER_PAIR` kept five
-#: **pictures** a pair by raw `P(>=4)`, on a different ranking, and the two were
-#: not nested, so a row in the top three by rank could be sixth by `P(>=4)` and
-#: have lost its picture. That second spelling is gone, and the coincidence that
-#: this constant is now also five is exactly that — a coincidence, on the shipped
-#: rank key and over rows rather than pictures.
 RETAIN_PER_PAIR = 5
 
 
@@ -567,12 +560,8 @@ RETAINED_FAMILY = "best_in_a_family_the_ranked_five_miss"
 
 #: The five things that keep a row whatever the rank says, as their own tuple.
 #:
-#: **Named rather than sliced.** This was `RETAINED_REASONS[1:]` at four sites
-#: and the slice *meant* "the protections" at every one of them, so a sixth
-#: reason that is not a protection — [`RETAINED_FAMILY`] — would have been read
-#: as one by all four, silently: [`sweep.prune`] would have counted a
-#: family-kept row as saved by a protection, and `curation.rotation` would have
-#: asked [`rotation.protections`] for a reference set nothing fills.
+#: **Named rather than sliced**, so a reason that is not a protection, such as
+#: [`RETAINED_FAMILY`], is never counted as one.
 RETAINED_PROTECTIONS = (
     RETAINED_SEATED,
     RETAINED_REJECTED,

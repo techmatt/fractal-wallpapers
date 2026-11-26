@@ -27,16 +27,8 @@ floored, censused, and permanently starved, and every report about it afterwards
 describes a decision nobody made.
 
 **There is no second kind of entry.** A row is a ratio and nothing else, and
-every registered partition is served by the walk on the same terms. This table
-carried an `externally_supplied` flag until 2026-09-02, on `phoenix:classic`
-alone: it kept its ratio and lost the clock — no share, no floor, no floor carry,
-no starvation alarm — on the ground that a job outside the walk supplied it. That
-job never existed in this repository (`AUDIT_phoenix_classic_funnel`), so the
-flag bought silence rather than accuracy: the partition was zero at every stage
-from the walk onward and nothing reported it, because the flag also took it out
-of the census that would have. The flag and its plumbing are gone rather than set
-false, and what stands in their place is the ordinary machinery — a partition the
-walk cannot feed *is* starved, and says so.
+every registered partition is served by the walk on the same terms: a partition
+the walk cannot feed *is* starved, and says so.
 """
 
 from __future__ import annotations

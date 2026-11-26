@@ -57,7 +57,7 @@ that hits it is recorded as a killed batch and the run carries on.
 
 ## The seats are sized against the budget, and topped up inside the run
 
-`deep_run1` was given eight hours and spent two hours ten. Its seat count was
+The first deep run was given eight hours and spent two hours ten. Its seat count was
 picked by hand from conservative estimates, and the frontier emptied at 470 of
 2000 node slots with three quarters of the budget unspent. That is not a run
 that stopped early; it is a run that was sized wrong before it started.
@@ -79,7 +79,7 @@ not the one that discovers it could not.
 
 ## A lineage is capped, because monotony is a supply problem
 
-`deep_run1` put 741 admissions on 15 of its 48 roots and 85 of them on one, and
+The first deep run put 741 admissions on 15 of its 48 roots and 85 of them on one, and
 the 162 frames of its floor set were largely one composition in 162 palettes.
 An evaluation pass can spread itself over lineages after the fact — that one had
 to — but
@@ -93,7 +93,7 @@ crossing lands in the ledger as its own row so a readout can say what the cap
 cost and what it bought. The cap is asked per row at booking, so two of a
 lineage's nodes in one batch — the second already drawn when the first closes it
 — book up to the cap and no further; the rest are recorded `not_admitted` with
-`lineage_capped` set. Until 2026-09-18 they were booked and the count overshot.
+`lineage_capped` set.
 """
 
 from __future__ import annotations
@@ -156,14 +156,14 @@ LEG_MINIMUM = {SOURCING: 30.0, WALK: 30.0}
 
 #: Admissions any one lineage may book before a deep run stops expanding it.
 #:
-#: `deep_run1`'s 48 roots booked 741 admissions between them — an equal share of
+#: The first deep run's 48 roots booked 741 admissions between them — an equal share of
 #: 15 — but 15 roots booked all of it and the largest booked **85**. Twenty-four
 #: is half again the equal share: enough that a genuinely fertile lineage runs
 #: past its portion, not so much that it becomes the run. At that cap ten of that
 #: run's lineages would have closed, and 446 of its 741 admissions — sixty per
 #: cent — are walk time that would have gone somewhere else.
 #:
-#: The honest qualifier: in `deep_run1` there *was* nowhere else, because the
+#: The honest qualifier: in the first deep run there *was* nowhere else, because the
 #: frontier emptied anyway. The cap is worth what the seating above it is worth,
 #: and the two ship together for that reason.
 LINEAGE_ADMISSIONS = 24
@@ -273,7 +273,7 @@ def run_clock(wall_budget: float | None = None) -> pacing.Clock:
     gate — *would starting this unit put the run over?* — and the estimate is the
     same one: the longest unit of the class this run has finished, so a run at a
     depth where a batch costs four times the median sizes itself off its own
-    batches rather than off `deep_run1`'s.
+    batches rather than off the first deep run's.
 
     Only the walk leg carries a kill deadline. A sourcing unit is a Newton
     descent, which is arbitrary-precision arithmetic **in this process** with no
@@ -298,9 +298,9 @@ class Deep:
     limits: Limits = field(default_factory=Limits)
     #: The wall clock this run promises to finish inside, in seconds. `None` is
     #: an unpaced run sized by [`Limits.seats`] alone — what this mode did before
-    #: `deep_run1` measured what that costs.
+    #: the first deep run measured what that costs.
     wall_budget: float | None = None
-    #: What a seat costs, for the projection. Defaults to `deep_run1`'s measured
+    #: What a seat costs, for the projection. Defaults to the first deep run's measured
     #: table; a run with its own numbers may hand them in.
     costs: budget_module.Costs = field(default_factory=budget_module.Costs)
     #: Whether the budget reserves the evaluation frames' share of the clock.
@@ -398,7 +398,7 @@ class Deep:
 
         A ceiling, not a plan. Batches are not this mode's lever — the frontier
         empties on its own long before a generous ceiling binds, which is what
-        `deep_run1` measured at 470 nodes of 2000 — so the number is sized to be
+        the first deep run measured at 470 nodes of 2000 — so the number is sized to be
         out of the way and the clock is what actually stops the leg.
         """
         nodes = max(1.0, float(seats)) * self.costs.nodes_per_seat
@@ -487,7 +487,7 @@ class Deep:
 
         **A dry frontier is not the end of the run.** With budget left beyond the
         margin it is the signal to seat again — see [`_reseat`] — which is what
-        turns `deep_run1`'s six unspent hours into breadth.
+        turns the first deep run's six unspent hours into breadth.
         """
         if not self.seats:
             self.source()

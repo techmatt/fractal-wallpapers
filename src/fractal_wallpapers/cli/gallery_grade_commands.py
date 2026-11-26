@@ -280,7 +280,7 @@ def add_commands(subcommands) -> None:
         "score-pool",
         help="read the whole seating pool through the band's picked run",
         description=(
-            "Writes the column `curate solve --key cascade` resolves its order from. It "
+            "Writes the column `curate solve run --key cascade` resolves its order from. It "
             "opens each candidate's stored 640x360 JPEG once and renders nothing. The rows "
             "are a cascade's SECOND stage: ranking the whole file would rank rows this head "
             "never saw the like of, and the solve applies it above the bar and only there."

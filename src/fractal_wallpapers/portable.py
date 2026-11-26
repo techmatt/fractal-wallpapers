@@ -87,7 +87,9 @@ from fractal_wallpapers.paths import (
     StorageRefusal,
     Tiers,
     repo_root,
+    source_commit,
 )
+from fractal_wallpapers.storage import sha256_of
 
 #: The schema the manifest and `pictures.jsonl` carry.
 SCHEMA = 1
@@ -447,14 +449,6 @@ def _hash_copy(source: Path, destination: Path) -> dict:
     return {"bytes": size, "sha256": digest.hexdigest()}
 
 
-def sha256_of(path: Path) -> str:
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        for chunk in iter(lambda: handle.read(CHUNK), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def tracked_files() -> set[str]:
     """Every path git tracks in this checkout, POSIX and relative. Empty without git."""
     try:
@@ -795,15 +789,7 @@ def _manifest(rows: list, roster, pictures: dict | None) -> dict:
         build = engine_fingerprint.current()
     except Exception:  # noqa: BLE001 — recorded as unknown, the same as a row that never said
         build = engine_fingerprint.UNKNOWN
-    try:
-        commit = subprocess.run(
-            ["git", "-C", str(repo_root()), "rev-parse", "HEAD"],
-            capture_output=True,
-            check=True,
-            text=True,
-        ).stdout.strip()
-    except (OSError, subprocess.CalledProcessError):
-        commit = None
+    commit = source_commit()
     weights = repo_root() / "models" / "weights.json"
     heads = (
         {

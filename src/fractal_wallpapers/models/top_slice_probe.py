@@ -85,6 +85,7 @@ import time
 from pathlib import Path
 
 from fractal_wallpapers.curation import page
+from fractal_wallpapers.models import renders
 from fractal_wallpapers.paths import under
 
 #: The schema every record this module writes carries.
@@ -152,13 +153,13 @@ BASELINES: dict[str, str] = {
 DRAWS = 5000
 BOOTSTRAP_SEED = 0
 
-#: How many engines the candidate-geometry render drives at once. **One**, and
-#: it is [`renders.DEFAULT_WORKERS`]'s measurement rather than a second opinion:
+#: How many engines the candidate-geometry render drives at once:
+#: [`renders.DEFAULT_WORKERS`]'s measurement rather than a second opinion:
 #: this is the same work a cache build does — one full frame per job — and the
 #: engine already iterates a field across every core it can see, so a second
 #: process finds this one rather than an idle machine. The pool rule's three is
 #: a ceiling on how much of the desktop a leg may take, not a floor.
-WORKERS = 1
+WORKERS = renders.DEFAULT_WORKERS
 
 
 class ProbeRefused(RuntimeError):

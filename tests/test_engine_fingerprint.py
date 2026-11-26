@@ -12,16 +12,10 @@ from pathlib import Path
 
 import pytest
 
+from conftest import needs_engine
 from fractal_wallpapers import engine, engine_fingerprint
 from fractal_wallpapers.curation import amend, intake, mode_policy
 from fractal_wallpapers.models import location_view, renders, tiles
-
-try:
-    ENGINE = engine.engine_path()
-except FileNotFoundError:
-    ENGINE = None
-
-needs_engine = pytest.mark.skipif(ENGINE is None, reason="the engine is not built")
 
 
 @pytest.fixture(autouse=True)

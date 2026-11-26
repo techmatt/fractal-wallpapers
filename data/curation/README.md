@@ -19,9 +19,11 @@ ledger_provenance.json           which walk ledger each released row was drawn f
 carry `collection: "gallery"`, a `slot` block, and, for a row re-seated from a run, a
 `source` block naming the row it came from under the id `<run>_<candidate>`.
 
-**A link this repository writes is the explorer's permalink v4.** `pins.query_of` is the one
-writer: it spells a view as `explorer/permalink.js` does, defaults left out, and writes the
-cap as `n` whenever it is not `engine.maxiter_for` at `w`. `EXPLORER_BASE` says `v=4`. The
+**A link this repository writes is the explorer's permalink v4.** `pins.query_of` is the
+writer for pins: it spells a view as `explorer/permalink.js` does, defaults left out, and
+writes the cap as `n` whenever it is not `engine.maxiter_for` at `w`. The link a released
+picture carries is `curation.explorer_link.query_of`'s, which also spells the mode, the
+palette pass and the tone curve. `EXPLORER_BASE` says `v=4`. The
 explorer reads v1 to v4, so the `v=3` links in `pins.txt` stay valid, and `parse` reads a
 pin by place and mode whatever its version.
 

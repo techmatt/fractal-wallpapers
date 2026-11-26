@@ -148,6 +148,7 @@ from pathlib import Path
 
 from fractal_wallpapers.curation import page, release
 from fractal_wallpapers.labeling import gallery_grade
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.labeling.sheets import LABEL_RESOLUTION, LABEL_SUPERSAMPLE
 
 #: The schema every row and record this module writes carries.
@@ -332,12 +333,6 @@ def _read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _now() -> str:
-    from fractal_wallpapers.labeling import store
-
-    return store.now()
-
-
 # --------------------------------------------------------------------------- #
 # the population, and the keys that name it.
 # --------------------------------------------------------------------------- #
@@ -403,7 +398,7 @@ def keys(store=None, log=print) -> dict:
     where.write_text("".join(f"{key}\n" for key in sorted(held)), encoding="utf-8", newline="\n")
     record = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "grade": GRADE,
         "keys": len(held),
         "verdicts": sum(counts.values()),
@@ -498,7 +493,7 @@ def population(store=None, log=print) -> dict:
         )
     record = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "grade": GRADE,
         "wallpapers": len(out),
         "verdicts": sum(counts.values()),
@@ -635,7 +630,7 @@ def fates(stamp: str, store=None, log=print) -> dict:
         row["seat"] = None if seat is None else _seat_of(seat, seat_rows, fine)
     out = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "stamp": stamp,
         "record": (manifest.get("solve") or {}).get("record"),
         "explained": len(explained),
@@ -888,7 +883,7 @@ def competitors(stamp: str, store=None, log=print) -> dict:
     _dress(paired, distinct)
     out = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "stamp": stamp,
         "pairing": PAIRING,
         "refused": sum(counts.values()),
@@ -1239,7 +1234,7 @@ def render(store=None, workers: int = WORKERS, log=print) -> dict:
     ]
     record = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "regime": regime.spelled,
         "geometry": regime.geometry(),
         "workers": int(workers),
@@ -1443,7 +1438,7 @@ def page(store=None, migration_store=None, repaired_seats_of=None, against=None,
     )
     record = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "index": str(index),
         "pictures": str(beside),
         "pages": len(slices),

@@ -26,7 +26,7 @@ and keep their scores, for none of the render cost.
 That is refused, and the reason is [`recipes.key_of`]: **a recipe key is a digest
 of the engine spec**, so a row claiming a mode it was not rendered in names a
 picture nobody made. Every reader that re-derives the picture from the row —
-[`candidate_ledger.re_render`], `release.replay`, the website's figure resolver —
+[`candidate_ledger.re_render`], [`checks.replay`], the website's figure resolver —
 would then disagree with the disk, silently, and the row would still be wrong
 after the disagreement was noticed. The two fields really are different fields:
 `max |Δ|` over those pairs has a median of 40 of 255 and a minimum of 15. Only the

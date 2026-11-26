@@ -629,7 +629,7 @@ def curate_solve(args: argparse.Namespace) -> int:
 
 def curate_growth(args: argparse.Namespace) -> int:
     """What N candidates' worth of mining buys, at gallery size n."""
-    from fractal_wallpapers.curation import growth
+    from fractal_wallpapers.curation import growth, tentative
 
     if args.what == "plot":
         from fractal_wallpapers.curation import growth_plot
@@ -644,7 +644,7 @@ def curate_growth(args: argparse.Namespace) -> int:
             print(refusal)
             return 1
         return 0
-    stamp = args.name or growth.stamp_now()
+    stamp = args.name or tentative.stamp_now()
     try:
         # The folder is claimed FIRST and each cell is appended as it lands, so a
         # sweep of hours that dies at cell fifteen leaves the fourteen it measured.
@@ -739,7 +739,7 @@ def _twin_sweep(candidates, radius) -> dict:
 
     kept = headroom.clearing(candidates)
     if radius is not None:
-        # `distinct.DELETE`, for `headroom.headroom`'s reason: this sweep is over
+        # `distinct.DELETE`, for `headroom.census`'s reason: this sweep is over
         # one picture per PLACE and the destructive walk's kept set is exactly one
         # representative per cluster.
         kept, _record = distinct.preselect(kept, radius=float(radius), fold=distinct.DELETE)
@@ -2130,8 +2130,8 @@ def add_steps(steps) -> None:
         help="bound the FLAT mode floor instead of the per-mode rule — "
         f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) seats for every accepted mode, at "
         "every rung. The default is curation.mode_policy.seat_floors(n), which is what an "
-        "unflagged `curate seat` and an unflagged `curate solve run` are floored by, so an "
-        "unflagged census bounds the gallery they would build. The block says which it ran "
+        "unflagged `curate solve run` is floored by, so an "
+        "unflagged census bounds the gallery it would build. The block says which it ran "
         "under",
     )
     headroom_step.add_argument(

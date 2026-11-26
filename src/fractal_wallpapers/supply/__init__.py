@@ -35,7 +35,3 @@ each lineage has already given this run.
 """
 
 from __future__ import annotations
-
-from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
-
-__all__ = ["ALL_PARTITIONS"]

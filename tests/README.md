@@ -10,7 +10,7 @@ cargo test --manifest-path engine/Cargo.toml        # ~7s warm, ~28s cold
 
 Run pytest with the checkout's `.venv` interpreter, on `.[dev,models]`, with a release
 engine built (`cargo build --release --manifest-path engine/Cargo.toml`); the walk tests
-skip without one.
+skip without an engine.
 
 `cargo test` builds the crate at `opt-level = 2` (`[profile.test]` in
 `engine/Cargo.toml`): the tests render, and unoptimized they run eight times longer.
@@ -18,19 +18,12 @@ skip without one.
 ## The two lanes
 
 `--slow` is the whole suite; the default run holds back the ~160 tests that do real work.
-A test earns `@pytest.mark.slow` by about a second or more of a render, a training loop,
-or a store sweep; arithmetic stays fast however much of it there is. **A guard may also
-be weakened or deleted for speed when the trade is named and priced** (what stopped being
-covered, at the site and in the report, with the seconds it bought). The marker, the flag
-and the held-back line live in `conftest.py`; `CLAUDE.md`'s *The two lanes* is the rule.
+What earns `@pytest.mark.slow`, and how a guard is weakened for speed, is `CLAUDE.md`'s
+*The two lanes*. The marker, the flag and the held-back line live in `conftest.py`; the
+line is the point, since a lane that went quiet would be guards nobody saw stop running.
 
 A flag added to a nested `curate` verb fails `test_nested_verbs.py` until its `SURFACE`
 entry names it: fix the table, never the guard.
-
-### The line is the point of the arrangement
-
-Every run that holds anything back says how much: a lane that went quiet would be guards
-nobody noticed had stopped running.
 
 ### Measure the fast lane after marking, not before
 
@@ -56,7 +49,7 @@ What it rests on:
   (`time.monotonic` on Windows ticks at 15.625 ms).
 - **A lane run inside a chained script writes its whole output to a file** (`-rf`, to
   `out/<item>/`), never only a `tail`: a red that passes on the re-run is then a named
-  test, not an unnamed warning (item 057 lost one that way, beside an identity run).
+  test, not an unnamed warning.
 - **Commit charge drifts upward on uptime alone**, ~4 GiB a day, reclaimed only by a
   reboot; the symptom is a launch dying on `WinError 1455`. Reboot before an overnight if
   uptime is past a week.
@@ -70,9 +63,9 @@ this project records is **`P + S`, the number pytest selected**, with `D` beside
   for, so a reading gives it and the clock together or gives neither.
 - **Deselected** is the slow lane and nothing else: `conftest.pytest_collection_modifyitems`
   removes exactly the `slow`-marked and says how many.
-- **Skipped** is a test that was collected, ran its guard and declined: no release engine
-  at `engine/target/release` (asked through `engine.engine_path`), a missing shipped file,
-  or an optional import absent at call time (below).
+- **Skipped** is a test that was collected, ran its guard and declined: no engine binary
+  (`engine.is_built`), a missing shipped file, or an optional import absent at call time
+  (below).
 - **Not collected** does not appear in the total at all, and it is the trap. A
   module-level `pytest.importorskip` stops the module being imported, so its tests are
   absent rather than skipped. The lane prints a red line naming those modules and what is
@@ -129,14 +122,15 @@ real `render_folds.assignment` over the shared pool, never a second deal.
 ### `tracked_ledger` is the dear one and the one to reach for by reflex
 
 `.rows`, `.scores`, `.pool`, `.costs` and `.refused`: one reading, ~40 s and ~6 GB
-resident, for every ledger guard. **Never call `candidate_ledger.read()` in a test.** It
-unsets the hot root while laying the pool out, so a redirected module cannot make it read
-an empty tree, and skips where the ledger is not backfilled (every machine but Matt's).
+resident, for every ledger guard. **Never `candidate_ledger.read()` the live ledger
+in a test.** `tracked_ledger` unsets the hot root while laying the pool out, so a
+redirected module cannot make it read an empty tree, and skips where the ledger is not
+backfilled (every machine but Matt's).
 
 ## Redirecting a store: at the roots, never per accessor
 
-There are exactly two roots and everything under `artifacts/` resolves through one of
-them. `paths.HOT_ROOT_VARIABLE` (`FRACTAL_WALLPAPERS_HOT_ROOT`) and
+Everything under `artifacts/` resolves through one of two roots:
+`paths.HOT_ROOT_VARIABLE` (`FRACTAL_WALLPAPERS_HOT_ROOT`) and
 `paths.ARCHIVE_ROOT_VARIABLE` (`FRACTAL_WALLPAPERS_ARCHIVE_ROOT`) are the whole redirect:
 the candidate ledger's row files, the flatness and signature sidecars, the supply sidecar
 and every durable copy address a root, so setting the two moves all of them. **Set them
@@ -170,6 +164,8 @@ fixture is not done at one.**
 - `conftest.no_signature_sidecar` is autouse too, and the roots cannot undo it because
   the function has already been replaced: a fixture that wants a real signature sidecar
   patches `signatures.sidecar_path` back explicitly.
+- `conftest.the_pool_scores_are_read_once` (autouse) reads `read_pool_scores()`
+  once a session; a test's own column passes `path=`.
 
 ### The backstop hashes every tracked manifest twice a session
 
@@ -199,9 +195,8 @@ What dominates today, in order:
 
 ### A cost paid once per test scales with the suite, and hides from every reading
 
-A growing store steps the lane the day it grows; a per-test cost grows milliseconds at a
-time and never reaches a durations list (`conftest`'s comment at its `tmp_path` override
-has the example). Only a by-file sum of every test finds it.
+It grows milliseconds at a time and never reaches a durations list (`conftest`'s
+`tmp_path` override has the example); only a by-file sum of every test finds it.
 
 ### A derivation paid twice is the thing to look for
 
@@ -244,10 +239,9 @@ CI runs `pytest --slow -rs` on Ubuntu, macOS (Apple silicon) and Windows after
 fetched weights or a store; a test that needs the shipped heads skips on a missing file
 rather than failing.
 
-The repository is public, so a red is readable without `gh` and without admin rights:
-`api.github.com/repos/techmatt/fractal-wallpapers/actions/runs` gives the runs and
-`runs/<id>/jobs` gives **step-level** conclusions. Job *logs* need admin and 403; the
-step conclusions are enough to say which step failed on which job.
+A red is readable without `gh` or admin rights:
+`api.github.com/repos/techmatt/fractal-wallpapers/actions/runs/<id>/jobs` gives
+**step-level** conclusions, enough to name the failed step per job (job *logs* 403).
 
 **Reproducing a failed Test step is a fresh clone with no store and no weights**, which
 is what a runner has: `git clone` the checkout into a scratch directory, copy the release

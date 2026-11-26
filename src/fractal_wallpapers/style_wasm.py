@@ -54,12 +54,10 @@ SPEED_SUPERSAMPLE = DRAFT_SUPERSAMPLE
 
 #: Node worker threads a parity run draws on, beside the native engine's renders, below
 #: normal priority. The whole run is as long as the longest of three things: its longest
-#: job (one keep's tiled draw, 16 minutes), the module's work over the workers (86
-#: thread-minutes on an idle box, up to 140 on a busy one), and the native side (12
-#: minutes at `PARITY_NATIVE_THREADS`). Measured on this twelve-thread box, idle, 168
-#: jobs: 17 minutes, the longest job the last to finish, so more workers buy nothing.
-#: On a shared box it was 25 to 30 (six workers and two native threads, and five and two,
-#: the native side the last to finish both times).
+#: job (one keep's tiled draw), the module's work over the workers, and the native side
+#: (at `PARITY_NATIVE_THREADS`). The whole run, 223 jobs, reads 38 to 48 minutes at
+#: `--workers 3` (six threads with the native side), and is never shorter than its
+#: longest job (`style-wasm/README.md`'s *Parity: which run is owed*).
 PARITY_WORKERS = 5
 
 #: Threads the native engine takes for its side of a parity run (`RAYON_NUM_THREADS`,
@@ -115,13 +113,6 @@ def colormap_of(name: str) -> dict[str, Any]:
     return json.loads((colormap_dir() / f"{name}.json").read_text(encoding="utf-8"))
 
 
-def keep_stacks(style: str) -> dict[str, Any]:
-    """A style's keeps' stacks as drawn, by the id each keep's render names."""
-    from fractal_wallpapers import style_keeps
-
-    return style_keeps.read_record(style)["stacks"]
-
-
 def has_post(stack: dict[str, Any]) -> bool:
     """Whether a stack has a post stage: it is drawn whole, never in tiles."""
     return bool(stack.get("post"))
@@ -149,6 +140,24 @@ def published_rows() -> list[dict[str, Any]]:
     from fractal_wallpapers import style_catalog
 
     return [row for row in style_catalog.load()["modes"] if row.get("status") == "publish"]
+
+
+def knob_writers(members: list[str]) -> list[str]:
+    """The published modes with a public knob writing a stack member named in `members`.
+
+    A change to a name list both engines read when a knob writes (`styles.INTEGER_MEMBERS`)
+    can move only a `__knobs` job, and only a mode whose knob writes a listed member: these
+    are the styles `wasm-parity --member` draws, instead of the whole run.
+    """
+    from fractal_wallpapers import styles
+
+    wanted, found = set(members), []
+    for row in published_rows():
+        knobs = (styles.load(row["style"]).get("public") or {}).get("knobs") or []
+        pointers = [pointer for knob in knobs for pointer, _ in styles.knob_writes(knob, 0.0)]
+        if any(pointer.rsplit("/", 1)[-1] in wanted for pointer in pointers):
+            found.append(row["style"])
+    return found
 
 
 def bundle() -> dict[str, Any]:

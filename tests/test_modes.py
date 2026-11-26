@@ -13,14 +13,8 @@ import struct
 
 import pytest
 
+from conftest import needs_engine
 from fractal_wallpapers import cli, engine
-
-try:
-    ENGINE = engine.engine_path()
-except FileNotFoundError:
-    ENGINE = None
-
-needs_engine = pytest.mark.skipif(ENGINE is None, reason="the engine is not built")
 
 #: Small, cheap, and structured enough that every mode has something to say
 #: about it: the whole of a Julia set with both an interior and a wide exterior.

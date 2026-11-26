@@ -653,7 +653,7 @@ def add_steps(steps) -> None:
         "are location-store only — a place and not a picture, so `curate label-migration` "
         "has no recipe to derive and never could have reached them. Until they carry a "
         "sidecar row they are not admitted, `curate embed` gives them no vector, and "
-        "`curate hunt --places` refuses a manifest of them outright. Best verdict first, "
+        "`curate hunt run --places` refuses a manifest of them outright. Best verdict first, "
         "read at the node regime like all other stock that states no regime",
     )
     reading.set_defaults(handler=curate_score)
@@ -905,7 +905,7 @@ def add_steps(steps) -> None:
             "at the end of `curate embed`, so a newly admitted location arrives with a "
             "score rather than being drawable before it has one. A location with NO row "
             "here reads as UNKNOWN everywhere and counts toward nothing: unknown is never "
-            "not_spiral. The reader is `curate solve --spiral-cap`."
+            "not_spiral. The reader is `curate solve run --spiral-cap`."
         ),
     )
     spiral_store.set_defaults(handler=curate_spiral_scores)

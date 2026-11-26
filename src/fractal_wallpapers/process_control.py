@@ -227,6 +227,18 @@ def let_go(handle: int | None) -> None:
         os.close(handle)
 
 
+def stop(pid: int) -> None:
+    """Kill process `pid` with `SIGTERM`, which on Windows is `TerminateProcess`.
+
+    Its children go with it only if it bound them: on Windows that is the job
+    object [`bind_children_to_parent`] installs, closed when the process dies.
+    """
+    import os
+    import signal
+
+    os.kill(pid, signal.SIGTERM)
+
+
 __all__ = [
     "IS_WINDOWS",
     "bind_children_to_parent",
@@ -234,4 +246,5 @@ __all__ = [
     "hold",
     "let_go",
     "set_background_priority",
+    "stop",
 ]

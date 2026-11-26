@@ -158,16 +158,17 @@ cargo test --release --manifest-path style-wasm/Cargo.toml
 cargo build --release --target wasm32-unknown-unknown --manifest-path style-wasm/Cargo.toml
 ```
 
-Then the parity run it owes, once, after the last code change: **`fractal-wallpapers style
-wasm-parity`** whole after an engine or module change (17 minutes idle),
-**`style wasm-parity <name>`** after a change to one style (seconds to minutes). An engine
-change also owes `identity` (`data/styles/README.md` step 2). An engine change that only
-adds a member no other stack sets owes `identity` (0 differ) plus `style wasm-parity
-<name>` for the style that sets it, not the whole run.
+Then the parity run it owes, once, after the last code change, read off
+`style-wasm/README.md`'s *Parity: which run is owed* table: the whole **`fractal-wallpapers
+style wasm-parity`** (38 to 48 minutes) only after engine or module code nothing cheaper
+covers; **`style wasm-parity <name>`** after one style's change; **`--member <name>`**
+after a name-list edit; nothing for docs and metadata. An engine change also owes
+`identity` (`data/styles/README.md` step 2).
 
 Run pytest with the checkout's own `.venv` interpreter: a gallery guard spawns
 `sys.executable`, and another fails it like a process-control bug. The walk tests need
-a **release** engine and skip without one; a guard asking whether the engine is built
+a built engine and skip without one (build **release**: a debug binary is found too, after
+it, and runs them slowly); a guard asking whether the engine is built
 asks `engine.is_built()`; a bare `engine.engine_path()` at module level raises
 `FileNotFoundError` and interrupts the lane at collection.
 
@@ -226,6 +227,9 @@ header, the load budget and waiting. This repository adds:
   process narration or
   restated prompt. **Tests are mentioned only for a red you could not fix.**
 - **End the console reply with `Report written to <path>`.**
+- **Working papers are never committed**: `experiments/` is in this box's
+  `.git/info/exclude`, whatever results folder the preamble names; tables go in
+  `out/keep/<item>/` and the report.
 - **Commit to the branch you are on.**
 - **Every clock time is local 12-hour** (`5:25pm`, never `17:25`/UTC). The CLI's
   `[HH:MM:SS]` stamps are 24-hour; convert before quoting.

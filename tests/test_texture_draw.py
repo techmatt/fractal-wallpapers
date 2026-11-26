@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
+from conftest import needs_engine
 from fractal_wallpapers import engine
 from fractal_wallpapers.cli import build_parser
 from fractal_wallpapers.curation import colorize, recipes
@@ -67,11 +68,8 @@ def test_a_drawn_weight_is_a_new_recipe_key() -> None:
     assert renders.job_name(a_row(mode_params={"texture_weight": 0.4})) != renders.job_name(a_row())
 
 
+@needs_engine
 def test_the_engine_draws_a_different_picture_at_a_different_weight(tmp_path) -> None:
-    try:
-        engine.engine_path()
-    except FileNotFoundError:
-        pytest.skip("no engine built")
     pictures = []
     for weight in (0.3, 0.9):
         output = tmp_path / f"w{weight}.png"

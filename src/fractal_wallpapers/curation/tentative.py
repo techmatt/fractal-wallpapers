@@ -89,7 +89,8 @@ from pathlib import Path
 
 from fractal_wallpapers.curation import fulls, page_order
 from fractal_wallpapers.curation import page as page_module
-from fractal_wallpapers.paths import Tiers, rehome, tracked_name, under
+from fractal_wallpapers.labeling import store as label_store
+from fractal_wallpapers.paths import Tiers, rehome, source_commit, tracked_name, under
 
 #: The schema every row and every manifest here carries.
 SCHEMA = 1
@@ -466,7 +467,7 @@ def _keep_row(stamp: str, kept: bool, reason: str) -> dict:
         "schema": KEEP_SCHEMA,
         "stamp": stamp,
         "kept": kept,
-        "at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "at": label_store.now(),
         "reason": reason,
     }
     path = keep_path()
@@ -881,8 +882,8 @@ def manifest_of(
     return {
         "schema": SCHEMA,
         "stamp": str(stamp),
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "source_commit": growth.source_commit(),
+        "taken_at": label_store.now(),
+        "source_commit": source_commit(),
         "solve": {
             "name": None if solve_name is None else str(solve_name),
             "record": None if solve_name is None else tracked_name(_solve_record_path(solve_name)),

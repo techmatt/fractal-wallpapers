@@ -15,15 +15,9 @@ from pathlib import Path
 
 import pytest
 
+from conftest import needs_engine
 from fractal_wallpapers import cli, engine, paths, process_control
 from fractal_wallpapers.paths import anchors_file
-
-try:
-    ENGINE = engine.engine_path()
-except FileNotFoundError:
-    ENGINE = None
-
-needs_engine = pytest.mark.skipif(ENGINE is None, reason="the engine is not built")
 
 
 def arguments(**overrides) -> argparse.Namespace:

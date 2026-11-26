@@ -18,7 +18,7 @@ Far apart, the gap is the instruction.
 
 Everything here is arithmetic over the ledger except the twin block, which is a
 statement about pairs of finished **pictures** and cannot be answered from a row.
-It costs one pixel-cloud signature per place plus the pairs [`solve.BOUND`] cannot
+It costs one pixel-cloud signature per place plus the pairs [`rules.BOUND`] cannot
 settle — minutes over a pool of a thousand places — so it is off unless a caller
 asks for it, and a census taken without it says so rather than reporting a
 constraint it never counted.
@@ -471,7 +471,7 @@ def twin_bound(places, pairs, order=None) -> dict:
     """How many mutually non-twin places the pool holds: an upper bound and a lower.
 
     `pairs` is the twin relation as `[(a, b)]` — [`distinct.twins`]' output,
-    which is exact over every pair through [`solve.BOUND`]. The upper bound is
+    which is exact over every pair through [`rules.BOUND`]. The upper bound is
     `places - |matching|` over a greedy maximal matching, which is the only claim
     here that is a **necessary condition**: an independent set takes at most one
     endpoint of each matched edge, so it misses at least one place per edge. The

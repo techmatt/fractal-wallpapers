@@ -1,14 +1,8 @@
 """One spelling per selection rule: a set-level predicate over incremental state.
 
-The rules a gallery is chosen under used to exist twice. `curation.seating`
-walked a ranked list and asked each candidate against the seats already taken;
-[`curation.solve`] stated the same intentions as constraint rows and handed them
-to a solver. Most of them agreed. Two did not — the palette-group cap was a
-*count* in one and a *distance* in the other, and the two legs did not even
-choose from the same pool — and a divergence like that is not one anybody finds
-by reading either file on its own.
-
-So there is one statement of each rule and it lives here. Every rule answers the
+Each rule a gallery is chosen under is one set-level predicate, stated once here,
+and both [`curation.solve`] and the incremental [`State`] read that one statement,
+so the two cannot disagree about a rule. Every rule answers the
 same two questions about a **set** rather than about a prefix of a walk:
 
 * [`State.requirements`] — what would have to leave the seated set before this

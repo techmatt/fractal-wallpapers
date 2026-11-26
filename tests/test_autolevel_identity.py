@@ -38,18 +38,11 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from fractal_wallpapers import engine
+from conftest import needs_engine
 from fractal_wallpapers.coloring import autolevel
 from fractal_wallpapers.coloring import band as band_module
 from fractal_wallpapers.curation import colorize, release
 from fractal_wallpapers.models import renders
-
-try:
-    ENGINE = engine.engine_path()
-except FileNotFoundError:
-    ENGINE = None
-
-needs_engine = pytest.mark.skipif(ENGINE is None, reason="the engine is not built")
 
 #: The band these digests were taken under. A re-derived band is a new decision
 #: about what the operator does to every render — `coloring.band` says so — and

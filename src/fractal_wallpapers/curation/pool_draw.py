@@ -61,6 +61,7 @@ import random
 from pathlib import Path
 
 from fractal_wallpapers.curation import candidate_ledger, headroom, solve
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import Tiers, rehome
 
 #: The schema the plan's record carries.
@@ -412,7 +413,7 @@ def draw(
             "unresolved": seeds_lost,
             "minimum": MINIMUM_SEEDS,
         },
-        "drawn_at": _now(),
+        "drawn_at": label_store.now(),
     }
     plan, document = write(directory, units, record)
     record["plan"] = str(plan)
@@ -425,12 +426,6 @@ def draw(
 #: this the centroid is one or two pictures and the hint is noise wearing a
 #: threshold, so the sheet ships blind and the record says which seeds were lost.
 MINIMUM_SEEDS = 5
-
-
-def _now() -> str:
-    from fractal_wallpapers.labeling import store
-
-    return store.now()
 
 
 __all__ = [

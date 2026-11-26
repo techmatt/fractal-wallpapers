@@ -27,12 +27,13 @@ evaluation frames that read it; eight hours buys about **184 seats**. `--seats` 
 
 ## What the mode is
 
-**Pure `f64`, end to end.** There is no perturbation kernel in this repository and
-this mode adds none: walk, score and release run the shallow path's arithmetic. The
-arbitrary precision in `centers.py` only says *where* a nucleus is — a center travels
-as decimal strings re-parsed to `f64` at every render. A kernel would be the way past
-the coordinate wall **and** the way to make deep frames *right* rather than merely
-reproducible; either is a reason to build one.
+**Pure `f64`, end to end.** Walk, score and release run the shallow path's arithmetic.
+The repository's perturbation kernel (`perturbation/`, see `engine/README.md`'s
+*`render-link`: an explorer link, drawn without Python*) draws only `dv=` explorer links
+and is not wired into this mode. The arbitrary precision in `centers.py` only says
+*where* a nucleus is — a center travels as decimal strings re-parsed to `f64` at every
+render. Using the kernel here would be the way past the coordinate wall **and** the way
+to make deep frames *right* rather than merely reproducible; this mode does not.
 
 **Depth comes from which atom, not from how far a walk descended.** A seat is a
 nucleus whose own framing band already lands below the shallow floor, so the first

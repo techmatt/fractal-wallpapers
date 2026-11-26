@@ -507,7 +507,7 @@ def _candidate_rows(kind: str, run: str) -> dict[str, dict]:
     if not path.is_file():
         raise ComparisonError(
             f"{path} is missing: candidate run {run!r} has not read the {kind} sheet. "
-            f"Run `fractal-wallpapers joint score --run {run}`."
+            f"Run `fractal-wallpapers renders score --head render --run {run}`."
         )
     return {row["name"]: row for row in render_train.read(kind, run)}
 

@@ -79,6 +79,7 @@ from fractal_wallpapers.curation import page as page_module
 from fractal_wallpapers.curation import recipes as recipes_module
 from fractal_wallpapers.curation import release
 from fractal_wallpapers.labeling import finished
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import repo_root
 
 #: The schema every row and record this module writes carries.
@@ -264,12 +265,6 @@ def _write_json(path: Path, document: dict) -> Path:
     return path
 
 
-def _now() -> str:
-    from fractal_wallpapers.labeling import store
-
-    return store.now()
-
-
 # --------------------------------------------------------------------------- #
 # The census. Read-only, and about the POOL rather than the corpora — it is here
 # because it is the question this leg exists downstream of.
@@ -356,7 +351,7 @@ def census(log=print) -> dict:
             totals[name] += seat[name]
     record = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "judge_artifact": artifact,
         "ledger_rows": len(rows),
         "p_fine_rows": len(fine),
@@ -533,7 +528,7 @@ def derive(store=None, log=print) -> dict:
     path = _write_jsonl(_path(store, RECIPES_NAME), rows)
     record = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "store": str(store_root(store)),
         "label_verdicts": sum(per_class.values()),
         "per_label_class": dict(sorted(per_class.items())),
@@ -808,7 +803,7 @@ def render(
     fresh = max(1, drawn)
     record = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "store": str(store_root(store)),
         "regime": recipes_module.CANDIDATE_REGIME.spelled,
         "population": {
@@ -928,7 +923,7 @@ def score(store=None, device: str = "auto", batch: int = SCORE_BATCH, log=print)
     path = _write_jsonl(_path(store, SCORES_NAME), rows)
     record = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "store": str(store_root(store)),
         "read": len(rows),
         "regime": recipes_module.CANDIDATE_REGIME.spelled,
@@ -1087,7 +1082,7 @@ def readout(store=None, stamp: str | None = None, classes=KEPT_CLASSES, log=prin
     )
     record = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "store": str(store_root(store)),
         "regime": recipes_module.CANDIDATE_REGIME.spelled,
         "regime_is": SCHEMA_NOTES["regime_is"],
@@ -1712,7 +1707,7 @@ def page(store=None, classes=KEPT_CLASSES, log=print) -> dict:
     )
     record = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "page": str(page_path),
         "pictures": str(beside),
         "entries": len(entries),
@@ -1945,7 +1940,7 @@ def merge(store=None, log=print) -> dict:
     written = candidate_ledger.merge(rows, scores, log=log)
     record = {
         "schema": SCHEMA,
-        "taken_at": _now(),
+        "taken_at": label_store.now(),
         "store": str(store_root(store)),
         "leg": leg_of(store),
         "pictures": tracked_name(where),

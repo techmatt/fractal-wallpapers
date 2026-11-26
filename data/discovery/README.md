@@ -38,17 +38,14 @@ form at a complex phase.
 
 **The plane pool is solved for, not drawn.** An unscreened shell draw over the
 higher multibrot degrees measured zero good locations out of a hundred and
-forty-four, so this pool was built without a sampler for `mandelbrot` or
-`multibrot3/4/5`, and this file used to say there would never be one.
-
-⚠ **That ruling is superseded, 2026-09-16** (`plane_sampler_ckpt128`). It rested
-on the *ungated* shell draw: the 144 were never put through the structural gates,
-and the gated draw that exists since — `sample-boundary`, and the walk's own
-`engine.screen` battery — is a different instrument. The parameter planes now have
-a continuous root channel, `discovery.viewport_sampler`'s straddle refinement
+forty-four, so this pool for `mandelbrot` and `multibrot3/4/5` is solved rather
+than drawn. That draw was *ungated*: the 144 were never put through the structural
+gates, and a gated draw — `sample-boundary`, and the walk's own `engine.screen`
+battery — is a different instrument. The parameter planes also have a continuous
+root channel, `discovery.viewport_sampler`'s straddle refinement
 (`--root-channel viewport_sampler`), which refines a quad-tree only where the
-connectedness locus's boundary is and screens every draw. **This pool is still the
-default supply and is unchanged**; the sampler is opt-in and is what serves a plane
+connectedness locus's boundary is and screens every draw. **This pool is the
+default supply**; the sampler is opt-in and is what serves a plane
 after its pool is walked out, or a plane that has no pool. The mechanism is
 `discovery/README.md`'s *The viewport sampler* and its *A parameter plane: straddle
 refinement*.
@@ -72,22 +69,21 @@ fractal-wallpapers derive-plane-seeds --write  # re-derive and replace it
 The verify is the default because the file's only real claim is that the
 procedure still produces it. Roughly fifteen minutes of Newton either way.
 
-**What the absence cost, measured 2026-09-13** — before the viewport sampler
-served the planes. Deliberate is not free. With no sampler, this file *was* the
-parameter planes' whole standing supply —
+**What a pool without the sampler costs.** Deliberate is not free. With no root
+channel named, this file is the parameter planes' whole standing supply —
 **1,922 rows: 1,912 `nucleus_grid` (mandelbrot 500, multibrot3 412, multibrot4
 500, multibrot5 500), 4 `home_view`, 6 `hand_picked`** — and `derive` is
 deterministic, so a run gets exactly those rows back and never a new one. A walk's
 cursor only moves forward, so a plane that has drawn its 500 has no fresh roots for
-the rest of that leg. `RUN_ckpt123_overnight_harvest` walked `mandelbrot` and
-`multibrot5` out and stopped on `nothing servable` with 94 active minutes of its
-budget unspent; `supply/README.md`'s *With no root channel named, the whole
-standing root supply is small enough to walk out in a night* is the reading. The
-pinned planes were the contrast — `discovery.viewport_sampler` re-derives its ladder
-every run and `--sampler-rungs` extends it. **More plane roots *from this pool*
-still means raising `COLUMNS` or `PER_PARTITION` and regenerating this file**, a
-tracked-data change and a decision; more plane roots *at all* is now
-`--root-channel viewport_sampler` on the leg.
+the rest of that leg. An overnight harvest walked `mandelbrot` and `multibrot5` out
+and stopped on `nothing servable` with 94 active minutes of its budget unspent;
+`supply/README.md`'s *With no root channel named, the whole standing root supply is
+small enough to walk out in a night* is the reading. The pinned planes are the
+contrast — `discovery.viewport_sampler` re-derives its ladder every run and
+`--sampler-rungs` extends it. **More plane roots *from this pool* means raising
+`COLUMNS` or `PER_PARTITION` and regenerating this file**, a tracked-data change and
+a decision; more plane roots *at all* is `--root-channel viewport_sampler` on the
+leg.
 
 This pool is load-bearing rather than convenient: without it, and without the
 viewport sampler named on the leg, `has_channel` is false for all four

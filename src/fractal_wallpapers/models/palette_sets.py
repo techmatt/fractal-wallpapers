@@ -295,15 +295,10 @@ def cyclic() -> set[str]:
     change that. The copy is microseconds against the read it replaces.
 
     The library does not move inside a process, which is what makes this sound. A
-    guard that redirects `colormap_dir` calls [`forget_cyclic`] first — the rule
-    [`hunt.forget_recorded_prices`] established for the same reason.
+    guard that redirects `colormap_dir` calls `_cyclic_names.cache_clear()` first,
+    which drops the memo.
     """
     return set(_cyclic_names())
-
-
-def forget_cyclic() -> None:
-    """Drop [`cyclic`]'s memo. For a guard that redirects the colormap library."""
-    _cyclic_names.cache_clear()
 
 
 def recipe_for(colormap: str, cyclic_maps: set[str]) -> dict:
@@ -517,7 +512,6 @@ __all__ = [
     "candidate_row",
     "cyclic",
     "extract",
-    "forget_cyclic",
     "members_of",
     "places",
     "pool",

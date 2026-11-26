@@ -62,7 +62,7 @@ fractal-wallpapers score-locations --manifest rows.jsonl --out scores.jsonl
 - **A JPEG re-encode floor through PIL needs `subsampling=0`**: the engine writes q90
   at 4:4:4 (`engine/src/resample.rs`) and PIL's 4:2:0 reads ~27x too high.
 - **A whole-store derivation reached from every builder is memoized with an un-memo**
-  (`palette_sets.forget_cyclic`, `hunt.forget_recorded_prices`); a guard that
+  (`hunt.forget_recorded_prices`); a guard that
   redirects a store calls it.
 
 ## Both picture caches are addressed by their recipe

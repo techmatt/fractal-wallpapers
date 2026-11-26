@@ -29,18 +29,12 @@ import json
 
 import pytest
 
+from conftest import needs_engine
 from fractal_wallpapers import engine
 from fractal_wallpapers.coloring import autolevel
 from fractal_wallpapers.coloring import band as band_module
 from fractal_wallpapers.curation import colorize, depth
 from fractal_wallpapers.paths import colormap_dir
-
-try:
-    ENGINE = engine.engine_path()
-except FileNotFoundError:
-    ENGINE = None
-
-needs_engine = pytest.mark.skipif(ENGINE is None, reason="the engine is not built")
 
 #: A real location off a production draw, at a map the same draw spent, where the
 #: operator **fires**. Shared with `tests/test_autolevel_identity.py`'s pinned set

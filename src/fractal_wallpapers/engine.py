@@ -185,9 +185,11 @@ def run(
     `arguments` follow the subcommand on the command line, for the one subcommand
     that takes flags rather than a spec — `render-link`, whose input is a link.
 
-    Every call into the engine goes through here, so there is one place that
-    knows how a spec is delivered, one place that decides what a failure looks
-    like from Python, and one place to change when either does.
+    Every call that hands the engine a spec or flags goes through here, so there
+    is one place that knows how a spec is delivered, one place that decides what a
+    failure looks like from Python, and one place to change when either does.
+    [`usage`], which reads a subcommand's `--help` text rather than a JSON report,
+    is the one other spawn, and it sets the same priority flag.
 
     `log` sends the engine's progress to a file as it runs instead of holding it
     until the call returns. Most calls here take a second and want the message

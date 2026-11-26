@@ -32,16 +32,18 @@ on one scale, not a separate head and not a new floor.
 **The evaluation side is pinned, not drawn.** Every batch here conditions on
 quality through the location head before its page exists, so none of them is an
 unbiased draw and no rate read on one is a base rate. What separates them is
-whether the page served a head's own verdict prefilled: 12 of the 16 that hold rows did,
-and their labels measure agreement with that head. `blind_minibrot` is the one that did
-not, and it is registered `eval_only` — bought to referee two heads on unanchored
-labels, and spent the moment it enters a training split. The pin is asserted on
+whether the page served a head's own verdict prefilled: 17 of the 22 that hold rows did,
+and their labels measure agreement with that head. `blind_minibrot` is the unanchored one
+registered `eval_only` — bought to referee two heads on unanchored labels, and spent the
+moment it enters a training split. `seated_and_head_top` is `eval_only` too, though
+anchored: a population the head selected is spent as an instrument the moment it trains
+one. The pin is asserted on
 the **location**, so a later batch that re-renders a pinned place under a fresh
 identifier cannot spend it by not naming it.
 
 **One hundred and twenty rows in here are revisions of `strange_render` originals** —
 thirteen appended 2026-09-03 and the remaining 107 on 2026-09-04 — which is why this
-store reads **6,540** rows against the 6,420 the batch arithmetic below gives. Each is an `itinerary` render whose modulate texture measured
+store holds 120 more rows than the batch arithmetic below gives. Each is an `itinerary` render whose modulate texture measured
 flat at label geometry — so the picture is the smooth field spent by rank bit for bit
 and the verdict is this judge's — carried over under its own batch with a `revision`
 block naming the original's file, line and recorded time. The originals stay in the
@@ -67,7 +69,7 @@ manufactured rare-colour drop lost were on the *other* store's pin. Its rows at 
 places are stored and are EXCLUDED from training by the strict split, which is a
 different rule and is the trainer's.
 
-**The newest batch is this judge's own top end, and it does not order it.**
+**One batch is this judge's own top end, and it does not order it.**
 `judge_band_20260903`'s smooth sheet is 123 cards — 118 of them S1, the band
 `P(>=4)` in [0.40,0.95) taken top-down, which over a 3,018-location band landed in
 a 0.0086-wide sliver at 0.9414–0.9500. All 123 route here by `finished.routes_to`
@@ -83,7 +85,7 @@ correction rate is downward disagreement and nothing else. Both readings and the
 other two slices are in [`../batch_caveats.md`](../batch_caveats.md) under
 THREE-SLICES.
 
-**And the newest batch is four pictures of each new map, aimed by this judge.**
+**`new_maps_top4_20260905` is four pictures of each new map, aimed by this judge.**
 `new_maps_top4_20260905`, 2026-09-05: the smooth half of a two-store sitting over the
 120 maps of drop `classic-pairs-2026-09`. 241 of 241 exported units resolved, **one
 withheld** on the pinned place named above, **240 fresh and 0 revised**, moving this
@@ -97,6 +99,13 @@ geometry against 0.258 on the draw column. What the sitting was bought for is th
 read, and it is in the other store's entry because both halves carry it. How the 480
 rows were assigned — four a map, one location apiece, the mode the assignment's pick —
 is in [`../batch_caveats.md`](../batch_caveats.md) under GLOBAL-ASSIGNMENT.
+
+**`repeat_axis_smooth_render_20260911` oversamples one axis on purpose.** Its 68 rows are
+this store's half of a seeded draw of matched pairs, each a repeat beside its control at
+the same place, mode, map and frame with only `Palette.cycles` moved. Registered
+unanchored and not `eval_only`. Half of it is repeats against well under one percent of
+the pool, so a rate read on it is a rate about an enriched sample: see
+[`../batch_caveats.md`](../batch_caveats.md) under OVERSAMPLED-AXIS.
 
 **The source corpus is complete here.** All 4,795 verdicts it holds are in these
 rows, checked on 2026-08-18 by rebuilding each one and looking its key up — not by

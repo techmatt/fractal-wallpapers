@@ -73,6 +73,7 @@ answer that is wrong. It is why `storage` copies, verifies and only then deletes
 from __future__ import annotations
 
 import os
+import subprocess
 import tomllib
 from pathlib import Path, PurePosixPath
 
@@ -174,6 +175,28 @@ def repo_root() -> Path:
         if (candidate / "pyproject.toml").is_file():
             return candidate
     raise RuntimeError("could not locate the repository root")
+
+
+def source_commit() -> str | None:
+    """The commit this checkout is on, or `None` where git could not say.
+
+    Soft, unlike [`models.ship.source_commit`]. That one stages an artifact other
+    machines fetch and must refuse to describe a state it cannot name; this one
+    stamps a record of a live store, and a run of hours should not fail to start
+    because git is not on the path.
+    """
+    try:
+        done = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo_root(),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    held = done.stdout.strip()
+    return held if len(held) == 40 else None
 
 
 #: The synced folder beside this checkout that holds what a style round shows and

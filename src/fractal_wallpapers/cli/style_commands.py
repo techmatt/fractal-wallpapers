@@ -161,6 +161,13 @@ def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
         started = time.monotonic()
         if args.recolour:
             return print_recolour(style_wasm, folder, args, started)
+        if args.member:
+            writers = style_wasm.knob_writers(args.member)
+            if not writers:
+                print(f"no published knob writes {', '.join(args.member)}: no parity run owed")
+                return 0
+            print(f"knobs writing {', '.join(args.member)}: {' '.join(writers)}")
+            args.names = sorted(set(args.names) | set(writers))
         rows = style_wasm.parity(
             folder,
             tuple(args.resolution or style_wasm.PARITY_RESOLUTION),
@@ -702,7 +709,7 @@ VERBS = {
 
 def add_commands(subcommands) -> None:
     """Register this group's commands, in the order they ship in."""
-    from fractal_wallpapers import style_sweep
+    from fractal_wallpapers import style_sheet, style_sweep
 
     group = subcommands.add_parser(
         "style",
@@ -933,6 +940,14 @@ def add_commands(subcommands) -> None:
         "against a plain frame of that entry",
     )
     parity.add_argument(
+        "--member",
+        action="append",
+        metavar="NAME",
+        help="also every published mode whose public knob writes this stack member: the "
+        "owed check after an edit to a name list both engines read (`INTEGER_MEMBERS`), "
+        "not the whole run; repeatable",
+    )
+    parity.add_argument(
         "--supersample",
         type=int,
         default=PARITY_SUPERSAMPLE,
@@ -975,18 +990,21 @@ def add_commands(subcommands) -> None:
         "sources",
         nargs="+",
         help="folders (their pictures by name), pictures, or .txt manifests of one picture "
-        "path per line; in the order given",
+        "path per line, relative to the manifest's folder; in the order given",
     )
     sheet.add_argument(
         "--columns",
         "--cols",
         type=int,
-        default=8,
-        help="tiles per row (default: 8; a manifest "
+        default=style_sheet.COLUMNS,
+        help=f"tiles per row (default: {style_sheet.COLUMNS}; a manifest "
         "render's variants-by-seats grid wants one column per variant)",
     )
     sheet.add_argument(
-        "--tile-width", type=int, default=640, help="each tile's width in pixels (default: 640)"
+        "--tile-width",
+        type=int,
+        default=style_sheet.TILE_WIDTH,
+        help=f"each tile's width in pixels (default: {style_sheet.TILE_WIDTH})",
     )
     sheet.add_argument(
         "--crop",

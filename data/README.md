@@ -66,10 +66,11 @@ committed is that teacher's answers plus the real candidate sets it was asked in
 production. Its README says so in a paragraph, because a machine-labeled corpus
 that does not announce itself is the kind of thing a reader takes for evidence.
 
-`palettes/` is the colormap library. Seventy-seven of its maps were curated by
-hand and are the ones a render chooses from; the rest arrived with the
-finished-render corpora and with the palette head's vendored candidate sets,
-because a row — or a recorded decision — naming a map nobody holds is about a
+`palettes/` is the colormap library. A render chooses from the candidate pool,
+`palette_choice/pool.json`, one member a group (the three counts are in
+`palettes/README.md`'s *Which maps are the same choice*); the rest of the library
+arrived with the finished-render corpora, the palette head's vendored candidate sets
+and later drops, because a row — or a recorded decision — naming a map nobody holds is about a
 picture nobody can rebuild. The files in there that are not maps are named
 `.jsonl` so no reader globbing `*.json` mistakes them for one: `provenance.jsonl`
 says how the authored and extracted maps were made, and `groups.jsonl` says which
@@ -78,8 +79,8 @@ maps are near enough to be one choice.
 since, one directory per drop, and is the other half of what `provenance.jsonl`
 records.
 
-`palette_authoring/` is how a palette gets written in the first place: the brief a
-generator run is given, a variant of it aimed at one colour region rather than one
-mood, and the standalone checker both name. It sits apart from the library because
-none of it is a colormap and none of it is read at render time — three files among
-nine hundred maps are three files nobody finds.
+`palette_authoring/` is how a palette gets written in the first place: the briefs a
+generator run is given (by mood, by colour region, by named pairing), the opener
+handed to a run first, and the standalone checker every brief names. It sits apart
+from the library because none of it is a colormap and none of it is read at render
+time — a handful of files among a thousand maps are files nobody finds.

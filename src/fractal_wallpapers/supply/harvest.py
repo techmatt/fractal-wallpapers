@@ -578,8 +578,6 @@ class Harvest:
         # node**, so those rows are on the books and not on the frontier. Counted
         # off the walk's own cap and not off a missing `node_id` alone, so a
         # survivor that lost its node for any other reason still ends the run.
-        # Until 2026-09-18 this identity did not know the cap existed, and a
-        # harvest given `--lineage-cap` died at the first crossing.
         capped = sum(
             1
             for row in candidates

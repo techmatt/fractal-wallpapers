@@ -30,7 +30,7 @@ draws its own permutation from `<SEED>/<collection>` unless `--orders DIR` gives
 `<collection>.txt` in the same form. Every seed is written into [`MANIFEST_NAME`] beside
 the order it produced.
 
-**A best pack may be forced members** (`--forced FILE`, packs_forced_members_ckpt157):
+**A best pack may be forced members** (`--forced FILE`):
 Matt's hand-picked previews, held by their best pack and every larger one whatever their
 rank, even from outside the thousand, each displacing the lowest-ranked member so the
 pack keeps its K. Such an outside key is ranked by its own score in the `--order` file,

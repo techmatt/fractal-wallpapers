@@ -18,15 +18,9 @@ import json
 
 import pytest
 
+from conftest import needs_engine
 from fractal_wallpapers import cli, engine
 from fractal_wallpapers.supply import location, partitions
-
-try:
-    ENGINE = engine.engine_path()
-except FileNotFoundError:
-    ENGINE = None
-
-needs_engine = pytest.mark.skipif(ENGINE is None, reason="the engine is not built")
 
 FRACTIONAL = {"kind": "fractional_multibrot", "degree": "2.5"}
 

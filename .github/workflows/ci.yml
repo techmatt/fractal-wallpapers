@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  # The engine first, and the full lane after it: the walk tests look for a release
+  # The engine first, and the full lane after it: the walk tests look for an engine
   # binary and skip without one, so with `--slow` ahead of `cargo build --release`
   # every engine-backed test would stand down and a green badge would mean the suite
   # had been collected, not that the renderer worked.
@@ -30,8 +30,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # uv's own Python, so every platform runs the same minor version the README
-      # asks for. No cache: the torch wheels are hundreds of megabytes even on the
+      # uv's own Python, so every platform runs the same minor version (3.12; the
+      # README's floor is 3.11). No cache: the torch wheels are hundreds of megabytes even on the
       # CPU build, and a cache of them is bigger than what it saves.
       - uses: astral-sh/setup-uv@v10.2.0
         with:

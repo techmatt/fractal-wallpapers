@@ -107,7 +107,8 @@ SCHEMA_NOTES: dict[str, str] = {
 UNIT = "distinct"
 
 #: What the distance between two locations is. Cosine over unit vectors, so
-#: `1 - dot`, which is the same distance [`gallery.Draw`] refuses inside.
+#: `1 - dot`, which is the same distance the themed diversity rule refuses inside
+#: ([`rules.GEOMETRY_RADIUS`]).
 METRIC = (
     "cosine distance (1 - dot) between two locations' frozen DINOv2 descriptors, each read "
     "off that location's neutral render — one colormap, one geometry, one mode, chosen "

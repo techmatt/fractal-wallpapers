@@ -27,14 +27,8 @@ from pathlib import Path
 
 import pytest
 
+from conftest import needs_engine
 from fractal_wallpapers import engine
-
-try:
-    ENGINE = engine.engine_path()
-except FileNotFoundError:
-    ENGINE = None
-
-needs_engine = pytest.mark.skipif(ENGINE is None, reason="the engine is not built")
 
 #: A seat's link with a comma and spaces in its palette name and a replayed curve, and
 #: one with neither: the two encoders and the two metadata payload shapes.

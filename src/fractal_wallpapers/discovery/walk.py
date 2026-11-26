@@ -224,13 +224,14 @@ class Limits:
     #: measurements.**
     #:
     #: *Pinned planes bought the number.* The first leg that ever walked
-    #: `phoenix:classic` (`CRAWL_phoenix_classic_30min`, 2026-09-02) stopped on
+    #: `phoenix:classic` (a 30-minute leg, 2026-09-02) stopped on
     #: `nothing servable` at 0.66 of its 30 minutes, and the ledger says why: of
     #: its 8 roots, 6 were expanded once each and the **two that booked every
     #: admission hit 12 expansions exactly** — the cap — while still producing
     #: expandable nodes at depth 6. A pinned plane has no parameter to vary, so
     #: what a root does not reach, nothing else will. At 36 it binds on **4 roots
-    #: of 160** (`LEG_phoenix_classic_supply`), every one in the productive tail.
+    #: of 160** (a later `phoenix:classic` supply leg), every one in the productive
+    #: tail.
     #:
     #: *The varied dynamical planes then measured the same signature, harder.*
     #: Over all 50 ledgers the 1,714 `julia:*` roots walked at 12 paid a **median
@@ -243,7 +244,7 @@ class Limits:
     #:
     #: The julia reason is not the pinned one — a julia root's parameter *can* be
     #: replaced by a fresh `c` — and they arrive at one number anyway, because
-    #: `AUDIT_ckpt123_julia_supply` found julia's stock is already 278 Julia sets
+    #: an audit of julia supply found julia's stock is already 278 Julia sets
     #: seen seventy times each: variety **within** one `c` is the thing in short
     #: supply, which is Matt's ruling of 2026-09-12 and what raised this from a
     #: pinned-plane field to a dynamical one.
@@ -279,8 +280,8 @@ class Limits:
     #: it, or `None` for no cap at all — which is the shallow walk, unchanged.
     #:
     #: **Diminishing returns are a supply-time problem, not a selection-time one.**
-    #: A later pass can spread itself over lineages after the fact, and `deep_run1`'s
-    #: had to; what it cannot do is get back the walk time that went into the
+    #: A later pass can spread itself over lineages after the fact, and the first
+    #: deep run's had to; what it cannot do is get back the walk time that went into the
     #: lineage it then had to thin. That run put 741 admissions on 15 of its 48
     #: roots and 85 of them on one, and the finished floor frames were largely one
     #: composition in a hundred and sixty palettes. Past the cap the lineage stops
@@ -844,8 +845,6 @@ class Walk:
         time, and a row the head would have admitted is recorded `not_admitted`
         with `lineage_capped` set and its score kept. That is a refusal at the
         gate rather than after it — no row that was booked changes its fate.
-        Until 2026-09-18 the cap was asked only when choosing what to expand, so
-        such a batch booked every row it held and lineages ran to 11 against 6.
         """
         cap = self.limits.lineage_admissions
         return cap is not None and self.admitted.get(int(root_id), 0) >= int(cap)
@@ -1805,7 +1804,7 @@ def lineage_distribution(admitted: dict) -> dict:
 
     `max`, `median` and the top five, because those three say between them
     whether a finished frame set will be one composition in a hundred palettes.
-    `deep_run1` would have reported a max of 85 against a median of 2.
+    The first deep run would have reported a max of 85 against a median of 2.
     """
     counts = sorted((int(v) for v in admitted.values()), reverse=True)
     total = sum(counts)

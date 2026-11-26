@@ -10,7 +10,3 @@ The module map is the package's `README.md`.
 """
 
 from __future__ import annotations
-
-from fractal_wallpapers.discovery.walk import Gates, Limits, Policy, Reframings, Walk
-
-__all__ = ["Gates", "Limits", "Policy", "Reframings", "Walk"]

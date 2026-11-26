@@ -78,18 +78,23 @@ was drawn with.
 ## Parity: which run is owed
 
 `style wasm-parity` and `style wasm-speed` hold the module to the native engine under Node
-(`style_wasm.py`). The whole `wasm-parity` is owed after an engine or module change (17
-minutes on an idle box: about 86 thread-minutes of Node work over `--workers` threads, the
-longest of the last run first, and never shorter than its longest job, one keep's tiled
-draw at 16; a detached run of its own), and `style wasm-parity <name>…` after a change to
-one style. An engine change that only adds a member no other stack sets owes `identity`
-(0 differ) and `style wasm-parity <name>` for the style that sets it, not the whole run. The
-native side draws beside the workers (`style_wasm.PARITY_WORKERS` and
-`PARITY_NATIVE_THREADS` have the counts and what bounds the run). A clean whole run
-is all identical but two: `flame_veil_teal__0__knobs` and `flame_veil_chalk__1` each read
-one pixel one step off, the same on main since 063's reading; any other miss is the change.
-At `--workers 3` (six threads with the native side) the whole run is about 38 minutes (223
-jobs, 083's reading). A mode's jobs are its shown keeps (`style_catalog.shown_of`), not its
+(`style_wasm.py`). The whole run is 38 to 48 minutes at `--workers 3` (six threads with the
+native side; 223 jobs, 083's reading): a detached run of its own, so owe it only where
+nothing cheaper covers the change. What a change owes, after its last code edit:
+
+| The change | Owed |
+|---|---|
+| Docs, tests, catalog metadata (`score`, `tier`, captions), a palette entry's values | nothing beyond the fast lane: no job reads them (below) |
+| A name list both engines read on a knob's write (`styles.INTEGER_MEMBERS` and `src/lib.rs`'s twin) | `tests/test_style_wasm.py` plus `style wasm-parity --member <name>` per name added or removed: the modes whose knobs write it (none: nothing owed) |
+| One style's stack, knobs or a new `show` | `style wasm-parity <name>` |
+| An engine member no other stack sets | `identity` (0 differ) plus `style wasm-parity <name>` for the style setting it |
+| Any other engine or module code | the whole run |
+
+The native side draws beside the workers (`style_wasm.PARITY_WORKERS` and
+`PARITY_NATIVE_THREADS` have the counts and what bounds the run; never shorter than its
+longest job, one keep's tiled draw). A clean whole run is all identical but two:
+`flame_veil_teal__0__knobs` and `flame_veil_chalk__1` each read one pixel one step off, the
+same on main since 063's reading; any other miss is the change. A mode's jobs are its shown keeps (`style_catalog.shown_of`), not its
 palette entries: an entry's new values or a new entry moves no job, a new `show` does. A
 draft not yet in `data/styles/` is checked with its job list (`style_wasm.request`, `run_node`, `native_rgb`,
 `compare`).

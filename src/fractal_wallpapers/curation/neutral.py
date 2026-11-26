@@ -19,7 +19,7 @@ A vector is only comparable to a vector made the same way. Change the map, the
 size, the supersample or the mode, and every stored vector becomes a reading of
 a picture that no longer exists — silently, because a cosine between two vectors
 of different provenance is still a number between -1 and 1. So the choices are
-constants in one place, they go into [`CHOICES`], and [`stamp`] digests them.
+constants in one place, they go into [`choices`], and [`stamp`] digests them.
 The embedding store writes that digest into its manifest and onto every row it
 appends, and refuses a row whose stamp is not today's.
 

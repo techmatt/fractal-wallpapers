@@ -236,12 +236,12 @@ def stop_now(out: Path) -> int | None:
     Only a pid the **held** lock vouches for is killed: a pid file outlives its
     process, and the number in it may by now be somebody else's.
     """
-    import signal
+    from fractal_wallpapers import process_control
 
     pid = running(out)
     if not pid:
         return None
-    os.kill(pid, signal.SIGTERM)
+    process_control.stop(pid)
     return pid
 
 

@@ -139,7 +139,7 @@ byte-identical. The cost a leg sizes on is
 costs a map*; all 18 modes are owed, since the grid guard holds the map to them.
 
 **`color_mass.delivering(cells, cutoff, within)` is the one reader that turns the map into
-a cut** (`curate depth --draw-cells`): maps are expected to put at least `cutoff`
+a cut** (`curate depth run --draw-cells`): maps are expected to put at least `cutoff`
 of a picture's colour in any of these cells, mode-conditional mass where the group has a
 row and the **carrier prior** where it does not (a fallback, never an overrule), the max
 over `mode_policy.accepted()`. `cutoff` unsaid is `dominance.CELL_LEAD`. A draw filter

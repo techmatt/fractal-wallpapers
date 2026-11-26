@@ -169,8 +169,8 @@ ONE_PER_PARTITION = True
 #: not separate a flat mode from a flat location. Two of each is the floor under
 #: both of those and not a sample of anything: a **spread** read across two is a
 #: range and never a distribution, which is what `map_ratio` in [`summarise`] is for
-#: and what the report has to say out loud. [`sized`] is what a pass with a clock
-#: actually uses.
+#: and what the report has to say out loud. [`run`]'s `budget` is what a pass with a
+#: clock actually uses.
 DEFAULT_PLACES = 2
 DEFAULT_MAPS = 2
 

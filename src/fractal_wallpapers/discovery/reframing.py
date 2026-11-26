@@ -312,8 +312,8 @@ REPROBE_FIRES = 2
 #:
 #: The step alternates x1.5 and x1.333 and the ends continue it rather than
 #: inventing a spacing — the whole ladder is `{16, 24}` doubled four times. It
-#: was `{8, 12}` doubled four times until 2026-09-04, when the two inner rungs
-#: came off and `192` and `256` went on: over 488 picks 8x and 12x took 37
+#: was `{8, 12}` doubled four times before the two inner rungs came off and
+#: `192` and `256` went on: over 488 picks 8x and 12x took 37
 #: between them and returned two head-q4, while the outer end took the most of
 #: both. A near-flat pick over `k` rungs leaves `2/k` on the ends whatever the
 #: rungs are, so nine rungs buys about 22% and the widths themselves —

@@ -277,13 +277,17 @@ def library(log=print) -> tuple[dict, list[dict]]:
 
 
 def _pool_maps() -> list[str]:
-    """The maps a colorize may actually choose between, from the shipped pool record."""
-    from fractal_wallpapers.paths import repo_root
+    """The shipped candidate pool, uncollapsed.
 
-    path = repo_root() / "data" / "palette_choice" / "pool.json"
-    if not path.is_file():
-        raise CensusError(f"{path} is missing — the pool is what stage 2's denominator is")
-    return list(json.loads(path.read_text(encoding="utf-8")).get("pool") or [])
+    What a colorize draws from is `colorize.pool`, one member a group.
+    """
+    from fractal_wallpapers.models import palette_sets
+
+    try:
+        record = palette_sets.pool()
+    except palette_sets.SetsError as refusal:
+        raise CensusError(f"{refusal} — the pool is what stage 2's denominator is") from refusal
+    return list(record.get("pool") or [])
 
 
 # --------------------------------------------------------------------------- #

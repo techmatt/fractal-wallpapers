@@ -158,9 +158,6 @@ RATIO = 2
 #: consequence is shared: a partition's queue holds **two shapes of entry**, a
 #: pool's typed seed and a proven row, and the refill resolves that once rather
 #: than per partition.
-#:
-#: It excluded `phoenix:classic` until 2026-09-02, which left its q3+ labels the
-#: only ones in the store that became no roots.
 SERVED = ALL_PARTITIONS
 
 #: Characters of the location digest an id carries. 48 bits over a corpus of a

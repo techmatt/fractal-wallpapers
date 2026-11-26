@@ -37,8 +37,6 @@ answer the other would pass every claim above and fail this one.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 from fractal_wallpapers.discovery import minibrot
@@ -336,10 +334,8 @@ def test_a_cut_moved_off_the_chain_table_agrees_with_probing_again():
         assert [one["period"] for one in solved] == [row[0] for row in cost["chain_table"]]
 
 
-def test_the_example_set_is_read_back_or_answers_empty():
-    """A writeup asking what the census found gets `({}, [])` where nobody has run it."""
+def test_the_example_set_lands_at_its_name():
     assert minibrot.examples_path().name == minibrot.EXAMPLES_NAME
-    assert minibrot.read_examples(Path("no") / "such" / "file.jsonl") == ({}, [])
 
 
 def test_the_ratio_decade_bins_by_the_decade_and_refuses_a_non_reading():

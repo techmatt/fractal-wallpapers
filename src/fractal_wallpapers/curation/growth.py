@@ -115,13 +115,12 @@ import hashlib
 import json
 import math
 import random
-import subprocess
 import time
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import candidate_ledger, solve
-from fractal_wallpapers.paths import repo_root, tracked_name, under
+from fractal_wallpapers.labeling import store as label_store
+from fractal_wallpapers.paths import source_commit, tracked_name, under
 
 #: The schema every row and every manifest this module writes carries.
 SCHEMA = 1
@@ -528,35 +527,6 @@ def pool_stamp(candidates) -> str:
     return digest.hexdigest()
 
 
-def source_commit() -> str | None:
-    """The commit this checkout is on, or `None` where git could not say.
-
-    Soft, unlike [`models.ship.source_commit`]. That one stages an artifact other
-    machines fetch and must refuse to describe a state it cannot name; this is an
-    instrument reading a live store, and a sweep of hours should not fail to start
-    because git is not on the path.
-    """
-    try:
-        done = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=repo_root(),
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except (OSError, subprocess.CalledProcessError):
-        return None
-    held = done.stdout.strip()
-    return held if len(held) == 40 else None
-
-
-def stamp_now() -> str:
-    """The name a run's folder takes: UTC, to the second, sortable (a record's spelling)."""
-    from fractal_wallpapers.curation import tentative
-
-    return tentative.stamp_now()
-
-
 def plan_of(denominators, seeds) -> list:
     """`[(denominator, seed)]` — every cell the sweep will solve, in order.
 
@@ -605,9 +575,9 @@ def sweep(
     fixture pool with no store behind it — and `None` on each of them means read
     the live one.
     """
-    from fractal_wallpapers.curation import depth, headroom
+    from fractal_wallpapers.curation import depth, headroom, tentative
 
-    stamp = stamp_now() if stamp is None else str(stamp)
+    stamp = tentative.stamp_now() if stamp is None else str(stamp)
     started = time.monotonic()
     visit_of, per_visit = visits(candidate_ledger.stream() if rows is None else rows)
     refused: dict = {}
@@ -662,7 +632,7 @@ def sweep(
     manifest = {
         "schema": SCHEMA,
         "stamp": stamp,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "commit": source_commit(),
         "of": "what N candidates' worth of mining buys, at gallery size n, by drawing a "
         "fraction of the VISITS that made this pool and solving over what they produced",
@@ -806,8 +776,6 @@ __all__ = [
     "read_run",
     "restrict",
     "row_of",
-    "source_commit",
-    "stamp_now",
     "stamps",
     "start_run",
     "sweep",

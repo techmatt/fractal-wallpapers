@@ -318,3 +318,12 @@ def test_the_switch_is_read_before_the_borrowed_curve(monkeypatch, tmp_path):
         borrowed,
     )
     assert leveled.image == base and leveled.stamp is None
+
+
+def test_the_densify_cache_holds_every_map_a_run_draws() -> None:
+    """A pool past the cache size drops its hit rate off a cliff and says nothing."""
+    from fractal_wallpapers.curation import colorize
+
+    drawn = len(colorize.pool())
+    size = autolevel._densified.cache_info().maxsize
+    assert drawn <= size, f"a run draws {drawn} maps and `_densified` holds {size}"
