@@ -188,9 +188,140 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_texture_lace_r1/crescent_lines/copper_feathers/cl_b_e_copper_feathers",
+      "picker": "style_texture_lace_r1",
+      "picked": [
+        {
+          "row": "crescent_lines/copper_feathers",
+          "key": "cl_b_e_copper_feathers"
+        }
+      ],
+      "label": "",
+      "image": "style_texture_lace_r1__cl_b_e_copper_feathers.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_17e354d3",
+          "family": {
+            "c": [
+              "-1.2517612129804818",
+              "0.038979112285470574"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "1.0192054988872936",
+            "center_im": "-0.005539516535256361",
+            "width": "0.4951839999554471"
+          },
+          "maxiter": 7118,
+          "note": "final139_general seat 163 (smooth, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 163,
+            "key": "17e354d3a344983c",
+            "p_spiral": 0.033018
+          }
+        },
+        "style": "c_crescent_copper",
+        "stack": "c_crescent_copper@0701ed9e",
+        "colormap": "copper_feathers",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
+    "c_crescent_copper@0701ed9e": {
+      "name": "c_crescent_copper",
+      "interior": {
+        "rgb": "#020208"
+      },
+      "tone": {
+        "median": 0.268,
+        "p10": 0.025
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 6.0
+            }
+          },
+          "palette": {
+            "cycles": 3.0
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "invert": true
+          },
+          "palette": {
+            "cycles": 1.0,
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.2
+          },
+          "blend": "overlay",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.003,
+          "color": {
+            "rgb": "#b0562a"
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#ff9a3c"
+          },
+          "blend": "screen",
+          "opacity": 0.9
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0001,
+          "color": {
+            "rgb": "#ffe2a8"
+          },
+          "blend": "add",
+          "opacity": 0.8
+        }
+      ]
+    },
     "crescent_lines@3864667b": {
       "name": "crescent_lines",
       "interior": {

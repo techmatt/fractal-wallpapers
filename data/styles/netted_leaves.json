@@ -20,7 +20,8 @@
     "Reachable by one escape loop: no, two. The leaves, outlines and level-line half of the net are the frame's loop; the field lines are the `lines` trap's loop.",
     "Round one's readings: nl_base, nl_fine (twice the lines each way), nl_gilt (the net screened bright gold rather than multiplied dark), nl_bold (wider outlines, glossier light) and nl_nomesh (the headline removed). Seats: a gallery scout (seed 94), twelve kept by eye. Screened at 0.35 the net vanished on the pale leaves; multiplied dark at 0.55 it reads at draft size. In the far field, where the field lines are few, the net opens into large square cells.",
     "Tone: 13 of 14 hold zulu-25's balance (median 0.278 to 0.285 against 0.279, p10 0.089 to 0.111 against 0.085) at both formulation seats and twelve location seats as shipped; nl_loc_11 (phoenix-classic) misses p90 (0.669 against 0.541).",
-    "Explorer cost (094, `style cost --location`, no held box: an upper bound): 43.3 s as WebAssembly on one thread at 1280x800 ss2 at the deeper formulation seat (julia-multibrot3_2e04e5e2, maxiter 10,220), under the 5-minute bar."
+    "Explorer cost (094, `style cost --location`, no held box: an upper bound): 43.3 s as WebAssembly on one thread at 1280x800 ss2 at the deeper formulation seat (julia-multibrot3_2e04e5e2, maxiter 10,220), under the 5-minute bar.",
+    "Matt (2026-11-26): round one 4/5, published at lab tier. Kept nl_base and nl_bold at seat a, nl_fine, nl_gilt and nl_bold at seat b, and locations nl_loc_01, nl_loc_04, nl_loc_07 and nl_loc_10; nl_nomesh kept nothing. The card shows nl_loc_07."
   ],
   "style": {
     "name": "netted_leaves",

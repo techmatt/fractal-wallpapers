@@ -1712,8 +1712,8 @@
         ]
       },
       "what": "Fine, hair-like streamlines sweep the whole frame around a small copy of the Mandelbrot set whose rim glows orange against deep blue.",
-      "kept": "2 locations, the ribbons formulation; retrospective (style_retrospective_082): the default; the slow-stripe overlay",
-      "note": "Engine: nothing new (streamlines from the stripe average) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the sweeping lines that break up the stripe pattern are pleasing in some ways. Retrospective (2026-11-24, style_retrospective_082): kept the default; the slow-stripe overlay; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
+      "kept": "2 locations, the ribbons formulation; retrospective (style_retrospective_082): the default; the slow-stripe overlay; texture and lace round one (style_texture_lace_r1): the copper_feathers entry at seat b",
+      "note": "Engine: nothing new (streamlines from the stripe average) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the sweeping lines that break up the stripe pattern are pleasing in some ways. Retrospective (2026-11-24, style_retrospective_082): kept the default; the slow-stripe overlay; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged. Item 094's copper_feathers entry (wallhaven-xld8rd, drawn beside feather_plumes' for comparison): kept at seat b, scored 3 (Matt, 2026-11-26).",
       "palettes": [
         {
           "colormap": "crescent_lines",
@@ -1733,8 +1733,11 @@
             "/tone/median": 0.268,
             "/tone/p10": 0.025
           },
-          "keeps": [],
-          "reference": "wallhaven_wallhaven-xld8rd.jpg"
+          "keeps": [
+            "style_texture_lace_r1/crescent_lines/copper_feathers/cl_b_e_copper_feathers"
+          ],
+          "reference": "wallhaven_wallhaven-xld8rd.jpg",
+          "score": 3
         }
       ]
     },
@@ -1984,7 +1987,7 @@
     },
     {
       "style": "smooth_bands",
-      "score": 2,
+      "score": 3,
       "status": "publish",
       "tier": "lab",
       "item": "031",
@@ -2021,8 +2024,8 @@
         "knobs": []
       },
       "what": "Smooth bands of colour flowing out from the set, a dark hairline keeping its lace crisp, in a choice of palettes.",
-      "kept": "five palettes (council, crisis, dalooka; krinshinda and learned from item 045, lander kept nothing): 4 locations, 2 no-hair formulations",
-      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · forest_smooth and mandelbrot3_smooth kept nothing: their maps left the library and their names open this mode's default · corkscrew_smooth stays its own style: its sheen is a third layer. · Matt: none amazing (forest, mandelbrot3, council, crisis and dalooka alike); the palettes are saved and there is no further work. · Matt (item 045 entries): some palettes are okay but nothing amazing.",
+      "kept": "five palettes (council, crisis, dalooka; krinshinda and learned from item 045, lander kept nothing): 4 locations, 2 no-hair formulations; texture and lace round one (style_texture_lace_r1): the starburst_lace entry at seat a",
+      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · forest_smooth and mandelbrot3_smooth kept nothing: their maps left the library and their names open this mode's default · corkscrew_smooth stays its own style: its sheen is a third layer. · Matt: none amazing (forest, mandelbrot3, council, crisis and dalooka alike); the palettes are saved and there is no further work. · Matt (item 045 entries): some palettes are okay but nothing amazing. Item 094's starburst_lace entry (web_burst): kept at seat a, scored 3 (Matt, 2026-11-26), so the mode's score, its best entry's, is 3.",
       "palettes": [
         {
           "colormap": "council_smooth",
@@ -2120,8 +2123,11 @@
               "rgb": "#04060c"
             }
           },
-          "keeps": [],
-          "reference": "web_burst.jpg"
+          "keeps": [
+            "style_texture_lace_r1/smooth_bands/starburst_lace/sb_a_e_starburst_lace"
+          ],
+          "reference": "web_burst.jpg",
+          "score": 3
         }
       ],
       "aliases": [
@@ -3880,8 +3886,8 @@
         "palette": "tempest_plumes",
         "knobs": []
       },
-      "kept": "7 tiles: fpf_long at both seats and fpf2_stack; entries tempest_plumes, mean_plumes, starlight_plumes (seat 2); lilac_plumes (lilac_kaleidoscope's unfolded tile); plus the flame_wisp_frost baseline tile, kept to that mode; round two (style_november_r2): long and the stack with tempest_plumes at seat 2d84, the brighter-tips lever on tempest_plumes, starlight_plumes with dimmed barbs; library maps magma and flame_wisp_frost on long",
-      "note": "Matt: round one (2026-11-24) feather_plumes 3/5, tempest_plumes 4/5 (Matt suspects the palette carries it: the paged backlog), mean and starlight 3/5; lilac_kaleidoscope kept only its unfolded tile (3/5), so it is this stack with the lilac map and merged here as lilac_plumes; the kaleidoscope projection stays in the engine. Round two (2026-11-24): kept long and the stack with tempest_plumes at seat 2d84, the brighter-tips lever on tempest_plumes, starlight_plumes with dimmed barbs; library maps magma and flame_wisp_frost on long; tempest_plumes is the default map (Matt kept his readings on it). Scores unchanged. Follow-up (2026-11-24, the planner's default by the round-two rule): starlight_plumes, kept only on its dim-barbs lever, takes barbs 0.55; the card shows fp2_stack_2d84_tempest, the new default.",
+      "kept": "7 tiles: fpf_long at both seats and fpf2_stack; entries tempest_plumes, mean_plumes, starlight_plumes (seat 2); lilac_plumes (lilac_kaleidoscope's unfolded tile); plus the flame_wisp_frost baseline tile, kept to that mode; round two (style_november_r2): long and the stack with tempest_plumes at seat 2d84, the brighter-tips lever on tempest_plumes, starlight_plumes with dimmed barbs; library maps magma and flame_wisp_frost on long; texture and lace round one (style_texture_lace_r1): the copper_feathers entry at seat a",
+      "note": "Matt: round one (2026-11-24) feather_plumes 3/5, tempest_plumes 4/5 (Matt suspects the palette carries it: the paged backlog), mean and starlight 3/5; lilac_kaleidoscope kept only its unfolded tile (3/5), so it is this stack with the lilac map and merged here as lilac_plumes; the kaleidoscope projection stays in the engine. Round two (2026-11-24): kept long and the stack with tempest_plumes at seat 2d84, the brighter-tips lever on tempest_plumes, starlight_plumes with dimmed barbs; library maps magma and flame_wisp_frost on long; tempest_plumes is the default map (Matt kept his readings on it). Scores unchanged. Follow-up (2026-11-24, the planner's default by the round-two rule): starlight_plumes, kept only on its dim-barbs lever, takes barbs 0.55; the card shows fp2_stack_2d84_tempest, the new default. Item 094's copper_feathers entry (wallhaven-xld8rd): kept at seat a, scored 3 (Matt, 2026-11-26).",
       "palettes": [
         {
           "colormap": "tempest_plumes",
@@ -3995,8 +4001,11 @@
             "/tone/median": 0.268,
             "/tone/p10": 0.025
           },
-          "keeps": [],
-          "reference": "wallhaven_wallhaven-xld8rd.jpg"
+          "keeps": [
+            "style_texture_lace_r1/feather_plumes/copper_feathers/fp_a_e_copper_feathers"
+          ],
+          "reference": "wallhaven_wallhaven-xld8rd.jpg",
+          "score": 3
         }
       ],
       "aliases": [
@@ -4029,8 +4038,8 @@
         "palette": "hollow_webs",
         "knobs": []
       },
-      "kept": "1 tile: the stack at the formulations seat, kept as the mode's example (no tile picked); plus the lace_holes baseline tile, kept to that mode",
-      "note": "Matt: round one (2026-11-24): \"these are fine, 3/5, although some palettes are not great here\"; no tile of its own picked (only the lace_holes baseline), so the stack tile is kept for the mode to open in lab; entries violet_cells and spellcaster_webs kept nothing and leave the set and the library.",
+      "kept": "1 tile: the stack at the formulations seat, kept as the mode's example (no tile picked); plus the lace_holes baseline tile, kept to that mode; texture and lace round one (style_texture_lace_r1): the knit_webs entry at seat a",
+      "note": "Matt: round one (2026-11-24): \"these are fine, 3/5, although some palettes are not great here\"; no tile of its own picked (only the lace_holes baseline), so the stack tile is kept for the mode to open in lab; entries violet_cells and spellcaster_webs kept nothing and leave the set and the library. Item 094's knit_webs entry (within-25): kept at seat a, scored 3 (Matt, 2026-11-26).",
       "palettes": [
         {
           "colormap": "hollow_webs",
@@ -4046,8 +4055,11 @@
             "/tone/median": 0.323,
             "/tone/p10": 0.145
           },
-          "keeps": [],
-          "reference": "within-25.jpg"
+          "keeps": [
+            "style_texture_lace_r1/hollow_webs/knit_webs/hw_a_e_knit_webs"
+          ],
+          "reference": "within-25.jpg",
+          "score": 3
         }
       ]
     },
@@ -4872,13 +4884,47 @@
     },
     {
       "style": "netted_leaves",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
       "item": "094",
       "reference": "zulu-25.jpg",
       "references": [
         "zulu-25.jpg"
       ],
       "what": "Netted leaves: lit leaf and chevron shapes outlined dark at every escape step, olive, gold and rust, under a fine fishnet mesh of field lines crossed by level lines that tightens towards the set.",
-      "palettes": []
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_texture_lace_r1/netted_leaves/locations/nl_loc_07_julia-multibrot3_017f4085",
+          "caption": "Curled olive, gold and rust leaves along a three-fold Julia set, each lit like a shallow bowl and covered in a fine dark net that tightens towards the lace"
+        }
+      ],
+      "public": {
+        "name": "netted-leaves",
+        "palette": "netted_leaves",
+        "knobs": []
+      },
+      "kept": "9 tiles: nl_base and nl_bold at seat a, nl_fine, nl_gilt and nl_bold at seat b, locations nl_loc_01, nl_loc_04, nl_loc_07 and nl_loc_10",
+      "note": "Matt: round one 4/5 (2026-11-26); published at lab tier. nl_nomesh (the headline removed) kept nothing.",
+      "palettes": [
+        {
+          "colormap": "netted_leaves",
+          "values": {},
+          "keeps": [
+            "style_texture_lace_r1/netted_leaves/forms_a/nl_a_nl_base",
+            "style_texture_lace_r1/netted_leaves/forms_a/nl_a_nl_bold",
+            "style_texture_lace_r1/netted_leaves/forms_b/nl_b_nl_fine",
+            "style_texture_lace_r1/netted_leaves/forms_b/nl_b_nl_gilt",
+            "style_texture_lace_r1/netted_leaves/forms_b/nl_b_nl_bold",
+            "style_texture_lace_r1/netted_leaves/locations/nl_loc_01_julia-multibrot4_0169f258",
+            "style_texture_lace_r1/netted_leaves/locations/nl_loc_04_phoenix_2d843082",
+            "style_texture_lace_r1/netted_leaves/locations/nl_loc_07_julia-multibrot3_017f4085",
+            "style_texture_lace_r1/netted_leaves/locations/nl_loc_10_phoenix_0275fee1"
+          ],
+          "score": 4
+        }
+      ]
     }
   ]
 }

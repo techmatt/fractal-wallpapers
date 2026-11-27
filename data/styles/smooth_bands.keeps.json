@@ -400,6 +400,48 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_texture_lace_r1/smooth_bands/starburst_lace/sb_a_e_starburst_lace",
+      "picker": "style_texture_lace_r1",
+      "picked": [
+        {
+          "row": "smooth_bands/starburst_lace",
+          "key": "sb_a_e_starburst_lace"
+        }
+      ],
+      "label": "",
+      "image": "style_texture_lace_r1__sb_a_e_starburst_lace.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "mandelbrot_fd18a4e5",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7482946417385522",
+            "center_im": "-0.13565131007822892",
+            "width": "0.000000013173455749263265"
+          },
+          "maxiter": 37315,
+          "note": "final139_general seat 30 (stripe, mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 30,
+            "key": "fd18a4e5f7fbb3ff",
+            "p_spiral": 0.506203
+          }
+        },
+        "style": "e_starburst_lace",
+        "stack": "e_starburst_lace@40b50102",
+        "colormap": "starburst_lace",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
@@ -583,6 +625,48 @@
       "tone": {
         "median": 0.616,
         "p10": 0.243
+      }
+    },
+    "e_starburst_lace@40b50102": {
+      "name": "e_starburst_lace",
+      "interior": {
+        "rgb": "#04060c"
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 2.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#1e0610"
+          },
+          "blend": "multiply",
+          "opacity": 0.5
+        }
+      ],
+      "tone": {
+        "median": 0.185,
+        "p10": 0.008
       }
     },
     "smooth_bands@16861e2f": {

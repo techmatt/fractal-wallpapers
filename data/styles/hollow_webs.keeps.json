@@ -9,6 +9,47 @@
   "folder": "fractal-drive-sync/style-keeps/hollow_webs",
   "keeps": [
     {
+      "id": "style_texture_lace_r1/hollow_webs/knit_webs/hw_a_e_knit_webs",
+      "picker": "style_texture_lace_r1",
+      "picked": [
+        {
+          "row": "hollow_webs/knit_webs",
+          "key": "hw_a_e_knit_webs"
+        }
+      ],
+      "label": "",
+      "image": "style_texture_lace_r1__hw_a_e_knit_webs.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "hand_rabbitbud_alpha",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-0.11341865594943655",
+              "0.860569472501573"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.30547427085040324",
+            "center_im": "0.5342004727183909",
+            "width": "0.6"
+          },
+          "maxiter": 2000,
+          "note": "hand: Julia z^2+c at the centre of a period-6 component (rabbitbud), about a repelling fixed point"
+        },
+        "style": "e_knit_webs",
+        "stack": "e_knit_webs@e98cb880",
+        "colormap": "knit_webs",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_webs_clouds_r1/hollow_webs/formulations/hwf_stack",
       "picker": "style_webs_clouds_r1",
       "picked": [
@@ -51,6 +92,213 @@
     }
   ],
   "stacks": {
+    "e_knit_webs@e98cb880": {
+      "name": "e_knit_webs",
+      "interior": {
+        "palette": 0.12
+      },
+      "tone": {
+        "median": 0.323,
+        "p10": 0.145
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 3.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            }
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "opacity": 0.08,
+          "power": 2.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            }
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.55,
+          "power": 3.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 16.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.8,
+              "shift": [
+                -0.133,
+                -0.181
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.65
+          },
+          "blend": "screen",
+          "opacity": 0.55,
+          "power": 3.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 16.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.951,
+              "shift": [
+                -0.096,
+                0.303
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.55,
+          "power": 3.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 16.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "color": {
+            "palette": 0.02
+          },
+          "blend": "multiply",
+          "opacity": 0.85,
+          "power": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 5.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.08,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "falloff": 0.0008
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.97
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "falloff": 0.0003
+        }
+      ]
+    },
     "hollow_webs@89a19651": {
       "name": "hollow_webs",
       "interior": {

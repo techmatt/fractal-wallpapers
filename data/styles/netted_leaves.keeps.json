@@ -1,0 +1,1143 @@
+{
+  "schema": 1,
+  "name": "netted_leaves",
+  "reference": {
+    "image": "zulu-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "unknown (an orbit-trap fractal render, exoteric.roach.org)"
+  },
+  "folder": "fractal-drive-sync/style-keeps/netted_leaves",
+  "keeps": [
+    {
+      "id": "style_texture_lace_r1/netted_leaves/forms_a/nl_a_nl_base",
+      "picker": "style_texture_lace_r1",
+      "picked": [
+        {
+          "row": "netted_leaves/forms_a",
+          "key": "nl_a_nl_base"
+        }
+      ],
+      "label": "the stack: lit leaves outlined dark at each escape step, under a net of field lines crossed by level lines that tightens towards the set",
+      "image": "style_texture_lace_r1__nl_a_nl_base.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_2e04e5e2",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.13379412906834562",
+            "center_im": "0.01066720222081552",
+            "width": "0.08255897112532501"
+          },
+          "maxiter": 10220,
+          "note": "final139_general seat 923 (direct_trap_multiply, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 923,
+            "key": "2e04e5e21e6b5512",
+            "p_spiral": 0.002261
+          }
+        },
+        "style": "nl_base",
+        "stack": "nl_base@476150a2",
+        "colormap": "netted_leaves",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_texture_lace_r1/netted_leaves/forms_a/nl_a_nl_bold",
+      "picker": "style_texture_lace_r1",
+      "picked": [
+        {
+          "row": "netted_leaves/forms_a",
+          "key": "nl_a_nl_bold"
+        }
+      ],
+      "label": "bolder leaves: wider dark outlines and a glossier light",
+      "image": "style_texture_lace_r1__nl_a_nl_bold.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_2e04e5e2",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.13379412906834562",
+            "center_im": "0.01066720222081552",
+            "width": "0.08255897112532501"
+          },
+          "maxiter": 10220,
+          "note": "final139_general seat 923 (direct_trap_multiply, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 923,
+            "key": "2e04e5e21e6b5512",
+            "p_spiral": 0.002261
+          }
+        },
+        "style": "nl_bold",
+        "stack": "nl_bold@f1d29043",
+        "colormap": "netted_leaves",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_texture_lace_r1/netted_leaves/forms_b/nl_b_nl_bold",
+      "picker": "style_texture_lace_r1",
+      "picked": [
+        {
+          "row": "netted_leaves/forms_b",
+          "key": "nl_b_nl_bold"
+        }
+      ],
+      "label": "bolder leaves: wider dark outlines and a glossier light",
+      "image": "style_texture_lace_r1__nl_b_nl_bold.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "multibrot3_9a82abfa",
+          "family": {
+            "kind": "multibrot",
+            "degree": 3
+          },
+          "viewport": {
+            "center_re": "-0.14282981552626525",
+            "center_im": "0.8077183400383088",
+            "width": "0.00022901985059954502"
+          },
+          "maxiter": 5460,
+          "note": "final139_general seat 793 (smooth_mean_angle, multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 793,
+            "key": "9a82abfa5c1a3c05",
+            "p_spiral": 0.012265
+          }
+        },
+        "style": "nl_bold",
+        "stack": "nl_bold@f1d29043",
+        "colormap": "netted_leaves",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_texture_lace_r1/netted_leaves/forms_b/nl_b_nl_fine",
+      "picker": "style_texture_lace_r1",
+      "picked": [
+        {
+          "row": "netted_leaves/forms_b",
+          "key": "nl_b_nl_fine"
+        }
+      ],
+      "label": "a finer net: twice the lines each way",
+      "image": "style_texture_lace_r1__nl_b_nl_fine.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "multibrot3_9a82abfa",
+          "family": {
+            "kind": "multibrot",
+            "degree": 3
+          },
+          "viewport": {
+            "center_re": "-0.14282981552626525",
+            "center_im": "0.8077183400383088",
+            "width": "0.00022901985059954502"
+          },
+          "maxiter": 5460,
+          "note": "final139_general seat 793 (smooth_mean_angle, multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 793,
+            "key": "9a82abfa5c1a3c05",
+            "p_spiral": 0.012265
+          }
+        },
+        "style": "nl_fine",
+        "stack": "nl_fine@b81336b3",
+        "colormap": "netted_leaves",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_texture_lace_r1/netted_leaves/forms_b/nl_b_nl_gilt",
+      "picker": "style_texture_lace_r1",
+      "picked": [
+        {
+          "row": "netted_leaves/forms_b",
+          "key": "nl_b_nl_gilt"
+        }
+      ],
+      "label": "a gilt net: the mesh drawn bright gold over the leaves rather than dark",
+      "image": "style_texture_lace_r1__nl_b_nl_gilt.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "multibrot3_9a82abfa",
+          "family": {
+            "kind": "multibrot",
+            "degree": 3
+          },
+          "viewport": {
+            "center_re": "-0.14282981552626525",
+            "center_im": "0.8077183400383088",
+            "width": "0.00022901985059954502"
+          },
+          "maxiter": 5460,
+          "note": "final139_general seat 793 (smooth_mean_angle, multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 793,
+            "key": "9a82abfa5c1a3c05",
+            "p_spiral": 0.012265
+          }
+        },
+        "style": "nl_gilt",
+        "stack": "nl_gilt@f155105b",
+        "colormap": "netted_leaves",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_texture_lace_r1/netted_leaves/locations/nl_loc_01_julia-multibrot4_0169f258",
+      "picker": "style_texture_lace_r1",
+      "picked": [
+        {
+          "row": "netted_leaves/locations",
+          "key": "nl_loc_01_julia-multibrot4_0169f258"
+        }
+      ],
+      "label": "",
+      "image": "style_texture_lace_r1__nl_loc_01_julia-multibrot4_0169f258.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot4_0169f258",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.1914062500000001",
+            "center_im": "-0.58203125",
+            "width": "1.17719912436409"
+          },
+          "maxiter": 5619,
+          "note": "final139_general seat 820 (direct_trap_multiply, julia:multibrot4)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 820,
+            "key": "0169f2580b499bac",
+            "p_spiral": 0.024048
+          }
+        },
+        "style": "nl_base",
+        "stack": "nl_base@476150a2",
+        "colormap": "netted_leaves",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_texture_lace_r1/netted_leaves/locations/nl_loc_04_phoenix_2d843082",
+      "picker": "style_texture_lace_r1",
+      "picked": [
+        {
+          "row": "netted_leaves/locations",
+          "key": "nl_loc_04_phoenix_2d843082"
+        }
+      ],
+      "label": "",
+      "image": "style_texture_lace_r1__nl_loc_04_phoenix_2d843082.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_2d843082",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.2392225561786449",
+            "center_im": "0.7922945504579708",
+            "width": "0.14321298448372002"
+          },
+          "maxiter": 9266,
+          "note": "final139_general seat 96 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 96,
+            "key": "2d8430827c4c5f05",
+            "p_spiral": 0.106666
+          }
+        },
+        "style": "nl_base",
+        "stack": "nl_base@476150a2",
+        "colormap": "netted_leaves",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_texture_lace_r1/netted_leaves/locations/nl_loc_07_julia-multibrot3_017f4085",
+      "picker": "style_texture_lace_r1",
+      "picked": [
+        {
+          "row": "netted_leaves/locations",
+          "key": "nl_loc_07_julia-multibrot3_017f4085"
+        }
+      ],
+      "label": "",
+      "image": "style_texture_lace_r1__nl_loc_07_julia-multibrot3_017f4085.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_017f4085",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.06748903259992045",
+            "center_im": "-0.6613097304718834",
+            "width": "0.4304012429270956"
+          },
+          "maxiter": 7361,
+          "note": "final139_general seat 999 (stripe, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 999,
+            "key": "017f4085e03430a0",
+            "p_spiral": 0.004946
+          }
+        },
+        "style": "nl_base",
+        "stack": "nl_base@476150a2",
+        "colormap": "netted_leaves",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_texture_lace_r1/netted_leaves/locations/nl_loc_10_phoenix_0275fee1",
+      "picker": "style_texture_lace_r1",
+      "picked": [
+        {
+          "row": "netted_leaves/locations",
+          "key": "nl_loc_10_phoenix_0275fee1"
+        }
+      ],
+      "label": "",
+      "image": "style_texture_lace_r1__nl_loc_10_phoenix_0275fee1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_0275fee1",
+          "family": {
+            "c": [
+              "-0.45709691767279576",
+              "-0.199309339142123"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "0.26195066562519664",
+              "-0.03188285542142037"
+            ],
+            "z_prev": [
+              "0.23987361417464126",
+              "0.45066347511034605"
+            ]
+          },
+          "viewport": {
+            "center_re": "1.1154713756796277",
+            "center_im": "0.1372761613815802",
+            "width": "0.0006723781020213695"
+          },
+          "maxiter": 18548,
+          "note": "final139_general seat 774 (threads, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 774,
+            "key": "0275fee138aa3b0b",
+            "p_spiral": 0.203667
+          }
+        },
+        "style": "nl_base",
+        "stack": "nl_base@476150a2",
+        "colormap": "netted_leaves",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "nl_base@476150a2": {
+      "name": "nl_base",
+      "interior": {
+        "palette": 0.08
+      },
+      "tone": {
+        "median": 0.279,
+        "p10": 0.085
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 3.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.35,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff4c8"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 3.0
+          },
+          "opacity": 0.85,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 1.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.55,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff4c8"
+            }
+          },
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "fill": 0.0,
+            "edge": 0.12
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.85
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "radius": 2.0,
+              "side": "outside"
+            }
+          },
+          "sheet": {
+            "period": 0.03125,
+            "fill": 0.0,
+            "edge": 0.3
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.55
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 0.25,
+            "fill": 0.0,
+            "edge": 0.3
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.55
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#140a06"
+          },
+          "blend": "multiply",
+          "opacity": 0.45
+        }
+      ]
+    },
+    "nl_bold@f1d29043": {
+      "name": "nl_bold",
+      "interior": {
+        "palette": 0.08
+      },
+      "tone": {
+        "median": 0.279,
+        "p10": 0.085
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 3.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.6,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff4c8"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 3.0
+          },
+          "opacity": 0.85,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 1.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.8,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff4c8"
+            }
+          },
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "fill": 0.0,
+            "edge": 0.22
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 1.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "radius": 2.0,
+              "side": "outside"
+            }
+          },
+          "sheet": {
+            "period": 0.03125,
+            "fill": 0.0,
+            "edge": 0.3
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.55
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 0.25,
+            "fill": 0.0,
+            "edge": 0.3
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.55
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#140a06"
+          },
+          "blend": "multiply",
+          "opacity": 0.45
+        }
+      ]
+    },
+    "nl_fine@b81336b3": {
+      "name": "nl_fine",
+      "interior": {
+        "palette": 0.08
+      },
+      "tone": {
+        "median": 0.279,
+        "p10": 0.085
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 3.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.35,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff4c8"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 3.0
+          },
+          "opacity": 0.85,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 1.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.55,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff4c8"
+            }
+          },
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "fill": 0.0,
+            "edge": 0.12
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.85
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "radius": 2.0,
+              "side": "outside"
+            }
+          },
+          "sheet": {
+            "period": 0.015625,
+            "fill": 0.0,
+            "edge": 0.35
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.55
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 0.125,
+            "fill": 0.0,
+            "edge": 0.35
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.55
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#140a06"
+          },
+          "blend": "multiply",
+          "opacity": 0.45
+        }
+      ]
+    },
+    "nl_gilt@f155105b": {
+      "name": "nl_gilt",
+      "interior": {
+        "palette": 0.08
+      },
+      "tone": {
+        "median": 0.279,
+        "p10": 0.085
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 3.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.35,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff4c8"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 3.0
+          },
+          "opacity": 0.85,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 1.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.55,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff4c8"
+            }
+          },
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "fill": 0.0,
+            "edge": 0.12
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.85
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "radius": 2.0,
+              "side": "outside"
+            }
+          },
+          "sheet": {
+            "period": 0.03125,
+            "fill": 0.0,
+            "edge": 0.3
+          },
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.8
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 0.25,
+            "fill": 0.0,
+            "edge": 0.3
+          },
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#140a06"
+          },
+          "blend": "multiply",
+          "opacity": 0.45
+        }
+      ]
+    }
+  }
+}
