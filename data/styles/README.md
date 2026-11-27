@@ -145,7 +145,8 @@ zoomed in, and its structure reads as the fractal's own (`docs/rulings.md`). Bac
    **locations**, ten to twelve seats kept by eye from the scout's forty `--draft`s (a
    10–15 minute run at four threads; give it a kill limit well past that). Each `view`
    iterates interior points to the seat's `maxiter`: draw a view-heavy stack at seats under
-   about 10,000 `maxiter` and time one draft first.
+   about 10,000 `maxiter` and time one draft first. Solid interior costs interior x cap:
+   a lower cap can keep the picture (098: a 28%-interior seat, 11,946 -> 2,000, 4-6x less).
 
    **Draw every reading you will show before you verify**: verification (identity, the
    parity row, the checks) and the diff review run once, after the last code change.
