@@ -1,0 +1,212 @@
+{
+  "schema": 1,
+  "name": "bokeh_bloom",
+  "description": "a glowing bloom with bokeh: soft lit petals with bright rims and fine veining, the set's lace as dark veins, a hot heart, soft out-of-focus discs and sparkle dust in the dark around it, rust to gold",
+  "reference": {
+    "image": "wallhaven_wallhaven-8xz1mk.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a fractal render (flower, depth of field)"
+  },
+  "suggested_colormap": "bokeh_bloom",
+  "reuses": [
+    "dew_bloom's lit petals and rims",
+    "storm_clouds' stripe grain",
+    "dew_bloom's sparkle",
+    "gilded_leaves' faded bubble"
+  ],
+  "adds": [],
+  "notes": [
+    "Round one (093): triage group (14), shells and blooms. wallhaven-8xz1mk (a glowing flower with bokeh) is the default; no entry.",
+    "Nearest mode: dew_bloom (soft lit petals ringed by pink rims, the lace inked dark, dew sparkles). What differs: depth of field. The far field is multiplied towards the map's dark end on the distance estimate, and over it lie bokeh: a faded circle packing (the bubble trap at radius 0.3, spacing 1, largest 0.4, smallest 1/8 of that, fade 0.5) drawn as soft flat discs added in the map's orange, masked to the far field. A brighter rim (the inverted height) was dropped: inverted, a faded height reads 1 where it faded and lit hard-edged shards. The petals carry fine veining (stripe grain at density 48, multiplied) and a warm radial heart.",
+    "Reachable by one escape loop: no. Petals, veins and grain are the frame's loop; the bokeh is a bubble trap's loop (two loops a sample).",
+    "Lessons: unmasked and unbounded, the bubble packs the whole frame in discs (a foam, not bokeh); `largest` leaves the far field to the big early discs, and the fade lets them come and go. Screened at 0.35 over lit petals the discs vanish under the tone pass: they need `add`, the far field darkened first, and opacity about 0.85. A radial heart above about 0.3 reads as fog over the frame's middle; discs under `largest` 0.4 are too small to read as bokeh at draft size.",
+    "Seats: a gallery scout (seed 931, no ink filter), ten kept by eye where a spiral bloom has room. The bokeh is plain at shallow seats with far field and faint where the lace fills the frame.",
+    "Tone: 12 of 12 hold the reference's balance (median 0.148 to 0.157 against 0.147).",
+    "Explorer cost (093, `style cost --location`, beside another item's work: an upper bound): 38.5 s as WebAssembly on one thread at 1280x800 ss2 at the deeper formulation seat (phoenix_625d9378, maxiter 3,000), under the 5-minute bar."
+  ],
+  "style": {
+    "name": "bokeh_bloom",
+    "interior": {
+      "palette": 0.02
+    },
+    "tone": {
+      "median": 0.147,
+      "p10": 0.038
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0,
+          "cycles": 1.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "period": 2.0,
+          "rings": 0.0,
+          "slope": 1.0,
+          "azimuth": 120.0,
+          "elevation": 38.0,
+          "ambient": 0.4,
+          "diffuse": 0.8,
+          "specular": 0.35,
+          "shininess": 12.0,
+          "rim": 0.2,
+          "rim_power": 3.0,
+          "highlight": {
+            "palette": 1.0
+          }
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 2.0,
+          "fill": 0.1,
+          "edge": 0.1
+        },
+        "color": {
+          "palette": 0.78
+        },
+        "blend": "screen",
+        "opacity": 0.6
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 48.0
+          }
+        },
+        "color": {
+          "palette": 0.12
+        },
+        "blend": "multiply",
+        "opacity": 0.25,
+        "power": 2.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0008,
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.85
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "radial": {
+            "center": [
+              0.5,
+              0.5
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.2,
+        "power": 4.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "gaussian_int"
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.7,
+        "power": 45.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "power": 1.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "power": 2.0,
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.6
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "spacing": 1.0,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.4,
+            "smallest": 0.05,
+            "fade": 0.5
+          }
+        },
+        "power": 0.3,
+        "color": {
+          "palette": 0.72
+        },
+        "blend": "add",
+        "opacity": 0.85,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": false,
+          "power": 1.5
+        }
+      }
+    ]
+  }
+}

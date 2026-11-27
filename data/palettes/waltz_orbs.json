@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "waltz_orbs",
+  "kind": "sequential",
+  "source": "waltz_orbs, authored as 7 control points as the albedo of the nautilus_fins style's entry from waltzing-in-shadows: a near-black teal, deep and mid teal for the orbs, an olive green, then muted gold and gold swirl bands to a cream.",
+  "stops": [
+    [0.0, [4, 12, 18]],
+    [0.2, [10, 44, 58]],
+    [0.38, [30, 90, 104]],
+    [0.55, [70, 110, 80]],
+    [0.7, [170, 150, 80]],
+    [0.85, [230, 206, 130]],
+    [1.0, [252, 244, 206]]
+  ]
+}

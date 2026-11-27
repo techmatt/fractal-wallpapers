@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "shell_tunnels",
+  "kind": "sequential",
+  "source": "shell_tunnels, authored as 7 control points as the albedo of the nautilus_fins style's entry from wallhaven-odxj5p: a deep maroon, brick and rust, then orange, salmon and peach ribs to a warm yellow-cream at the tunnels' ends.",
+  "stops": [
+    [0.0, [40, 10, 8]],
+    [0.2, [96, 30, 18]],
+    [0.38, [170, 62, 26]],
+    [0.55, [226, 110, 50]],
+    [0.7, [236, 160, 120]],
+    [0.85, [246, 206, 180]],
+    [1.0, [255, 240, 200]]
+  ]
+}

@@ -135,6 +135,8 @@ zoomed in, and its structure reads as the fractal's own (`docs/rulings.md`). Bac
    the map's dark end, since a layer sinking it to black makes the pass lift the rest.
    The pass holds the median, so dimming one glow or light can leave p90 where the seat
    puts it; lowering the ground's `cycles` (keeping it off the map's bright end) moves it.
+   A pale reference's deep p10 (a black share under a median over 0.5) the pass cannot
+   reach; only a stack drawing that dark area holds it (`nautilus_fins` ships missing it).
    Check at `--draft`, on the stack as shipped. A palette entry is held to **its own**
    reference: `style tones <mode> <pictures…> --reference <entry map>`.
 6. **Round one: a picker of about twenty tiles**: **formulations**, four to six readings

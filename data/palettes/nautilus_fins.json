@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "nautilus_fins",
+  "kind": "sequential",
+  "source": "nautilus_fins, authored as 7 control points as the albedo of the nautilus_fins style from wallhaven-ey2zv8: a near-black violet core, dusky violet and plum-bronze, then amber, gold and pale gold fins to a cream white.",
+  "stops": [
+    [0.0, [14, 8, 22]],
+    [0.2, [52, 34, 70]],
+    [0.38, [104, 70, 62]],
+    [0.55, [170, 112, 40]],
+    [0.7, [214, 170, 70]],
+    [0.85, [236, 214, 140]],
+    [1.0, [252, 246, 220]]
+  ]
+}

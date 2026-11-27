@@ -307,3 +307,8 @@
 {"schema": 1, "kind": "admitted", "map": "soft_veils_wine", "group": "map:soft_veils_wine", "joined": false, "nearest": "m61", "m1": 0.063072}
 {"schema": 1, "kind": "admitted", "map": "violet_threads", "group": "map:violet_threads", "joined": false, "nearest": "map:tempest_plumes", "m1": 0.039937}
 {"schema": 1, "kind": "admitted", "map": "blue_nebula", "group": "map:blue_nebula", "joined": false, "nearest": "map:Ice-to-Ember Cliff", "m1": 0.06631}
+{"schema": 1, "kind": "admitted", "map": "nautilus_fins", "group": "map:nautilus_fins", "joined": false, "nearest": "map:golden_petals", "m1": 0.049797}
+{"schema": 1, "kind": "admitted", "map": "shell_tunnels", "group": "map:shell_tunnels", "joined": false, "nearest": "map:Spice Procession", "m1": 0.048673}
+{"schema": 1, "kind": "admitted", "map": "waltz_orbs", "group": "map:waltz_orbs", "joined": false, "nearest": "map:cmr.eclipse", "m1": 0.046121}
+{"schema": 1, "kind": "admitted", "map": "thorn_whorl", "group": "map:thorn_whorl", "joined": false, "nearest": "map:ribbon_packing", "m1": 0.067284}
+{"schema": 1, "kind": "admitted", "map": "bokeh_bloom", "group": "map:bokeh_bloom", "joined": false, "nearest": "map:fractal_stripes_bends_lines_116839_2560x1600", "m1": 0.043542}

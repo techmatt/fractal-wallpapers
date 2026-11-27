@@ -126,7 +126,8 @@
       "reference": "blessed-by-the-night-25.jpg",
       "references": [
         "blessed-by-the-night-25.jpg",
-        "happy-hours-25.jpg"
+        "happy-hours-25.jpg",
+        "waltzing-in-shadows-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -167,6 +168,15 @@
             "style_glossy_lobes_r1/locations/locations__09_mandelbrot_c7223dda_glossy_lobes"
           ],
           "score": 4
+        },
+        {
+          "colormap": "waltz_orbs",
+          "values": {
+            "/tone/median": 0.163,
+            "/tone/p10": 0.04
+          },
+          "keeps": [],
+          "reference": "waltzing-in-shadows-25.jpg"
         }
       ]
     },
@@ -3552,7 +3562,8 @@
         "metal-emblem-25.jpg",
         "to-the-bone-25.jpg",
         "unfolding-creation-25.jpg",
-        "noir-25.jpg"
+        "noir-25.jpg",
+        "zhgiu1cypaac1.jpeg"
       ],
       "what": "Polished chrome petals whirling out of a small rosette, one lit tube per two escape bands, an amber ember glowing in each seam.",
       "variant": "current",
@@ -3600,6 +3611,15 @@
           "keeps": [
             "style_november_r2/chrome_whorl/maps/cw2_map_twilight"
           ]
+        },
+        {
+          "colormap": "thorn_whorl",
+          "values": {
+            "/tone/median": 0.155,
+            "/tone/p10": 0.019
+          },
+          "keeps": [],
+          "reference": "zhgiu1cypaac1.jpeg"
         }
       ]
     },
@@ -3999,7 +4019,7 @@
         "wallhaven_wallhaven-3z1jkd.png",
         "wallhaven_wallhaven-jewqgw.png"
       ],
-      "what": "Storm clouds: crinkled cloud banks in teal, violet and orchid, the lace their edge, soft colour drifting through them, lit as a broad relief (blue and gold, and a crimson nebula with stars, as palette entries).",
+      "what": "Storm clouds: crinkled cloud banks in teal, violet and orchid, the lace their edge, soft colour drifting through them, lit as a broad relief (blue and gold, a crimson nebula with stars, and a blue nebula, as palette entries).",
       "variant": "current",
       "show": [
         {
@@ -4683,6 +4703,29 @@
           "reference": "wallhaven_wallhaven-wqg52p.png"
         }
       ]
+    },
+    {
+      "style": "nautilus_fins",
+      "item": "093",
+      "reference": "wallhaven_wallhaven-ey2zv8.jpg",
+      "references": [
+        "wallhaven_wallhaven-ey2zv8.jpg",
+        "wallhaven_wallhaven-odxj5p.jpg",
+        "waltzing-in-shadows-25.jpg",
+        "zhgiu1cypaac1.jpeg"
+      ],
+      "what": "A nautilus of layered fins: one translucent fin per escape step, each brightening to a dark-lined rim and lit as a curved surface, gold beads strung along the set's edge and its heart inked dark, gold to violet (orange shell ribs, gold bands round dark teal orbs, and blue-and-gold coils on black as palette entries).",
+      "palettes": []
+    },
+    {
+      "style": "bokeh_bloom",
+      "item": "093",
+      "reference": "wallhaven_wallhaven-8xz1mk.jpg",
+      "references": [
+        "wallhaven_wallhaven-8xz1mk.jpg"
+      ],
+      "what": "A glowing bloom with bokeh: soft lit petals in rust and gold with bright rims and fine veining, the set's lace as dark veins, a warm heart, the far field sunk into the dark and strewn with soft out-of-focus discs.",
+      "palettes": []
     }
   ]
 }

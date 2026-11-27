@@ -1,0 +1,196 @@
+{
+  "schema": 1,
+  "name": "nautilus_fins",
+  "description": "a nautilus of layered fins: one translucent fin per escape step, each brightening to a dark-lined rim and lit as a curved surface, gold beads strung along the set's edge, the shell's heart inked dark, gold to violet",
+  "reference": {
+    "image": "wallhaven_wallhaven-ey2zv8.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a fractal render (nautilus spiral)"
+  },
+  "suggested_colormap": "nautilus_fins",
+  "reuses": [
+    "lit_petals' smooth-count light",
+    "veil_shards' scooped sheet with a rim",
+    "ember_rose's bubble beads",
+    "glossy_lobes' interior dome"
+  ],
+  "adds": [],
+  "notes": [
+    "Round one (093): triage group (14), shells and blooms. wallhaven-ey2zv8 (a gold nautilus with layered fins) is the default; three references are palette entries of the same stack: shell_tunnels (wallhaven-odxj5p, orange shell spirals and tunnels: two fins to an escape step, the dark heart lighter, the reference's pale tone), waltz_orbs (waltzing-in-shadows, glossy dark orbs in gold swirl bands: the reference's dark tone, the interior domes in the map's teal) and thorn_whorl (zhgiu1cypaac1, a spiky gold-and-blue spiral: blue fins and gold beads on black).",
+    "Nearest mode: glossy_spirals (satin blades along a spiral's arms over a sculpted relief); here there are no blades: each escape step is one fin, a `sheet` on the smooth count at period 1 whose scoop brightens towards its rim (screen) and a second thin sheet multiplied dark along the rim, so the fins overlap like a shell's chambers; a slope `light` on the same count shades the relief (at `rings` 0 its `period` draws nothing, so the fins' curve is the sheets'). Bubble-trap beads (ember_rose's, largest 0.015) are strung along the edge, a de glow multiplied dark inks the lace as the shell's heart, and the interior is a glossy dome (glossy_lobes').",
+    "Reachable by one escape loop: no. The fins, relief and dark heart are the frame's loop; the beads are a bubble trap's loop and the dome the `inside` loop, so three loops a sample. The `nf_layered` formulation adds a turned view's fins (a fourth). Seats are a `--spiral` scout (seed 93): almost every one reads as a nautilus at draft size.",
+    "Lessons: the palette runs on the inverted smooth count so the far field is the pale shell and the core dark, as in the reference; at the reference's median (0.628) the far field washes towards cream, which is the picture's own key. The lace drew olive mush until the dark-heart glow went to opacity 0.9 at falloff 0.002.",
+    "Tone: the median holds (0.60 to 0.62 against 0.628) but p10 misses at every seat (0.24 to 0.38 against 0.012): the reference's 17% black is a shadowed core no spiral seat draws, and the pass cannot pull p10 that far under a median of 0.6. A wider dark-heart falloff (0.006, 0.015), palette gamma 0.5 and 2, and a broad near-set shade (the inverted distance at power 2 to 8) each left it at 0.27 to 0.36. The entries hold: shell_tunnels 2 of 2, waltz_orbs 2 of 2; thorn_whorl misses p90 low (0.44 against 0.60) at both seats.",
+    "Explorer cost (093, `style cost --location`, beside another item's work: an upper bound): 30.1 s for the default stack (`nf_layered`'s turned view, a fourth loop, costs more) as WebAssembly on one thread at 1280x800 ss2 at the deeper formulation seat (julia-mandelbrot_45222fc4, maxiter 8,599), under the 5-minute bar."
+  ],
+  "style": {
+    "name": "nautilus_fins",
+    "interior": {
+      "palette": 0.04
+    },
+    "tone": {
+      "median": 0.628,
+      "p10": 0.012
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "invert": true
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0,
+          "cycles": 1.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "period": 1.0,
+          "rings": 0.0,
+          "slope": 1.0,
+          "azimuth": 135.0,
+          "elevation": 42.0,
+          "ambient": 0.55,
+          "diffuse": 0.65,
+          "specular": 0.5,
+          "shininess": 18.0,
+          "rim": 0.1,
+          "rim_power": 3.0,
+          "highlight": {
+            "palette": 1.0
+          }
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 1.0,
+          "fill": 0.35,
+          "edge": 0.08
+        },
+        "color": {
+          "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.45
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 1.0,
+          "fill": 0.0,
+          "edge": 0.05
+        },
+        "color": {
+          "palette": 0.1
+        },
+        "blend": "multiply",
+        "opacity": 0.55
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.002,
+        "color": {
+          "palette": 0.04
+        },
+        "blend": "multiply",
+        "opacity": 0.9
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.08,
+            "spacing": 1.0,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.015
+          }
+        },
+        "power": 1.0,
+        "color": {
+          "palette": 0.82
+        },
+        "blend": "screen",
+        "opacity": 1.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 2.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "power": 0.01,
+        "color": {
+          "palette": 0.22
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 1.0,
+          "slope": 0.0,
+          "azimuth": 135.0,
+          "elevation": 55.0,
+          "ambient": 0.8,
+          "diffuse": 0.5,
+          "specular": 0.9,
+          "shininess": 24.0,
+          "rim": 0.25,
+          "rim_power": 3.0,
+          "highlight": {
+            "palette": 0.95
+          }
+        }
+      }
+    ]
+  }
+}
