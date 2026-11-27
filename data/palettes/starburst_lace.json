@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "starburst_lace",
+  "kind": "sequential",
+  "source": "starburst_lace, authored as 8 control points as the albedo of the smooth_bands style's entry from web_burst: a rust-red far field, a dark brown, navy and steel blue lace, pale blue starbursts, then cream-gold spiral eyes to a warm white.",
+  "stops": [
+    [0.0, [110, 36, 22]],
+    [0.15, [150, 56, 34]],
+    [0.3, [40, 20, 20]],
+    [0.45, [10, 24, 44]],
+    [0.6, [30, 80, 120]],
+    [0.75, [100, 160, 190]],
+    [0.88, [240, 200, 130]],
+    [1.0, [255, 246, 225]]
+  ]
+}

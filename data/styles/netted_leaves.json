@@ -1,0 +1,201 @@
+{
+  "schema": 1,
+  "name": "netted_leaves",
+  "description": "netted leaves: lit leaf and chevron shapes outlined dark at every escape step, olive, gold and rust, under a fishnet mesh of field lines crossed by level lines that tightens towards the set",
+  "reference": {
+    "image": "zulu-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "unknown (an orbit-trap fractal render, exoteric.roach.org)"
+  },
+  "suggested_colormap": "netted_leaves",
+  "reuses": [
+    "lit_petals' smooth-count lights",
+    "clockwork_rings' field-line sheet",
+    "banded_lines' periodic seam sheet"
+  ],
+  "adds": [],
+  "notes": [
+    "Round one (094): triage group (15), texture and lace, the last of round 2. zulu-25 (lit leaf and chevron shapes, dark-outlined, under a fishnet mesh, olive, gold and rust) is the default. The group's other three references are palette entries of existing modes: wallhaven-xld8rd as feather_plumes' copper_feathers (crescent_lines drew it too, for comparison), web_burst as smooth_bands' starburst_lace, within-25 as hollow_webs' knit_webs.",
+    "Nearest mode: lit_petals (smoothly lit petals, colours cycling round each). What differs is the net: a `sheet` on the `lines` channel (field lines, radius 2, `divide` 1) cut every 1/32 of a turn, crossed by a `sheet` on the smooth count cut every quarter step, both thin rims multiplied dark, so the leaves are covered in a conformal mesh whose cells shrink towards the set as the lace does. With `divide` 2 (clockwork_rings') the divided angle spans too little of a turn for a 1/32 cut, and no field lines showed. A third `sheet` on the smooth count at period 1 draws each leaf's dark outline; lit_petals' two lights (period 3 slope, period 1 near the set) shade the leaves.",
+    "Reachable by one escape loop: no, two. The leaves, outlines and level-line half of the net are the frame's loop; the field lines are the `lines` trap's loop.",
+    "Round one's readings: nl_base, nl_fine (twice the lines each way), nl_gilt (the net screened bright gold rather than multiplied dark), nl_bold (wider outlines, glossier light) and nl_nomesh (the headline removed). Seats: a gallery scout (seed 94), twelve kept by eye. Screened at 0.35 the net vanished on the pale leaves; multiplied dark at 0.55 it reads at draft size. In the far field, where the field lines are few, the net opens into large square cells.",
+    "Tone: 13 of 14 hold zulu-25's balance (median 0.278 to 0.285 against 0.279, p10 0.089 to 0.111 against 0.085) at both formulation seats and twelve location seats as shipped; nl_loc_11 (phoenix-classic) misses p90 (0.669 against 0.541).",
+    "Explorer cost (094, `style cost --location`, no held box: an upper bound): 43.3 s as WebAssembly on one thread at 1280x800 ss2 at the deeper formulation seat (julia-multibrot3_2e04e5e2, maxiter 10,220), under the 5-minute bar."
+  ],
+  "style": {
+    "name": "netted_leaves",
+    "interior": {
+      "palette": 0.08
+    },
+    "tone": {
+      "median": 0.279,
+      "p10": 0.085
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "cycles": 1.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "period": 3.0,
+          "rings": 0.0,
+          "slope": 1.0,
+          "azimuth": 135.0,
+          "elevation": 40.0,
+          "ambient": 0.45,
+          "diffuse": 0.75,
+          "specular": 0.35,
+          "shininess": 14.0,
+          "rim": 0.15,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#fff4c8"
+          }
+        }
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "cycles": 3.0
+        },
+        "opacity": 0.85,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "power": 25.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "period": 1.0,
+          "rings": 0.0,
+          "slope": 1.0,
+          "azimuth": 135.0,
+          "elevation": 40.0,
+          "ambient": 0.45,
+          "diffuse": 0.75,
+          "specular": 0.55,
+          "shininess": 14.0,
+          "rim": 0.15,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#fff4c8"
+          }
+        },
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "power": 25.0
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 1.0,
+          "fill": 0.0,
+          "edge": 0.12
+        },
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.85
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "lines": {
+            "radius": 2.0,
+            "side": "outside"
+          }
+        },
+        "sheet": {
+          "period": 0.03125,
+          "fill": 0.0,
+          "edge": 0.3
+        },
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.55
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 0.25,
+          "fill": 0.0,
+          "edge": 0.3
+        },
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.55
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0003,
+        "color": {
+          "rgb": "#140a06"
+        },
+        "blend": "multiply",
+        "opacity": 0.45
+      }
+    ]
+  }
+}

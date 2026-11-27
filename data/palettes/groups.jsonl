@@ -310,5 +310,8 @@
 {"schema": 1, "kind": "admitted", "map": "nautilus_fins", "group": "map:nautilus_fins", "joined": false, "nearest": "map:golden_petals", "m1": 0.049797}
 {"schema": 1, "kind": "admitted", "map": "shell_tunnels", "group": "map:shell_tunnels", "joined": false, "nearest": "map:Spice Procession", "m1": 0.048673}
 {"schema": 1, "kind": "admitted", "map": "waltz_orbs", "group": "map:waltz_orbs", "joined": false, "nearest": "map:cmr.eclipse", "m1": 0.046121}
-{"schema": 1, "kind": "admitted", "map": "thorn_whorl", "group": "map:thorn_whorl", "joined": false, "nearest": "map:ribbon_packing", "m1": 0.067284}
 {"schema": 1, "kind": "admitted", "map": "bokeh_bloom", "group": "map:bokeh_bloom", "joined": false, "nearest": "map:fractal_stripes_bends_lines_116839_2560x1600", "m1": 0.043542}
+{"schema": 1, "kind": "admitted", "map": "netted_leaves", "group": "map:netted_leaves", "joined": false, "nearest": "map:green-dragon-25", "m1": 0.041989}
+{"schema": 1, "kind": "admitted", "map": "copper_feathers", "group": "map:copper_feathers", "joined": false, "nearest": "map:metal-emblem-25", "m1": 0.053757}
+{"schema": 1, "kind": "admitted", "map": "starburst_lace", "group": "map:starburst_lace", "joined": false, "nearest": "map:Cobalt & Coal", "m1": 0.055118}
+{"schema": 1, "kind": "admitted", "map": "knit_webs", "group": "map:knit_webs", "joined": false, "nearest": "map:cream_tubes", "m1": 0.052294}

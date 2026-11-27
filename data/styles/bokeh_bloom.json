@@ -22,7 +22,8 @@
     "Lessons: unmasked and unbounded, the bubble packs the whole frame in discs (a foam, not bokeh); `largest` leaves the far field to the big early discs, and the fade lets them come and go. Screened at 0.35 over lit petals the discs vanish under the tone pass: they need `add`, the far field darkened first, and opacity about 0.85. A radial heart above about 0.3 reads as fog over the frame's middle; discs under `largest` 0.4 are too small to read as bokeh at draft size.",
     "Seats: a gallery scout (seed 931, no ink filter), ten kept by eye where a spiral bloom has room. The bokeh is plain at shallow seats with far field and faint where the lace fills the frame.",
     "Tone: 12 of 12 hold the reference's balance (median 0.148 to 0.157 against 0.147).",
-    "Explorer cost (093, `style cost --location`, beside another item's work: an upper bound): 38.5 s as WebAssembly on one thread at 1280x800 ss2 at the deeper formulation seat (phoenix_625d9378, maxiter 3,000), under the 5-minute bar."
+    "Explorer cost (093, `style cost --location`, beside another item's work: an upper bound): 38.5 s as WebAssembly on one thread at 1280x800 ss2 at the deeper formulation seat (phoenix_625d9378, maxiter 3,000), under the 5-minute bar.",
+    "Matt (2026-11-26): round one 3/5, catalogued at lab tier. Kept bb_veins at seat a, bb_base at seat b, and locations bb_loc_01, bb_loc_08 and bb_loc_09."
   ],
   "style": {
     "name": "bokeh_bloom",

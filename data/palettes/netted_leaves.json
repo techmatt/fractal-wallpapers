@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "netted_leaves",
+  "kind": "sequential",
+  "source": "netted_leaves, authored as 7 control points as the albedo of the netted_leaves style from zulu-25: a green-black ground, dark teal-green and olive, a maroon-rust leaf heart, then ochre and gold rims to a pale straw yellow.",
+  "stops": [
+    [0.0, [8, 16, 14]],
+    [0.18, [24, 52, 44]],
+    [0.35, [70, 92, 50]],
+    [0.5, [120, 40, 24]],
+    [0.65, [176, 110, 40]],
+    [0.82, [222, 190, 80]],
+    [1.0, [246, 236, 160]]
+  ]
+}

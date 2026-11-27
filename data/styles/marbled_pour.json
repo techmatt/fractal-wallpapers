@@ -18,7 +18,8 @@
     "Reachable by one escape loop: yes. The frame's loop plus the stir's seven (two passes, 4 and 3 steps), no light, so no Jacobian; the paper pass reads the height the frame already has.",
     "Round one's readings: f_broad (10 sheets: broader bands, closest to xl8gmd's), f_strong (the stir at 7 over 8 steps and 4 over 4), f_flat (no vein), f_nostir (the set's bands as flat inks: poster_curls' look). A dry-brush `ragged` comb (reach 0.012) frayed every edge into noise in the lace and left the drafts. teal_marbling (dp6vvj) walks its map end to end over 14 sheets (`hop` 1/14), a white vein thrown away from the light, and a gentler stir (strength 2 and 2, the fine pass at period 1).",
     "Tone: the sheets are cut on rank, so each ink holds a share of the frame fixed by `levels` and `taper`, and the map carries the reference's spread; the tone pass only nudges it. Three map re-tunes (creams lowered to L* about 0.82, the dark umber made the first, far-field ink) took the white share from up to 0.15 to 0 but held only 6 of 14 picker tiles at `taper` 0.95: at lace-heavy seats the stirred lace's fine bands average into mid-tone speckle (p10 0.21 to 0.24 against 0.153), and no tone curve spreads that at both ends. `taper` 0.8 gives the far-field sheets the area and fixed it: all 14 picker tiles hold as shipped (median 0.568 to 0.586, p10 0.152 to 0.156 against 0.589/0.153); 0.65 drowned the frame in umber and cream. teal_marbling held at both its seats against dp6vvj.",
-    "Explorer cost (089, no held box: an upper bound): 47 s as WebAssembly on one thread at 1280x800 ss2 at its deepest formulation seat (julia-mandelbrot_df5d31a1, maxiter 11,005), whole frame with the paper pass; 45 s without it, so the pass is about a second and the stir's seven loops are the rest."
+    "Explorer cost (089, no held box: an upper bound): 47 s as WebAssembly on one thread at 1280x800 ss2 at its deepest formulation seat (julia-mandelbrot_df5d31a1, maxiter 11,005), whole frame with the paper pass; 45 s without it, so the pass is about a second and the stir's seven loops are the rest.",
+    "Published stack set to its kept reading (Matt, 2026-11-26, the lever rule; item 094): the paper pass's `levels` 16 became 10, f_broad's, since the card's Example must draw its kept tile and f_broad was drawn at 10. f_nostir, kept beside it in the default entry, was drawn at 16 without the stir, so no default stack draws it, before this change or after. The tone figures above were read at 16."
   ],
   "style": {
     "name": "marbled_pour",
@@ -35,7 +36,7 @@
        "palette": {"transfer": {"kind": "rank"}}}
     ],
     "post": [
-      {"kind": "paper", "levels": 16, "taper": 0.8, "hop": 0.125, "phase": 0.0625,
+      {"kind": "paper", "levels": 10, "taper": 0.8, "hop": 0.125, "phase": 0.0625,
        "shadow": {"width": 0.004, "offset": 0.0012, "azimuth": 120.0, "opacity": 0.5,
                   "color": {"rgb": "#1c0806"}}}
     ]

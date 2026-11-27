@@ -20,7 +20,8 @@
     "Round one's readings: f_fine (the field-line cut at 1/16), f_broad (the views at twice the zoom, sheets spanning the frame), f_gilt (rims added rather than screened, so crossings burn gold), f_noshards, and s_base, the stack folded by the kaleidoscope projection into a five-point star (views at twice the zoom, the set's hair at 0.1) for wqg52p's star of veils; the fold read as a mandala of lace at a dense quintic seat and as a star only at a shallow quadratic one, and lilac_kaleidoscope's fold kept nothing in 075, so it was offered on bone_star rather than as a mode of its own (both its tiles were kept, and it became the mode veil_star in item 092). Seats: the flame family's hand-placed shallow seats (step 4's exception, the far field veils need; soft_veils' notes), the twelve with ink under 0.10 (`style scout --points --measure`: 0.0007 to 0.058); the six over it (0.12 to 0.31) drowned the panes in lace or a flat interior, as soft_veils' notes predict.",
     "Tone: the reference's 0.350/0.235 holds at all twelve location seats and both formulation seats as shipped (p90 0.516 to 0.595 against 0.551). bone_star (0.405/0.250) and silk_shards (0.135/0.093, thin fills at 0.1, rims at 0.75, the field-line cut at 1/16) hold at both formulation seats.",
     "Explorer cost (090, round one, nothing else running): 52 s as WebAssembly on one thread at 1280x800 ss2 at its deeper formulation seat (vm_d4, maxiter 800; 49 s at vj_d3), under the 5-minute bar; 84 s at the deepest location seat offered (phoenix_2d843082, maxiter 9,266).",
-    "Matt (2026-11-26): the flame veils are \"very good\", 5/5. Kept f_broad and f_gilt at both seats, locations vs_loc_05 and vs_loc_16, and bone_star and silk_shards at both seats. The star fold's two keeps (s_base, and bone_star at the quadratic star seat) became their own mode, veil_star (item 092)."
+    "Matt (2026-11-26): the flame veils are \"very good\", 5/5. Kept f_broad and f_gilt at both seats, locations vs_loc_05 and vs_loc_16, and bone_star and silk_shards at both seats. The star fold's two keeps (s_base, and bone_star at the quadratic star seat) became their own mode, veil_star (item 092).",
+    "Published stack set to its kept reading (Matt, 2026-11-26, the lever rule; item 094): the default is f_broad, the four views at twice the zoom (1.0, 1.218, 1.484, 1.806), so the card's Example draws its kept tile. bone_star and silk_shards were kept on the old default, so each carries the old zooms (0.5 to 0.903) as values; f_gilt (both seats, rims added rather than screened) and the kept locations vs_loc_05 and vs_loc_16 were drawn at the old zooms too, and no entry now reproduces those four."
   ],
   "style": {
     "name": "veil_shards",
@@ -67,7 +68,7 @@
           },
           "view": {
             "turn": 137.5,
-            "zoom": 0.5,
+            "zoom": 1.0,
             "shift": [
               -0.079,
               -0.108
@@ -90,7 +91,7 @@
           },
           "view": {
             "turn": 275.0,
-            "zoom": 0.609,
+            "zoom": 1.218,
             "shift": [
               -0.057,
               0.181
@@ -113,7 +114,7 @@
           },
           "view": {
             "turn": 52.5,
-            "zoom": 0.742,
+            "zoom": 1.484,
             "shift": [
               0.22,
               -0.075
@@ -136,7 +137,7 @@
           },
           "view": {
             "turn": 190.0,
-            "zoom": 0.903,
+            "zoom": 1.806,
             "shift": [
               -0.22,
               -0.154
@@ -158,7 +159,7 @@
           },
           "view": {
             "turn": 137.5,
-            "zoom": 0.5,
+            "zoom": 1.0,
             "shift": [
               -0.079,
               -0.108
@@ -194,7 +195,7 @@
           },
           "view": {
             "turn": 137.5,
-            "zoom": 0.5,
+            "zoom": 1.0,
             "shift": [
               -0.079,
               -0.108
@@ -230,7 +231,7 @@
           },
           "view": {
             "turn": 275.0,
-            "zoom": 0.609,
+            "zoom": 1.218,
             "shift": [
               -0.057,
               0.181
@@ -266,7 +267,7 @@
           },
           "view": {
             "turn": 275.0,
-            "zoom": 0.609,
+            "zoom": 1.218,
             "shift": [
               -0.057,
               0.181
@@ -302,7 +303,7 @@
           },
           "view": {
             "turn": 52.5,
-            "zoom": 0.742,
+            "zoom": 1.484,
             "shift": [
               0.22,
               -0.075
@@ -338,7 +339,7 @@
           },
           "view": {
             "turn": 52.5,
-            "zoom": 0.742,
+            "zoom": 1.484,
             "shift": [
               0.22,
               -0.075
@@ -374,7 +375,7 @@
           },
           "view": {
             "turn": 190.0,
-            "zoom": 0.903,
+            "zoom": 1.806,
             "shift": [
               -0.22,
               -0.154
@@ -410,7 +411,7 @@
           },
           "view": {
             "turn": 190.0,
-            "zoom": 0.903,
+            "zoom": 1.806,
             "shift": [
               -0.22,
               -0.154

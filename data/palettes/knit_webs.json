@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "knit_webs",
+  "kind": "sequential",
+  "source": "knit_webs, authored as 7 control points as the albedo of the hollow_webs style's entry from within-25: a slate-black well, slate blue and teal, bronze and tan webbing, an aqua sheen, to a pale bone.",
+  "stops": [
+    [0.0, [20, 24, 28]],
+    [0.2, [40, 60, 80]],
+    [0.38, [60, 110, 120]],
+    [0.55, [140, 110, 70]],
+    [0.7, [190, 160, 110]],
+    [0.85, [110, 190, 200]],
+    [1.0, [236, 226, 200]]
+  ]
+}

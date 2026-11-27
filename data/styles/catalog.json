@@ -155,8 +155,8 @@
         ]
       },
       "what": "Soft lit blue lobes, each a glossy dome, between gold star webs, with a halo and sparkle.",
-      "kept": "3 locations, map_lobes formulation",
-      "note": "Engine: bubble disc + strip (existing) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The published lobes are the literal blue; map_lobes (painted from the map) is kept but not the default. · Matt: reasonably good; item 052's happy_hours_star entry kept nothing and left the set.",
+      "kept": "3 locations, map_lobes formulation; shells and blooms round one (style_shells_blooms_r1): the waltz_orbs entry at seat b",
+      "note": "Engine: bubble disc + strip (existing) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The published lobes are the literal blue; map_lobes (painted from the map) is kept but not the default. · Matt: reasonably good; item 052's happy_hours_star entry kept nothing and left the set. Item 093's waltz_orbs entry (waltzing-in-shadows): kept at seat b, scored 3 (Matt, 2026-11-26).",
       "palettes": [
         {
           "colormap": "glossy_lobes",
@@ -175,8 +175,11 @@
             "/tone/median": 0.163,
             "/tone/p10": 0.04
           },
-          "keeps": [],
-          "reference": "waltzing-in-shadows-25.jpg"
+          "keeps": [
+            "style_shells_blooms_r1/glossy_lobes/waltz_orbs/glossy_lobes_b_waltz_orbs"
+          ],
+          "reference": "waltzing-in-shadows-25.jpg",
+          "score": 3
         }
       ]
     },
@@ -1679,7 +1682,8 @@
       "item": "034",
       "reference": "crescent-25.jpg",
       "references": [
-        "crescent-25.jpg"
+        "crescent-25.jpg",
+        "wallhaven_wallhaven-xld8rd.jpg"
       ],
       "variant": "current",
       "show": [
@@ -1722,6 +1726,15 @@
             "style_retrospective_082/crescent_lines/levers/r5_cl_slow_s1"
           ],
           "score": 3
+        },
+        {
+          "colormap": "copper_feathers",
+          "values": {
+            "/tone/median": 0.268,
+            "/tone/p10": 0.025
+          },
+          "keeps": [],
+          "reference": "wallhaven_wallhaven-xld8rd.jpg"
         }
       ]
     },
@@ -1769,8 +1782,8 @@
         ]
       },
       "what": "Glossy blades lit like satin sweep along a spiral's arms, over a softly sculpted relief, with the fractal's fine lace laid on top.",
-      "kept": "five palettes (violet_star_arms, golden_petals, copper_arms, cream_tubes, malign_tubes): 5 locations, 2 ghost formulations and 1 malign_tubes entry tile",
-      "note": "Engine: nothing new (strip trap blades lit across over the slope relief) · reproducible: every keep has its full render record · Matt: a few are okay (round one); teal_tubes and chrome_blades kept nothing and were discarded; of item 052's entries malign_tubes kept one tile (okay but not amazing), gyre_blades and into_forever_rays kept nothing and left the set.",
+      "kept": "five palettes (violet_star_arms, golden_petals, copper_arms, cream_tubes, malign_tubes): 5 locations, 2 ghost formulations and 1 malign_tubes entry tile; shells and blooms round one (style_shells_blooms_r1): its baseline tile in the nautilus_fins map at seat a",
+      "note": "Engine: nothing new (strip trap blades lit across over the slope relief) · reproducible: every keep has its full render record · Matt: a few are okay (round one); teal_tubes and chrome_blades kept nothing and were discarded; of item 052's entries malign_tubes kept one tile (okay but not amazing), gyre_blades and into_forever_rays kept nothing and left the set. Item 093's baseline tile (glossy_spirals in the nautilus_fins map, seat a) kept, scored 3 with the round (Matt, 2026-11-26).",
       "palettes": [
         {
           "colormap": "violet_star_arms",
@@ -1952,6 +1965,14 @@
           ],
           "reference": "malign-25.jpg",
           "score": 2
+        },
+        {
+          "colormap": "nautilus_fins",
+          "values": {},
+          "keeps": [
+            "style_shells_blooms_r1/nautilus_fins/forms_a/nf_a_baseline"
+          ],
+          "score": 3
         }
       ],
       "aliases": [
@@ -1976,7 +1997,8 @@
         "commons_Mandelbrot_3_Xo_C3_A1y_B_C3_A1nh_Ng_E1_BB_8Dt.png",
         "krinshinda.jpg",
         "lander.jpg",
-        "learned.jpg"
+        "learned.jpg",
+        "web_burst.jpg"
       ],
       "variant": "current",
       "show": [
@@ -2088,6 +2110,18 @@
             "style_mode_entries_r1/smooth_bands/learned_smooth/learned_smooth__02_julia-mandelbrot_69e07a2f_learned_smooth"
           ],
           "reference": "learned.jpg"
+        },
+        {
+          "colormap": "starburst_lace",
+          "values": {
+            "/tone/median": 0.185,
+            "/tone/p10": 0.008,
+            "/interior": {
+              "rgb": "#04060c"
+            }
+          },
+          "keeps": [],
+          "reference": "web_burst.jpg"
         }
       ],
       "aliases": [
@@ -3579,7 +3613,7 @@
         "knobs": []
       },
       "kept": "2 tiles: cw_soft at the formulations seat and cw_wide_ember at the phoenix seat; no palette entry and no location kept; round two (style_november_r2): wide_ember at seat e756; library maps tempest_plumes, gilded_leaves and twilight on soft (rings 0.6)",
-      "note": "Matt: round one 2/5 (2026-11-22); kept cw_soft and cw_wide_ember (phoenix seat), no entries (bone_whorl, unfolding_whorl and noir_whorl leave the set and the library), no locations. Round two (2026-11-24): kept wide_ember at seat e756; library maps tempest_plumes, gilded_leaves and twilight on soft (rings 0.6); Scores unchanged. Default (2026-11-25, 087): the kept soft reading (rings 0.6) is the published stack, as light_shafts did.",
+      "note": "Matt: round one 2/5 (2026-11-22); kept cw_soft and cw_wide_ember (phoenix seat), no entries (bone_whorl, unfolding_whorl and noir_whorl leave the set and the library), no locations. Round two (2026-11-24): kept wide_ember at seat e756; library maps tempest_plumes, gilded_leaves and twilight on soft (rings 0.6); Scores unchanged. Default (2026-11-25, 087): the kept soft reading (rings 0.6) is the published stack, as light_shafts did. Item 093's thorn_whorl entry (zhgiu1cypaac1) kept nothing and left the set (Matt, 2026-11-26: neither its version nor nautilus_fins' was kept).",
       "palettes": [
         {
           "colormap": "chrome_whorl",
@@ -3611,15 +3645,6 @@
           "keeps": [
             "style_november_r2/chrome_whorl/maps/cw2_map_twilight"
           ]
-        },
-        {
-          "colormap": "thorn_whorl",
-          "values": {
-            "/tone/median": 0.155,
-            "/tone/p10": 0.019
-          },
-          "keeps": [],
-          "reference": "zhgiu1cypaac1.jpeg"
         }
       ]
     },
@@ -3839,7 +3864,8 @@
         "mean-25.jpg",
         "starlight-25.jpg",
         "patterns_lilac_fractal_122906_2560x1600.jpg",
-        "vitality-25.jpg"
+        "vitality-25.jpg",
+        "wallhaven_wallhaven-xld8rd.jpg"
       ],
       "what": "Frosted feather plumes combed out of the set: fine barbs off a thin lit spine and crossing plumes in violet and magenta (amber star sparks on a blue-black night, teal plumes over a rust haze, ultramarine plumes, periwinkle plumes on royal blue, magma, and ice-blue frost as palette entries).",
       "variant": "current",
@@ -3962,6 +3988,15 @@
           "keeps": [
             "style_november_r2/feather_plumes/maps/fp2_frostmap_flame_wisp_frost"
           ]
+        },
+        {
+          "colormap": "copper_feathers",
+          "values": {
+            "/tone/median": 0.268,
+            "/tone/p10": 0.025
+          },
+          "keeps": [],
+          "reference": "wallhaven_wallhaven-xld8rd.jpg"
         }
       ],
       "aliases": [
@@ -3978,7 +4013,8 @@
       "references": [
         "thermal-pockets-25.jpg",
         "wallhaven_wallhaven-391g76.png",
-        "spellcaster-25.jpg"
+        "spellcaster-25.jpg",
+        "within-25.jpg"
       ],
       "what": "Hollow webs: dark wells of every size framed by bright rims, pockets nested in pockets, a membrane of fine fibres between them (magenta and gold; violet cells, and bone strands on crimson, as palette entries).",
       "variant": "current",
@@ -4003,6 +4039,15 @@
             "style_webs_clouds_r1/hollow_webs/formulations/hwf_stack"
           ],
           "score": 3
+        },
+        {
+          "colormap": "knit_webs",
+          "values": {
+            "/tone/median": 0.323,
+            "/tone/p10": 0.145
+          },
+          "keeps": [],
+          "reference": "within-25.jpg"
         }
       ]
     },
@@ -4621,7 +4666,19 @@
           "colormap": "bone_star",
           "values": {
             "/tone/median": 0.405,
-            "/tone/p10": 0.25
+            "/tone/p10": 0.25,
+            "/layers/2/channel/view/zoom": 0.5,
+            "/layers/3/channel/view/zoom": 0.609,
+            "/layers/4/channel/view/zoom": 0.742,
+            "/layers/5/channel/view/zoom": 0.903,
+            "/layers/6/channel/view/zoom": 0.5,
+            "/layers/7/channel/view/zoom": 0.5,
+            "/layers/8/channel/view/zoom": 0.609,
+            "/layers/9/channel/view/zoom": 0.609,
+            "/layers/10/channel/view/zoom": 0.742,
+            "/layers/11/channel/view/zoom": 0.742,
+            "/layers/12/channel/view/zoom": 0.903,
+            "/layers/13/channel/view/zoom": 0.903
           },
           "keeps": [
             "style_flame_veils_r1/veil_shards/bone_star/vs_a_e_bone_star",
@@ -4633,22 +4690,34 @@
         {
           "colormap": "silk_shards",
           "values": {
+            "/tone/median": 0.135,
+            "/tone/p10": 0.093,
+            "/layers/2/channel/view/zoom": 0.5,
+            "/layers/3/channel/view/zoom": 0.609,
+            "/layers/4/channel/view/zoom": 0.742,
+            "/layers/5/channel/view/zoom": 0.903,
+            "/layers/6/channel/view/zoom": 0.5,
             "/layers/6/opacity": 0.1,
+            "/layers/7/channel/view/zoom": 0.5,
             "/layers/7/opacity": 0.75,
+            "/layers/8/channel/view/zoom": 0.609,
             "/layers/8/opacity": 0.1,
+            "/layers/9/channel/view/zoom": 0.609,
             "/layers/9/opacity": 0.75,
+            "/layers/10/channel/view/zoom": 0.742,
             "/layers/10/opacity": 0.1,
+            "/layers/11/channel/view/zoom": 0.742,
             "/layers/11/opacity": 0.75,
+            "/layers/12/channel/view/zoom": 0.903,
             "/layers/12/opacity": 0.1,
+            "/layers/13/channel/view/zoom": 0.903,
             "/layers/13/opacity": 0.75,
             "/layers/14/opacity": 0.1,
             "/layers/15/opacity": 0.75,
             "/layers/16/opacity": 0.1,
             "/layers/16/sheet/period": 0.0625,
             "/layers/17/opacity": 0.75,
-            "/layers/17/sheet/period": 0.0625,
-            "/tone/median": 0.135,
-            "/tone/p10": 0.093
+            "/layers/17/sheet/period": 0.0625
           },
           "keeps": [
             "style_flame_veils_r1/veil_shards/silk_shards/vs_a_e_silk_shards",
@@ -4674,7 +4743,7 @@
       "show": [
         {
           "keep": "style_flame_veils_r1/veil_shards/forms_a/vs_a_s_base",
-          "caption": "Veil_shards' rimmed green panes folded by a kaleidoscope into a five-point star of veils round a Julia set's lace"
+          "caption": "Green shards of veil, each pane rimmed in gold, folded by a kaleidoscope into a five-point star round a Julia set's lace"
         }
       ],
       "public": {
@@ -4706,6 +4775,9 @@
     },
     {
       "style": "nautilus_fins",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
       "item": "093",
       "reference": "wallhaven_wallhaven-ey2zv8.jpg",
       "references": [
@@ -4714,17 +4786,98 @@
         "waltzing-in-shadows-25.jpg",
         "zhgiu1cypaac1.jpeg"
       ],
-      "what": "A nautilus of layered fins: one translucent fin per escape step, each brightening to a dark-lined rim and lit as a curved surface, gold beads strung along the set's edge and its heart inked dark, gold to violet (orange shell ribs, gold bands round dark teal orbs, and blue-and-gold coils on black as palette entries).",
-      "palettes": []
+      "what": "A nautilus of layered fins: one translucent fin per escape step, each brightening to a dark-lined rim and lit as a curved surface, gold beads strung along the set's edge and its heart inked dark, gold to violet (orange shell ribs as a palette entry).",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_shells_blooms_r1/nautilus_fins/locations/nf_loc_29_phoenix_c34a0553",
+          "caption": "Layered gold fins round small coiled shells, each fin lit like a curved chamber wall, with soft gold beads drifting over the pale shell"
+        }
+      ],
+      "public": {
+        "name": "nautilus-fins",
+        "palette": "nautilus_fins",
+        "knobs": []
+      },
+      "kept": "5 tiles: nf_layered and nf_glass at seat b, locations nf_loc_29 and nf_loc_03; entry shell_tunnels at seat a (plus glossy_spirals' baseline tile in this map at seat a, kept to that mode)",
+      "note": "Matt: round one 3/5 (2026-11-26); catalogued at score 3, lab tier. Kept entry shell_tunnels (score 3); the waltz_orbs and thorn_whorl entries kept nothing and left the set (waltz_orbs lives on as glossy_lobes' entry). Ships as drawn: its p10 miss (0.24 to 0.38 against 0.012) is accepted, no round two.",
+      "palettes": [
+        {
+          "colormap": "nautilus_fins",
+          "values": {},
+          "keeps": [
+            "style_shells_blooms_r1/nautilus_fins/forms_b/nf_b_nf_layered",
+            "style_shells_blooms_r1/nautilus_fins/forms_b/nf_b_nf_glass",
+            "style_shells_blooms_r1/nautilus_fins/locations/nf_loc_29_phoenix_c34a0553",
+            "style_shells_blooms_r1/nautilus_fins/locations/nf_loc_03_julia-multibrot5_7ba4bcab"
+          ],
+          "score": 3
+        },
+        {
+          "colormap": "shell_tunnels",
+          "values": {
+            "/layers/1/light/period": 0.5,
+            "/layers/2/sheet/period": 0.5,
+            "/layers/3/sheet/period": 0.5,
+            "/layers/4/opacity": 0.4,
+            "/tone/median": 0.583,
+            "/tone/p10": 0.364
+          },
+          "keeps": [
+            "style_shells_blooms_r1/nautilus_fins/shell_tunnels/nf_a_e_shell_tunnels"
+          ],
+          "score": 3
+        }
+      ]
     },
     {
       "style": "bokeh_bloom",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
       "item": "093",
       "reference": "wallhaven_wallhaven-8xz1mk.jpg",
       "references": [
         "wallhaven_wallhaven-8xz1mk.jpg"
       ],
       "what": "A glowing bloom with bokeh: soft lit petals in rust and gold with bright rims and fine veining, the set's lace as dark veins, a warm heart, the far field sunk into the dark and strewn with soft out-of-focus discs.",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_shells_blooms_r1/bokeh_bloom/forms_b/bb_b_bb_base",
+          "caption": "Glowing rust and gold petals veined with dark lace round spiral hearts, the far field sunk into shadow behind soft out-of-focus discs"
+        }
+      ],
+      "public": {
+        "name": "bokeh-bloom",
+        "palette": "bokeh_bloom",
+        "knobs": []
+      },
+      "kept": "5 tiles: bb_veins at seat a, bb_base at seat b, locations bb_loc_01, bb_loc_08 and bb_loc_09",
+      "note": "Matt: round one 3/5 (2026-11-26); catalogued at score 3, lab tier.",
+      "palettes": [
+        {
+          "colormap": "bokeh_bloom",
+          "values": {},
+          "keeps": [
+            "style_shells_blooms_r1/bokeh_bloom/forms_a/bb_a_bb_veins",
+            "style_shells_blooms_r1/bokeh_bloom/forms_b/bb_b_bb_base",
+            "style_shells_blooms_r1/bokeh_bloom/locations/bb_loc_01_julia-multibrot4_2b93af96",
+            "style_shells_blooms_r1/bokeh_bloom/locations/bb_loc_08_phoenix-classic_af53ce85",
+            "style_shells_blooms_r1/bokeh_bloom/locations/bb_loc_09_julia-mandelbrot_df5d31a1"
+          ],
+          "score": 3
+        }
+      ]
+    },
+    {
+      "style": "netted_leaves",
+      "item": "094",
+      "reference": "zulu-25.jpg",
+      "references": [
+        "zulu-25.jpg"
+      ],
+      "what": "Netted leaves: lit leaf and chevron shapes outlined dark at every escape step, olive, gold and rust, under a fine fishnet mesh of field lines crossed by level lines that tightens towards the set.",
       "palettes": []
     }
   ]

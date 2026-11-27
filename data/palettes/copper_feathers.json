@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "copper_feathers",
+  "kind": "sequential",
+  "source": "copper_feathers, authored as 7 control points as the albedo of the feather_plumes style's entry from wallhaven-xld8rd: a black night, dark slate, copper-brown and copper, then steel blue and silver plumes to a white with a faint mauve.",
+  "stops": [
+    [0.0, [6, 6, 8]],
+    [0.2, [40, 46, 60]],
+    [0.38, [110, 60, 30]],
+    [0.52, [176, 100, 48]],
+    [0.68, [120, 140, 170]],
+    [0.84, [196, 208, 224]],
+    [1.0, [248, 242, 246]]
+  ]
+}

@@ -1,0 +1,818 @@
+{
+  "schema": 1,
+  "name": "bokeh_bloom",
+  "reference": {
+    "image": "wallhaven_wallhaven-8xz1mk.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a fractal render (flower, depth of field)"
+  },
+  "folder": "fractal-drive-sync/style-keeps/bokeh_bloom",
+  "keeps": [
+    {
+      "id": "style_shells_blooms_r1/bokeh_bloom/forms_a/bb_a_bb_veins",
+      "picker": "style_shells_blooms_r1",
+      "picked": [
+        {
+          "row": "bokeh_bloom/forms_a",
+          "key": "bb_a_bb_veins"
+        }
+      ],
+      "label": "stronger veins: a wider dark vein and more grain through the petals",
+      "image": "style_shells_blooms_r1__bb_a_bb_veins.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_625d9378",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.061923467817755644",
+            "center_im": "0.47644013413660824",
+            "width": "0.2317905187857839"
+          },
+          "maxiter": 3000,
+          "note": "final139_general seat 674 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 674,
+            "key": "625d93784fdf2619",
+            "p_spiral": 0.121601
+          }
+        },
+        "style": "bb_veins",
+        "stack": "bb_veins@09c85925",
+        "colormap": "bokeh_bloom",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_shells_blooms_r1/bokeh_bloom/forms_b/bb_b_bb_base",
+      "picker": "style_shells_blooms_r1",
+      "picked": [
+        {
+          "row": "bokeh_bloom/forms_b",
+          "key": "bb_b_bb_base"
+        }
+      ],
+      "label": "the stack: lit petals with bright rims and fine veining, the lace as dark veins, a warm heart, the far field sunk dark with soft bokeh discs",
+      "image": "style_shells_blooms_r1__bb_b_bb_base.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_29e0b1cd",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-0.7578064602405856",
+              "0.07283215584887273"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "0.375"
+          },
+          "maxiter": 950,
+          "note": "final139_general seat 545 (smooth_angle_min, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 545,
+            "key": "29e0b1cde8661861",
+            "p_spiral": 0.007804
+          }
+        },
+        "style": "bb_base",
+        "stack": "bb_base@27ac70b7",
+        "colormap": "bokeh_bloom",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_shells_blooms_r1/bokeh_bloom/locations/bb_loc_01_julia-multibrot4_2b93af96",
+      "picker": "style_shells_blooms_r1",
+      "picked": [
+        {
+          "row": "bokeh_bloom/locations",
+          "key": "bb_loc_01_julia-multibrot4_2b93af96"
+        }
+      ],
+      "label": "",
+      "image": "style_shells_blooms_r1__bb_loc_01_julia-multibrot4_2b93af96.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot4_2b93af96",
+          "family": {
+            "c": [
+              "0.5085072688522326",
+              "0.6503632328044952"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.04743875543413367",
+            "center_im": "-0.16033033078750109",
+            "width": "0.029809657742725253"
+          },
+          "maxiter": 11983,
+          "note": "final139_general seat 582 (tia, julia:multibrot4)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 582,
+            "key": "2b93af960171e2da",
+            "p_spiral": 0.013541
+          }
+        },
+        "style": "bokeh_bloom",
+        "stack": "bokeh_bloom@90a59ec1",
+        "colormap": "bokeh_bloom",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_shells_blooms_r1/bokeh_bloom/locations/bb_loc_08_phoenix-classic_af53ce85",
+      "picker": "style_shells_blooms_r1",
+      "picked": [
+        {
+          "row": "bokeh_bloom/locations",
+          "key": "bb_loc_08_phoenix-classic_af53ce85"
+        }
+      ],
+      "label": "",
+      "image": "style_shells_blooms_r1__bb_loc_08_phoenix-classic_af53ce85.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix-classic_af53ce85",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.4065328632733176",
+            "center_im": "-0.9202833994415716",
+            "width": "0.060070915300949775"
+          },
+          "maxiter": 10770,
+          "note": "final139_general seat 966 (stripe, phoenix:classic)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 966,
+            "key": "af53ce85b471f700",
+            "p_spiral": 0.028197
+          }
+        },
+        "style": "bokeh_bloom",
+        "stack": "bokeh_bloom@90a59ec1",
+        "colormap": "bokeh_bloom",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_shells_blooms_r1/bokeh_bloom/locations/bb_loc_09_julia-mandelbrot_df5d31a1",
+      "picker": "style_shells_blooms_r1",
+      "picked": [
+        {
+          "row": "bokeh_bloom/locations",
+          "key": "bb_loc_09_julia-mandelbrot_df5d31a1"
+        }
+      ],
+      "label": "",
+      "image": "style_shells_blooms_r1__bb_loc_09_julia-mandelbrot_df5d31a1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_df5d31a1",
+          "family": {
+            "c": [
+              "-0.7464215353014425",
+              "-0.17137095012889225"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-1.0718889294135205",
+            "center_im": "-0.11726541120807724",
+            "width": "0.05244815732082433"
+          },
+          "maxiter": 11005,
+          "note": "final139_general seat 813 (smooth_mean_angle, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 813,
+            "key": "df5d31a1ac11644d",
+            "p_spiral": 0.153273
+          }
+        },
+        "style": "bokeh_bloom",
+        "stack": "bokeh_bloom@90a59ec1",
+        "colormap": "bokeh_bloom",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "bb_base@27ac70b7": {
+      "name": "bb_base",
+      "interior": {
+        "palette": 0.02
+      },
+      "tone": {
+        "median": 0.147,
+        "p10": 0.038
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0,
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 2.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 120.0,
+            "elevation": 38.0,
+            "ambient": 0.4,
+            "diffuse": 0.8,
+            "specular": 0.35,
+            "shininess": 12.0,
+            "rim": 0.2,
+            "rim_power": 3.0,
+            "highlight": {
+              "palette": 1.0
+            }
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "fill": 0.1,
+            "edge": 0.1
+          },
+          "color": {
+            "palette": 0.78
+          },
+          "blend": "screen",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 48.0
+            }
+          },
+          "color": {
+            "palette": 0.12
+          },
+          "blend": "multiply",
+          "opacity": 0.25,
+          "power": 2.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0008,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.85
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "radial": {
+              "center": [
+                0.5,
+                0.5
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.2,
+          "power": 4.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.7,
+          "power": 45.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              }
+            },
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.4,
+              "smallest": 0.05,
+              "fade": 0.5
+            }
+          },
+          "power": 0.3,
+          "color": {
+            "palette": 0.72
+          },
+          "blend": "add",
+          "opacity": 0.85,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": false,
+            "power": 1.5
+          }
+        }
+      ]
+    },
+    "bb_veins@09c85925": {
+      "name": "bb_veins",
+      "interior": {
+        "palette": 0.02
+      },
+      "tone": {
+        "median": 0.147,
+        "p10": 0.038
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0,
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 2.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 120.0,
+            "elevation": 38.0,
+            "ambient": 0.4,
+            "diffuse": 0.8,
+            "specular": 0.35,
+            "shininess": 12.0,
+            "rim": 0.2,
+            "rim_power": 3.0,
+            "highlight": {
+              "palette": 1.0
+            }
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "fill": 0.1,
+            "edge": 0.1
+          },
+          "color": {
+            "palette": 0.78
+          },
+          "blend": "screen",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 48.0
+            }
+          },
+          "color": {
+            "palette": 0.12
+          },
+          "blend": "multiply",
+          "opacity": 0.45,
+          "power": 2.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0015,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "radial": {
+              "center": [
+                0.5,
+                0.5
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.2,
+          "power": 4.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.7,
+          "power": 45.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              }
+            },
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.4,
+              "smallest": 0.05,
+              "fade": 0.5
+            }
+          },
+          "power": 0.3,
+          "color": {
+            "palette": 0.72
+          },
+          "blend": "add",
+          "opacity": 0.85,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": false,
+            "power": 1.5
+          }
+        }
+      ]
+    },
+    "bokeh_bloom@90a59ec1": {
+      "name": "bokeh_bloom",
+      "interior": {
+        "palette": 0.02
+      },
+      "tone": {
+        "median": 0.147,
+        "p10": 0.038
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0,
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 2.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 120.0,
+            "elevation": 38.0,
+            "ambient": 0.4,
+            "diffuse": 0.8,
+            "specular": 0.35,
+            "shininess": 12.0,
+            "rim": 0.2,
+            "rim_power": 3.0,
+            "highlight": {
+              "palette": 1.0
+            }
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "fill": 0.1,
+            "edge": 0.1
+          },
+          "color": {
+            "palette": 0.78
+          },
+          "blend": "screen",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 48.0
+            }
+          },
+          "color": {
+            "palette": 0.12
+          },
+          "blend": "multiply",
+          "opacity": 0.25,
+          "power": 2.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0008,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.85
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "radial": {
+              "center": [
+                0.5,
+                0.5
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.2,
+          "power": 4.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.7,
+          "power": 45.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              }
+            },
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.4,
+              "smallest": 0.05,
+              "fade": 0.5
+            }
+          },
+          "power": 0.3,
+          "color": {
+            "palette": 0.72
+          },
+          "blend": "add",
+          "opacity": 0.85,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": false,
+            "power": 1.5
+          }
+        }
+      ]
+    }
+  }
+}
