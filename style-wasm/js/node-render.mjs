@@ -1,6 +1,6 @@
 // Draw a list of style requests under Node, for `fractal-wallpapers style wasm-parity` and `wasm-speed`:
 //
-//   node node-render.mjs <style_wasm.wasm> <jobs.json> <out dir> [workers]
+//   node node-render.mjs <style_wasm.wasm> <jobs.json> <out dir> [workers] [limit seconds]
 //
 // `jobs.json` is `[{id, request, draw}]`, `draw` one of `frame` (one pass) or
 // `{measure: {width, height, supersample}, tile: [w, h]}` (measured, then tiled; with
@@ -81,23 +81,62 @@ function draw(styles, job, outDir) {
 }
 
 if (isMainThread) {
-  const [wasmPath, jobsPath, outDir, workers] = process.argv.slice(2);
+  // `limit` (seconds, optional): a job still drawing past it is abandoned. A module call
+  // cannot be interrupted inside its own thread, so the main thread terminates that
+  // worker, writes the job `{ok: false, over: true}` and starts a replacement on the same
+  // counter. No limit is the default: parity and speed draw every job whole.
+  const [wasmPath, jobsPath, outDir, workers, limit] = process.argv.slice(2);
   const count = JSON.parse(readFileSync(jobsPath, "utf8")).length;
   const results = join(outDir, "results.jsonl");
+  const limitSeconds = Number(limit) || 0;
   // The next job's index, shared: each worker adds one and draws what it took.
   const next = new SharedArrayBuffer(4);
   const threads = Math.max(1, Math.min(Number(workers) || 1, count));
-  for (let i = 0; i < threads; i++) {
+  const drawing = new Map(); // worker -> {id, since}
+  let watch = null;
+  const start = () => {
     const worker = new Worker(new URL(import.meta.url), {
       workerData: { wasmPath, jobsPath, outDir, next },
     });
-    worker.on("message", (row) => appendFileSync(results, JSON.stringify(row) + "\n"));
+    worker.on("message", (message) => {
+      if (message.started !== undefined) {
+        drawing.set(worker, { id: message.started, since: performance.now() });
+        return;
+      }
+      drawing.delete(worker);
+      appendFileSync(results, JSON.stringify(message) + "\n");
+    });
     // A worker lost (the module would not load, a crash outside a job's own catch):
     // stop at once, since the caller discards a failed run's rows anyway.
     worker.on("error", (error) => {
       console.error(error);
       process.exit(1);
     });
+    worker.on("exit", () => {
+      drawing.delete(worker);
+      live.delete(worker);
+      if (live.size === 0 && watch) {
+        clearInterval(watch);
+      }
+    });
+    live.add(worker);
+  };
+  const live = new Set();
+  for (let i = 0; i < threads; i++) {
+    start();
+  }
+  if (limitSeconds > 0) {
+    watch = setInterval(() => {
+      for (const [worker, { id, since }] of drawing) {
+        if ((performance.now() - since) / 1000 > limitSeconds) {
+          drawing.delete(worker);
+          const row = { id, ok: false, over: true, why: `over ${limitSeconds} s` };
+          appendFileSync(results, JSON.stringify(row) + "\n");
+          worker.terminate();
+          start();
+        }
+      }
+    }, 1000);
   }
 } else {
   const { wasmPath, jobsPath, outDir, next } = workerData;
@@ -109,6 +148,7 @@ if (isMainThread) {
     if (index >= jobs.length) {
       break;
     }
+    parentPort.postMessage({ started: jobs[index].id });
     parentPort.postMessage(draw(styles, jobs[index], outDir));
   }
 }

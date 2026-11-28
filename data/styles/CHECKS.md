@@ -29,7 +29,8 @@ idle, as every time here. A round-one mode has no kept seat and no shown one: gi
 one with `--location <record>`. A mode already known to be over (a whole frame held a
 worker 20+ minutes in 080) reads with `--shrink 4`: a quarter of each side, the time
 scaled by 16, the row's `read_seconds` what it took; so does one clearly over (a seat at
-`maxiter` 10k or more): never a whole frame first, and Node reads count against the
+`maxiter` 10k or more): never a whole frame first; `--give-up 600` abandons a frame
+still drawing after ten minutes and reads it over. And Node reads count against the
 three-worker pool as engines do. What drives cost is interior share times `maxiter`
 (096: ~100 s native at a 28%-interior seat at 11,946, 7-40 s elsewhere), so wasm ranks
 do not predict a native plan. Deepest is not always dearest: dew_bloom

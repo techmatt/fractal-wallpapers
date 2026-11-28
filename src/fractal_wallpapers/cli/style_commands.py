@@ -98,9 +98,14 @@ def print_cost(rows: list[dict], style_wasm) -> int:
                 f"{row['seconds']:8.1f} s  {verdict} the {style_wasm.COST_BAR_SECONDS} s bar"
                 f"{scaled}"
             )
+        elif row.get("gave_up_seconds"):
+            print(
+                f"{row['style']:<20} {row['seat'] or '-':<32} OVER: abandoned after "
+                f"{row['gave_up_seconds']:.0f} s (--give-up)"
+            )
         else:
             print(f"{row['style']:<20} {row['seat'] or '-':<32} FAILED: {row['why']}")
-    return 0 if all(row["ok"] for row in rows) else 1
+    return 0 if all(row["ok"] or row.get("gave_up_seconds") for row in rows) else 1
 
 
 def print_recolour(style_wasm, folder, args: argparse.Namespace, started: float) -> int:
@@ -154,7 +159,13 @@ def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
                     locations.read_one(source, drawing=True)
                     location = style_picker.records_as_written(source)[0]
                 rows = style_wasm.cost(
-                    folder, args.names, args.seat, args.workers, location, args.shrink
+                    folder,
+                    args.names,
+                    args.seat,
+                    args.workers,
+                    location,
+                    args.shrink,
+                    give_up=args.give_up,
                 )
             except (styles.StyleError, locations.LocationError) as refusal:
                 print(refusal)
@@ -1003,6 +1014,14 @@ def add_commands(subcommands) -> None:
         default=1,
         help="draw at 1/N of each side and scale the time by N squared: for a mode already "
         "known to be over the bar (default 1, the whole frame)",
+    )
+    cost.add_argument(
+        "--give-up",
+        type=float,
+        default=None,
+        metavar="SECONDS",
+        help="abandon a frame still drawing after this many seconds and read it as over "
+        "(e.g. 600: an over-bar mode reads as over in minutes; default: draw every frame)",
     )
     cost.add_argument(
         "--workers",

@@ -224,6 +224,31 @@ def test_the_bundle_command_writes_it(tmp_path):
 
 @pytest.mark.slow
 @pytest.mark.skipif(
+    not (style_wasm.wasm_path().is_file() and shutil.which("node")),
+    reason="needs the built module (style_wasm.BUILD) and node",
+)
+def test_a_job_past_its_limit_is_abandoned_and_the_rest_still_draw(tmp_path):
+    """080's two runaway frames held a cost read 20 minutes; with a limit the runner
+    abandons a frame past it, writes it `over`, and a fresh worker draws the next job."""
+    row = style_wasm.published_rows()[0]
+    document = styles.load(row["style"])
+    location = style_catalog.keeps_of(row["style"])[row["show"][0]["keep"]]["render"]["location"]
+    colormap = style_wasm.colormap_of(row["public"]["palette"])
+
+    def asked(size, supersample):
+        return style_wasm.request(location, document["style"], colormap, size, supersample, [], {})
+
+    jobs = [
+        {"id": "huge", "request": asked((3840, 2400), 4), "draw": "frame"},
+        {"id": "small", "request": asked((32, 20), 1), "draw": "frame"},
+    ]
+    huge, small = style_wasm.run_node(jobs, tmp_path, workers=1, limit=1)
+    assert huge["ok"] is False and huge["over"] is True, huge
+    assert small["ok"], small
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(
     not (engine.is_built() and style_wasm.wasm_path().is_file() and shutil.which("node")),
     reason="needs the release engine, the built module (style_wasm.BUILD) and node",
 )

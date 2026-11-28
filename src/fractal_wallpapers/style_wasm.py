@@ -303,8 +303,11 @@ def native_rgb(
         return picture.convert("RGB").tobytes(), report
 
 
-def start_node(jobs: list[dict[str, Any]], folder: Path, workers: int = 1) -> subprocess.Popen:
-    """Start drawing `jobs` under Node on `workers` threads, below normal priority."""
+def start_node(
+    jobs: list[dict[str, Any]], folder: Path, workers: int = 1, limit: float | None = None
+) -> subprocess.Popen:
+    """Start drawing `jobs` under Node on `workers` threads, below normal priority; a job
+    still drawing after `limit` seconds is abandoned as `{ok: false, over: true}`."""
     from fractal_wallpapers import process_control
 
     module = wasm_path()
@@ -321,7 +324,8 @@ def start_node(jobs: list[dict[str, Any]], folder: Path, workers: int = 1) -> su
         json.dump(jobs, handle, ensure_ascii=False)
     runner = crate_dir() / "js" / "node-render.mjs"
     return subprocess.Popen(
-        [node, str(runner), str(module), str(jobs_path), str(folder), str(workers)],
+        [node, str(runner), str(module), str(jobs_path), str(folder), str(workers)]
+        + ([str(limit)] if limit else []),
         creationflags=process_control.child_priority_flags(),
     )
 
@@ -341,9 +345,11 @@ def node_results(
     return [rows[job["id"]] for job in jobs]
 
 
-def run_node(jobs: list[dict[str, Any]], folder: Path, workers: int = 1) -> list[dict[str, Any]]:
+def run_node(
+    jobs: list[dict[str, Any]], folder: Path, workers: int = 1, limit: float | None = None
+) -> list[dict[str, Any]]:
     """Draw `jobs` under Node on `workers` threads; their result rows in the jobs' order."""
-    return node_results(start_node(jobs, folder, workers), jobs, folder)
+    return node_results(start_node(jobs, folder, workers, limit), jobs, folder)
 
 
 #: Beside a folder's `parity.jsonl`: what each job last took as WebAssembly, by id, over
@@ -778,9 +784,12 @@ def cost(
     workers: int = 1,
     location: dict[str, Any] | None = None,
     shrink: int = 1,
+    give_up: float | None = None,
 ) -> list[dict[str, Any]]:
     """The explorer's cost of each style: one 1280x800 ss2 frame as WebAssembly on one
-    thread, at its deepest kept seat, against [`COST_BAR_SECONDS`].
+    thread, at its deepest kept seat, against [`COST_BAR_SECONDS`]. With `give_up` a
+    frame still drawing after that many seconds is abandoned and reads `over` (080's two
+    runaway frames held the read 20 minutes).
 
     Each job is one thread's work whatever `workers` is; a reading is a timing only on a
     quiet box with a core left for every worker. Rows go to `cost.jsonl` in `folder`.
@@ -794,11 +803,14 @@ def cost(
             "(the render pool's count)"
         )
     jobs = cost_jobs(names, seat, location, shrink)
-    results = run_node(jobs, folder, workers)
+    results = run_node(jobs, folder, workers, give_up)
     out = []
     for job, result in zip(jobs, results, strict=True):
         line = {"style": job["style"], "seat": job["seat"], "ok": result["ok"]}
-        if result["ok"]:
+        if result.get("over"):
+            # Abandoned past `give_up`: a read time of at least that, scaled as any read.
+            line.update(over=True, gave_up_seconds=give_up, why=result["why"])
+        elif result["ok"]:
             read = round(result["open"] + result["draw"], 2)
             seconds = round(read * shrink * shrink, 2)
             line.update(maxiter=result["maxiter"], seconds=seconds, over=seconds > COST_BAR_SECONDS)
