@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "soft_veils_teal_echoes",
+  "kind": "sequential",
+  "source": "soft_veils_teal's stops, for the soft_veils entry tuned so the haze's faded echoes read in teal (item 106's re-tune: a darker ground, stronger haze, veils and wisps): a deep pine through sea green and teal to a pale mint",
+  "stops": [
+    [0.0, [10, 40, 36]],
+    [0.2, [18, 72, 66]],
+    [0.4, [30, 112, 102]],
+    [0.6, [56, 160, 146]],
+    [0.8, [132, 212, 190]],
+    [1.0, [226, 248, 212]]
+  ]
+}

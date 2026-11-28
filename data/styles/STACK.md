@@ -120,6 +120,7 @@ projection's `ring`s (escape steps without one). A frame-wide cut spends its ste
 whatever range the frame holds, so under a log-polar view, whose smooth count climbs
 without end towards the vanishing point, they smear into the deep end; a periodic cut is
 the same at every depth. On the smooth count it draws one equipotential tube per ring.
+Too many tubes (108): `bands` on a `log` channel, not a longer `period`, which leaves them crowding by the set.
 
 Under a style the render spec's own `palette` carries the bake and the rolloff only. The
 CLI folds a sequential map (`mirror`) only when a palette layer repeats it (`cycles` > 1):

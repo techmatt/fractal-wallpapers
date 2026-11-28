@@ -2490,8 +2490,8 @@
         ]
       },
       "what": "Soft translucent veils of light rising out of the set, their folds lit and crossing, fine wisps over them.",
-      "kept": "eight palettes (soft_veils_teal, _neon, _ember, _drift, _amber, _fire, _peach, _gold): 5 locations and 1 formulation (current); _amber from jewel_lace's round (item 044); _fire, _peach and _gold from item 046's flame references, whose other five kept nothing; flame veils round one (style_flame_veils_r1): soft_veils_wine at both seats (unscored)",
-      "note": "Engine: nothing new (scooped smooth-count sheets through the frame's loop and five views, masked by the inverted de; stripe wisps; Julia and Misiurewicz seats placed by hand) · a new mode, not a flame_veil variant (flame_veil_blue's baseline tiles kept nothing); olive kept nothing and its map left the library · Matt: interesting texture and detail in sparse regions without removing the underlying fractal's visibility the way the opaque shells do. · 075's entries (2026-11-24): silk_scarves (seat 1), sweet_child (seat 1), twist_in_time (seat 2) 3/5; the_gift kept nothing and left the set and library.",
+      "kept": "eight palettes (soft_veils_teal, _neon, _ember, _drift, _amber, _fire, _peach, _gold): 5 locations and 1 formulation (current); _amber from jewel_lace's round (item 044); _fire, _peach and _gold from item 046's flame references, whose other five kept nothing; flame veils round one (style_flame_veils_r1): soft_veils_wine at both seats (unscored); faded echoes round one (style_soft_veils_echoes_r1): ember, teal, plum and indigo at c03, c06 and c14, soft_veils_teal_echoes (106's re-tuned teal) at c06 and c14, forest at c06 (unscored)",
+      "note": "Engine: nothing new (scooped smooth-count sheets through the frame's loop and five views, masked by the inverted de; stripe wisps; Julia and Misiurewicz seats placed by hand) · a new mode, not a flame_veil variant (flame_veil_blue's baseline tiles kept nothing); olive kept nothing and its map left the library · Matt: interesting texture and detail in sparse regions without removing the underlying fractal's visibility the way the opaque shells do. · 075's entries (2026-11-24): silk_scarves (seat 1), sweet_child (seat 1), twist_in_time (seat 2) 3/5; the_gift kept nothing and left the set and library. · 106's faded echoes (108): both teal readings kept, so the old teal stays the default and the re-tuned one is entry soft_veils_teal_echoes; smoke kept nothing and left the set and library; mode score unchanged.",
       "palettes": [
         {
           "colormap": "soft_veils_teal",
@@ -2499,25 +2499,16 @@
           "keeps": [
             "style_soft_veils_r1/formulations/f_current__00_vm_d3_soft_veils_teal",
             "style_soft_veils_r1/locations/loc__02_vj_d2_r1.08_t0.188_whole_soft_veils_teal",
-            "style_soft_veils_entries_r1/soft_veils/teal_default/01_vj_d3_r1.08_t0.124_whole_soft_veils_teal"
+            "style_soft_veils_entries_r1/soft_veils/teal_default/01_vj_d3_r1.08_t0.124_whole_soft_veils_teal",
+            "style_soft_veils_echoes_r1/c03/c03_teal_old",
+            "style_soft_veils_echoes_r1/c06/c06_teal_old",
+            "style_soft_veils_echoes_r1/c14/c14_teal_old"
           ],
           "score": 5
         },
         {
           "colormap": "soft_veils_ember",
           "values": {
-            "/layers/1/opacity": 0.08,
-            "/layers/2/opacity": 0.08,
-            "/layers/3/opacity": 0.08,
-            "/layers/4/opacity": 0.08,
-            "/layers/5/opacity": 0.08,
-            "/layers/6/opacity": 0.08,
-            "/layers/7/opacity": 0.3,
-            "/layers/8/opacity": 0.3,
-            "/layers/9/opacity": 0.3,
-            "/layers/10/opacity": 0.3,
-            "/layers/11/opacity": 0.3,
-            "/layers/12/opacity": 0.3,
             "/layers/13/opacity": 0.3,
             "/layers/14/opacity": 0.3,
             "/layers/15/opacity": 0.3,
@@ -2531,7 +2522,10 @@
             "style_soft_veils_r1/locations/loc__00_vj_d3_r1.08_t0.124_whole_soft_veils_ember",
             "showcase_g2/soft_veils/soft_veils__c03",
             "showcase_g2/soft_veils/soft_veils__c06",
-            "showcase_g2/soft_veils/soft_veils__c14"
+            "showcase_g2/soft_veils/soft_veils__c14",
+            "style_soft_veils_echoes_r1/c03/c03_ember",
+            "style_soft_veils_echoes_r1/c06/c06_ember",
+            "style_soft_veils_echoes_r1/c14/c14_ember"
           ],
           "score": 5,
           "reference": "detonation-25.jpg"
@@ -2539,18 +2533,6 @@
         {
           "colormap": "soft_veils_neon",
           "values": {
-            "/layers/1/opacity": 0.08,
-            "/layers/2/opacity": 0.08,
-            "/layers/3/opacity": 0.08,
-            "/layers/4/opacity": 0.08,
-            "/layers/5/opacity": 0.08,
-            "/layers/6/opacity": 0.08,
-            "/layers/7/opacity": 0.3,
-            "/layers/8/opacity": 0.3,
-            "/layers/9/opacity": 0.3,
-            "/layers/10/opacity": 0.3,
-            "/layers/11/opacity": 0.3,
-            "/layers/12/opacity": 0.3,
             "/layers/13/opacity": 0.3,
             "/layers/14/opacity": 0.3,
             "/layers/15/opacity": 0.3,
@@ -2569,18 +2551,6 @@
         {
           "colormap": "soft_veils_drift",
           "values": {
-            "/layers/1/opacity": 0.08,
-            "/layers/2/opacity": 0.08,
-            "/layers/3/opacity": 0.08,
-            "/layers/4/opacity": 0.08,
-            "/layers/5/opacity": 0.08,
-            "/layers/6/opacity": 0.08,
-            "/layers/7/opacity": 0.3,
-            "/layers/8/opacity": 0.3,
-            "/layers/9/opacity": 0.3,
-            "/layers/10/opacity": 0.3,
-            "/layers/11/opacity": 0.3,
-            "/layers/12/opacity": 0.3,
             "/layers/13/opacity": 0.35,
             "/layers/14/opacity": 0.35,
             "/layers/15/opacity": 0.35,
@@ -2598,28 +2568,7 @@
         },
         {
           "colormap": "soft_veils_amber",
-          "values": {
-            "/layers/1/opacity": 0.08,
-            "/layers/2/opacity": 0.08,
-            "/layers/3/opacity": 0.08,
-            "/layers/4/opacity": 0.08,
-            "/layers/5/opacity": 0.08,
-            "/layers/6/opacity": 0.08,
-            "/layers/7/opacity": 0.3,
-            "/layers/8/opacity": 0.3,
-            "/layers/9/opacity": 0.3,
-            "/layers/10/opacity": 0.3,
-            "/layers/11/opacity": 0.3,
-            "/layers/12/opacity": 0.3,
-            "/layers/13/opacity": 0.12,
-            "/layers/14/opacity": 0.12,
-            "/layers/15/opacity": 0.12,
-            "/layers/16/opacity": 0.12,
-            "/layers/17/opacity": 0.12,
-            "/layers/18/opacity": 0.12,
-            "/tone/median": 0.374,
-            "/tone/p10": 0.212
-          },
+          "values": {},
           "keeps": [
             "style_jewel_lace_r1/soft_veils/amber/veil__01_julia-multibrot4_a3fdcc6f_jewel_lace_amber"
           ],
@@ -2629,12 +2578,6 @@
         {
           "colormap": "soft_veils_fire",
           "values": {
-            "/layers/1/opacity": 0.08,
-            "/layers/2/opacity": 0.08,
-            "/layers/3/opacity": 0.08,
-            "/layers/4/opacity": 0.08,
-            "/layers/5/opacity": 0.08,
-            "/layers/6/opacity": 0.08,
             "/layers/7/opacity": 0.45,
             "/layers/8/opacity": 0.45,
             "/layers/9/opacity": 0.45,
@@ -2659,24 +2602,6 @@
         {
           "colormap": "soft_veils_peach",
           "values": {
-            "/layers/1/opacity": 0.08,
-            "/layers/2/opacity": 0.08,
-            "/layers/3/opacity": 0.08,
-            "/layers/4/opacity": 0.08,
-            "/layers/5/opacity": 0.08,
-            "/layers/6/opacity": 0.08,
-            "/layers/7/opacity": 0.3,
-            "/layers/8/opacity": 0.3,
-            "/layers/9/opacity": 0.3,
-            "/layers/10/opacity": 0.3,
-            "/layers/11/opacity": 0.3,
-            "/layers/12/opacity": 0.3,
-            "/layers/13/opacity": 0.12,
-            "/layers/14/opacity": 0.12,
-            "/layers/15/opacity": 0.12,
-            "/layers/16/opacity": 0.12,
-            "/layers/17/opacity": 0.12,
-            "/layers/18/opacity": 0.12,
             "/tone/median": 0.577,
             "/tone/p10": 0.42
           },
@@ -2689,12 +2614,6 @@
         {
           "colormap": "soft_veils_gold",
           "values": {
-            "/layers/1/opacity": 0.08,
-            "/layers/2/opacity": 0.08,
-            "/layers/3/opacity": 0.08,
-            "/layers/4/opacity": 0.08,
-            "/layers/5/opacity": 0.08,
-            "/layers/6/opacity": 0.08,
             "/layers/7/opacity": 0.4,
             "/layers/8/opacity": 0.4,
             "/layers/9/opacity": 0.4,
@@ -2719,24 +2638,6 @@
         {
           "colormap": "silk_scarves",
           "values": {
-            "/layers/1/opacity": 0.08,
-            "/layers/2/opacity": 0.08,
-            "/layers/3/opacity": 0.08,
-            "/layers/4/opacity": 0.08,
-            "/layers/5/opacity": 0.08,
-            "/layers/6/opacity": 0.08,
-            "/layers/7/opacity": 0.3,
-            "/layers/8/opacity": 0.3,
-            "/layers/9/opacity": 0.3,
-            "/layers/10/opacity": 0.3,
-            "/layers/11/opacity": 0.3,
-            "/layers/12/opacity": 0.3,
-            "/layers/13/opacity": 0.12,
-            "/layers/14/opacity": 0.12,
-            "/layers/15/opacity": 0.12,
-            "/layers/16/opacity": 0.12,
-            "/layers/17/opacity": 0.12,
-            "/layers/18/opacity": 0.12,
             "/tone/median": 0.224,
             "/tone/p10": 0.078
           },
@@ -2749,24 +2650,6 @@
         {
           "colormap": "sweet_child",
           "values": {
-            "/layers/1/opacity": 0.08,
-            "/layers/2/opacity": 0.08,
-            "/layers/3/opacity": 0.08,
-            "/layers/4/opacity": 0.08,
-            "/layers/5/opacity": 0.08,
-            "/layers/6/opacity": 0.08,
-            "/layers/7/opacity": 0.3,
-            "/layers/8/opacity": 0.3,
-            "/layers/9/opacity": 0.3,
-            "/layers/10/opacity": 0.3,
-            "/layers/11/opacity": 0.3,
-            "/layers/12/opacity": 0.3,
-            "/layers/13/opacity": 0.12,
-            "/layers/14/opacity": 0.12,
-            "/layers/15/opacity": 0.12,
-            "/layers/16/opacity": 0.12,
-            "/layers/17/opacity": 0.12,
-            "/layers/18/opacity": 0.12,
             "/tone/median": 0.378,
             "/tone/p10": 0.243
           },
@@ -2779,24 +2662,6 @@
         {
           "colormap": "twist_in_time",
           "values": {
-            "/layers/1/opacity": 0.08,
-            "/layers/2/opacity": 0.08,
-            "/layers/3/opacity": 0.08,
-            "/layers/4/opacity": 0.08,
-            "/layers/5/opacity": 0.08,
-            "/layers/6/opacity": 0.08,
-            "/layers/7/opacity": 0.3,
-            "/layers/8/opacity": 0.3,
-            "/layers/9/opacity": 0.3,
-            "/layers/10/opacity": 0.3,
-            "/layers/11/opacity": 0.3,
-            "/layers/12/opacity": 0.3,
-            "/layers/13/opacity": 0.12,
-            "/layers/14/opacity": 0.12,
-            "/layers/15/opacity": 0.12,
-            "/layers/16/opacity": 0.12,
-            "/layers/17/opacity": 0.12,
-            "/layers/18/opacity": 0.12,
             "/tone/median": 0.209,
             "/tone/p10": 0.103
           },
@@ -2809,12 +2674,6 @@
         {
           "colormap": "soft_veils_wine",
           "values": {
-            "/layers/1/opacity": 0.08,
-            "/layers/2/opacity": 0.08,
-            "/layers/3/opacity": 0.08,
-            "/layers/4/opacity": 0.08,
-            "/layers/5/opacity": 0.08,
-            "/layers/6/opacity": 0.08,
             "/layers/7/opacity": 0.55,
             "/layers/8/opacity": 0.55,
             "/layers/9/opacity": 0.55,
@@ -2852,9 +2711,20 @@
             "/layers/10/opacity": 0.5,
             "/layers/11/opacity": 0.5,
             "/layers/12/opacity": 0.5,
+            "/layers/13/opacity": 0.35,
+            "/layers/14/opacity": 0.35,
+            "/layers/15/opacity": 0.35,
+            "/layers/16/opacity": 0.35,
+            "/layers/17/opacity": 0.35,
+            "/layers/18/opacity": 0.35,
+            "/tone/median": 0.2,
             "/tone/p10": 0.05
           },
-          "keeps": []
+          "keeps": [
+            "style_soft_veils_echoes_r1/c03/c03_plum",
+            "style_soft_veils_echoes_r1/c06/c06_plum",
+            "style_soft_veils_echoes_r1/c14/c14_plum"
+          ]
         },
         {
           "colormap": "soft_veils_indigo",
@@ -2871,28 +2741,20 @@
             "/layers/10/opacity": 0.5,
             "/layers/11/opacity": 0.5,
             "/layers/12/opacity": 0.5,
+            "/layers/13/opacity": 0.35,
+            "/layers/14/opacity": 0.35,
+            "/layers/15/opacity": 0.35,
+            "/layers/16/opacity": 0.35,
+            "/layers/17/opacity": 0.35,
+            "/layers/18/opacity": 0.35,
+            "/tone/median": 0.2,
             "/tone/p10": 0.05
           },
-          "keeps": []
-        },
-        {
-          "colormap": "soft_veils_smoke",
-          "values": {
-            "/layers/1/opacity": 0.2,
-            "/layers/2/opacity": 0.2,
-            "/layers/3/opacity": 0.2,
-            "/layers/4/opacity": 0.2,
-            "/layers/5/opacity": 0.2,
-            "/layers/6/opacity": 0.2,
-            "/layers/7/opacity": 0.5,
-            "/layers/8/opacity": 0.5,
-            "/layers/9/opacity": 0.5,
-            "/layers/10/opacity": 0.5,
-            "/layers/11/opacity": 0.5,
-            "/layers/12/opacity": 0.5,
-            "/tone/p10": 0.05
-          },
-          "keeps": []
+          "keeps": [
+            "style_soft_veils_echoes_r1/c03/c03_indigo",
+            "style_soft_veils_echoes_r1/c06/c06_indigo",
+            "style_soft_veils_echoes_r1/c14/c14_indigo"
+          ]
         },
         {
           "colormap": "soft_veils_forest",
@@ -2909,9 +2771,47 @@
             "/layers/10/opacity": 0.5,
             "/layers/11/opacity": 0.5,
             "/layers/12/opacity": 0.5,
+            "/layers/13/opacity": 0.35,
+            "/layers/14/opacity": 0.35,
+            "/layers/15/opacity": 0.35,
+            "/layers/16/opacity": 0.35,
+            "/layers/17/opacity": 0.35,
+            "/layers/18/opacity": 0.35,
+            "/tone/median": 0.2,
             "/tone/p10": 0.05
           },
-          "keeps": []
+          "keeps": [
+            "style_soft_veils_echoes_r1/c06/c06_forest"
+          ]
+        },
+        {
+          "colormap": "soft_veils_teal_echoes",
+          "values": {
+            "/layers/1/opacity": 0.3,
+            "/layers/2/opacity": 0.3,
+            "/layers/3/opacity": 0.3,
+            "/layers/4/opacity": 0.3,
+            "/layers/5/opacity": 0.3,
+            "/layers/6/opacity": 0.3,
+            "/layers/7/opacity": 0.45,
+            "/layers/8/opacity": 0.45,
+            "/layers/9/opacity": 0.45,
+            "/layers/10/opacity": 0.45,
+            "/layers/11/opacity": 0.45,
+            "/layers/12/opacity": 0.45,
+            "/layers/13/opacity": 0.35,
+            "/layers/14/opacity": 0.35,
+            "/layers/15/opacity": 0.35,
+            "/layers/16/opacity": 0.35,
+            "/layers/17/opacity": 0.35,
+            "/layers/18/opacity": 0.35,
+            "/tone/median": 0.2,
+            "/tone/p10": 0.038
+          },
+          "keeps": [
+            "style_soft_veils_echoes_r1/c06/c06_teal",
+            "style_soft_veils_echoes_r1/c14/c14_teal"
+          ]
         }
       ],
       "showcase": {
@@ -4880,7 +4780,9 @@
       "public": {
         "name": "cube-facets",
         "palette": "cube_facets",
-        "knobs": []
+        "knobs": [
+          "facets"
+        ]
       },
       "kept": "8 tiles: f_seams, f_coarse (seat b), crimson_cubes and locations cf_loc_07, 14, 22, 27 and 32 (plus the two tri_mosaic baseline tiles, kept to that mode)",
       "note": "Matt: round one 3/5 (2026-11-26).",

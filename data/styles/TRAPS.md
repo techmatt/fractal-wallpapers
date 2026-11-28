@@ -54,7 +54,7 @@ one). A loop is shared only by reads with
 one `fade`: a `step` read beside a faded height runs a loop of its own unless it takes the
 same `fade`. Fade suits a height read laid additively: an inverted `height` (a rim glow)
 reads 1 where the height faded, so it lights the faded part of each shape as a hard-edged
-shard (074's dials take no fade). With `spacing`, nearly every escaping sample enters some shape, so a
+shard (074's dials take no fade); a lower rim `power` widens those shards too, while a higher one with a smaller `largest` reads continuous (108). With `spacing`, nearly every escaping sample enters some shape, so a
 layer on `height` paints the whole frame unless its `power` is high (8 lights a blade's
 spine alone).
 

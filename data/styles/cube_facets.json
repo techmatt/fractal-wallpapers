@@ -20,8 +20,26 @@
     "Reachable by one escape loop: yes, one loop and the mosaic pass (which costs no loop). Distinct from tri_mosaic at draft size: its facets are lit by a fitted relief and a fold pyramid, so neighbours differ at random; here every hexagon of triangles reads as a cube.",
     "Tried: a paper pass of flat inks under the mosaic (each facet the mean of the inks under it: washed and muddy) and a finer lattice (`largest` 0.25). Round one's readings: f_noinlay, f_flat (no faces: what the stack is without its headline), f_coarse (`reach` 0.25, five levels: big cubes), f_seams (a dark rim on every facet) and f_deep (deeper shading, three inlaid levels). `faces` refuses the rhombus and spiral lattices: their rhombi all face one way.",
     "Locations: a `--max-ink 0.10` scout (seed 88) under maxiter 14,000, 35 drafts. Tone as shipped (median 0.484, p10 0.184, nrl8ym's): all 35 hold, and both formulation seats; the crimson_cubes entry misses its own reference's p90 at both seats (0.68 and 0.73 against 0.893, after its whites were widened to three of eight inks): n61olx's whites are wide flat triangles that the mosaic's means and the cube shading pull down.",
-    "Explorer cost (item 088, an upper bound, not on a held box): 8.1 s as WebAssembly on one thread at 1280x800 ss2 at its deepest formulation seat (julia-multibrot3_70e1da1e, maxiter 10,060), of which the mosaic pass is about 2.6 s of the whole frame (5.4 s without it); 9.0 s at the deepest location candidate (maxiter 10,220). Under the 5-minute bar."
+    "Explorer cost (item 088, an upper bound, not on a held box): 8.1 s as WebAssembly on one thread at 1280x800 ss2 at its deepest formulation seat (julia-multibrot3_70e1da1e, maxiter 10,060), of which the mosaic pass is about 2.6 s of the whole frame (5.4 s without it); 9.0 s at the deepest location candidate (maxiter 10,220). Under the 5-minute bar.",
+    "Item 108 (showcase try-again; Matt: less discretizing, so more of the underlying geometry is present, or at least a parameter): one knob, `facets` (the mosaic's `opacity`: under 1 the smooth bands show through the cubes); its range [0.5, 1] is this item's readings (o50, o70), provisional until Matt keeps one, and the default draws what the mode drew. `smallest` is no knob: cells are 0.5/2^k, so between 0.002 and 0.004 it draws two pictures only (seven levels below 0.0039, six above); the `fine` reading (0.002, one more level of cubes along the set) is a lever for the default instead."
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "facets",
+        "label": "Cube strength",
+        "what": "how much of the picture the cubes cover; lower lets the fractal's own bands show through",
+        "default": 1.0,
+        "range": [
+          0.5,
+          1.0
+        ],
+        "set": [
+          "/post/0/opacity"
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "cube_facets",
     "interior": {
@@ -62,7 +80,8 @@
         "inlay": {
           "levels": 2,
           "amount": 0.5
-        }
+        },
+        "opacity": 1.0
       }
     ]
   }
