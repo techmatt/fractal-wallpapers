@@ -33,6 +33,13 @@ carrying the re-tune as values, and move the default only once Matt keeps it ove
 reading (106 moved teal's early and pinned eleven entries; 108 kept both and moved it back
 as `soft_veils_teal_echoes`).
 
+**The lever rule: a shown keep is one the published stack draws.** The site opens an
+Example as the keep's entry plus the knob settings read off it; a keep showing a member
+no entry or knob reaches opens at the defaults instead (089's marbled_pour, 090's
+veil_shards). The fast lane's `style_catalog.check_reached` refuses one the moment `show`
+names it: move the stack to the kept reading (as above) or show another keep;
+`style_catalog.UNREACHED_SHOWN` (the website's `UNREACHED`) lists the accepted ones.
+
 **Merging a style into a mode** (its kept stack is the mode's up to values): rename its
 map to the entry's name, write the entry with `was` the old style name and `values` from
 `style_palettes.values_between(mode stack, kept stack)`, add the old name to the row's
@@ -42,8 +49,10 @@ into the mode's, then delete its style file, keeps file and catalog row.
 **Deleting a mode** (092, 107): its style file, keeps file and catalog row; each map in its
 set that nothing else uses (another row's entry or `public.palette`, a style file's
 `suggested_colormap`, a remaining keep's render) goes with its `data/palettes/<map>.json`
-and its rows in `carriers.jsonl` (the method header's `maps` and `carriers` recounted),
-`groups.jsonl` (its `admitted` row; no group id moves) and `palette_family_shares.csv`.
+and its rows in `carriers.jsonl` (the method header's `maps`, `carriers` and `uncarried`
+recounted), `groups.jsonl` (its `admitted` row; no group id moves) and
+`palette_family_shares.csv`: `palettes remove <map>` does this map half once the mode's
+files are gone, refusing a map the grouping's cut placed or another map joined.
 Its kept pictures stay in `fractal-drive-sync/style-keeps/<mode>/`; a test or doc naming
 the mode is repointed. The deleted mode's shown keeps leave the parity run with it.
 

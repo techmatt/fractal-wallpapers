@@ -649,7 +649,15 @@ def render_style(args: argparse.Namespace) -> int:
         report.pop("style", None)
         print(json.dumps({"output": tracked_name(output), **report}, ensure_ascii=False))
         drawn = style_picker.log_row(
-            output, raw, document["name"], colormap, resolution, supersample, spec["style"]
+            output,
+            raw,
+            document["name"],
+            colormap,
+            resolution,
+            supersample,
+            spec["style"],
+            name=raw.get("name") or locations.name_of(row),
+            report=report,
         )
         before = style_picker.read_log(output.parent).get(output.name)
         if before is not None and before.get("stack") != drawn["stack"]:

@@ -249,7 +249,7 @@ def test_no_public_knob_turns_only_what_a_flat_light_ignores(name):
     document = styles.load(name)
     lights = [layer.get("light") for layer in document["style"]["layers"]]
     for knob in (document.get("public") or {}).get("knobs") or []:
-        pointers = [s if isinstance(s, str) else s["path"] for s in knob["set"]]
+        pointers = [pointer for pointer, _, _ in styles.knob_targets(knob)]
         places = [place for p in pointers for place in styles.targets(document["style"], p)]
         dead = bool(places) and all(
             key in ("period", "bands")

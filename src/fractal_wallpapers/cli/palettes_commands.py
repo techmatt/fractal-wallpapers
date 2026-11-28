@@ -107,7 +107,7 @@ def palettes_carriers(args: argparse.Namespace) -> int:
 
 
 def palettes_add(args: argparse.Namespace) -> int:
-    """Admit one map to the library, with its produced row and its carrier rows."""
+    """Admit maps to the library, each with its produced row and its carrier rows."""
     from fractal_wallpapers import style_catalog, style_palettes, styles
     from fractal_wallpapers.curation import colorize
     from fractal_wallpapers.palettes import (
@@ -144,34 +144,39 @@ def palettes_add(args: argparse.Namespace) -> int:
     except produced.ProducedError:
         counts = None
         print(f"[add] no candidate ledger here: {produced.RECORD_NAME} gains a zero row only")
-    try:
-        report = admit.run(Path(args.map), replace=args.replace, counts=counts)
-    except (
-        admit.AddError,
-        carriers.CarrierError,
-        produced.ProducedError,
-        reference_fields.ReferenceFieldError,
-        colorize.ColorizeError,
-        dominance.DominanceError,
-        groups.GroupError,
-        FileNotFoundError,
-    ) as refusal:
-        print(f"[add] refused: {refusal}")
-        return 1
-    for line in admit.lines(report):
-        print(line)
-    if row is not None:
-        # A palette for the mode's next round: it stays in the set once a tile in it is
-        # kept, and `palettes remove` takes it out when none is.
-        # A round-one row's empty set gains the mode's own map as entry 0 first.
-        default = styles.load(args.mode)["suggested_colormap"]
-        if style_palettes.open_round(row, report["name"], default):
-            style_catalog.write(catalog)
-        print(
-            f"[add] {args.mode}'s palette set: {report['name']} in its round (no keeps yet); "
-            f"tune its values in catalog.json, render with `style render {args.mode} "
-            f"--colormap {report['name']}`"
-        )
+    # Several maps share the one tally (~20 s of ledger reading, 106's four maps paid it
+    # four times); each is admitted whole in turn, and a refusal stops the rest.
+    for index, path in enumerate(args.maps):
+        try:
+            report = admit.run(Path(path), replace=args.replace, counts=counts)
+        except (
+            admit.AddError,
+            carriers.CarrierError,
+            produced.ProducedError,
+            reference_fields.ReferenceFieldError,
+            colorize.ColorizeError,
+            dominance.DominanceError,
+            groups.GroupError,
+            FileNotFoundError,
+        ) as refusal:
+            print(f"[add] refused: {refusal}")
+            if index:
+                print(f"[add] the {index} map(s) before {path} stand; the rest were not tried")
+            return 1
+        for line in admit.lines(report):
+            print(line)
+        if row is not None:
+            # A palette for the mode's next round: it stays in the set once a tile in it is
+            # kept, and `palettes remove` takes it out when none is.
+            # A round-one row's empty set gains the mode's own map as entry 0 first.
+            default = styles.load(args.mode)["suggested_colormap"]
+            if style_palettes.open_round(row, report["name"], default):
+                style_catalog.write(catalog)
+            print(
+                f"[add] {args.mode}'s palette set: {report['name']} in its round (no keeps "
+                f"yet); tune its values in catalog.json, render with `style render "
+                f"{args.mode} --colormap {report['name']}`"
+            )
     return 0
 
 
@@ -410,7 +415,7 @@ def add_commands(subcommands) -> None:
 
     adding = steps.add_parser(
         "add",
-        help="admit one colormap to the library, with its carrier and produced rows",
+        help="admit colormaps to the library, each with its carrier and produced rows",
         description=(
             "Validates a map document the way tests/test_colormaps.py holds the library, "
             "writes it to data/palettes/<name>.json, rebuilds palette_family_shares.csv "
@@ -423,7 +428,13 @@ def add_commands(subcommands) -> None:
             "holds is refused without --replace."
         ),
     )
-    adding.add_argument("map", help="the map's JSON document, anywhere on disk")
+    adding.add_argument(
+        "maps",
+        nargs="+",
+        metavar="map",
+        help="each map's JSON document, anywhere on disk; several read the ledger once and "
+        "are admitted in order, a refusal stopping the rest",
+    )
     adding.add_argument(
         "--replace",
         action="store_true",

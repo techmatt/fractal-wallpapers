@@ -18,6 +18,7 @@ the parameters Python left for the engine to decide, like the iteration cap.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -73,9 +74,18 @@ POOL_WORKERS = 3
 #: fallback for a fresh checkout, not a configuration.
 BUILD_PROFILES = ("release", "debug")
 
+#: Names another engine binary in place of the checkout's own: a byte comparison
+#: against the commit before (`data/styles/CHECKS.md`) sets it to a worktree's build.
+ENGINE_ENV = "FRACTAL_ENGINE"
+
 
 def engine_path() -> Path:
-    """Return the path to the built engine binary."""
+    """Return the path to the built engine binary, or [`ENGINE_ENV`]'s when it is set."""
+    named = os.environ.get(ENGINE_ENV)
+    if named:
+        if Path(named).is_file():
+            return Path(named)
+        raise FileNotFoundError(f"{ENGINE_ENV} names {named}, which is not a file")
     name = ENGINE_BINARY_NAME + (".exe" if sys.platform == "win32" else "")
     target = repo_root() / "engine" / "target"
     for profile in BUILD_PROFILES:

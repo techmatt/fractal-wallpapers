@@ -35,7 +35,12 @@ which pictures Matt marked for a mode no row has tried yet.
 drawn at the same ten locations, `passes` the cells Matt picked, which rank the modes
 (tiers stay his call). A mode with no pass was deleted unless `held` for a later
 try-again (a mode with passes may be held too); each picked cell is a keep, shown after
-the mode's earlier keeps.
+the mode's earlier keeps. A mode's showcase group (`showcase_g1`..`g8`) is the `picker`
+of those keeps in `<style>.keeps.json`; a cell's drawn stack is its row in that picker's
+renders sidecar (`artifacts/pickers/showcase_g<N>/renders.jsonl`).
+
+`show` is what the website lists as a mode's **Examples** (the bundle's `shown`); each
+shown keep must be one the published stack draws ([`check_reached`]).
 
 `public` is a published mode's alone, and its knobs are named here and defined in the
 style file (`data/styles/README.md`'s *Public knobs*), so `check` holds the two to
@@ -118,7 +123,14 @@ def load(path: Path | None = None) -> dict[str, Any]:
 
 
 def write(catalog: dict[str, Any], path: Path | None = None) -> Path:
-    """The catalog written back in its own shape (two-space JSON, LF)."""
+    """The catalog written back in its own shape (two-space JSON, LF).
+
+    `json.dumps(obj, indent=2, ensure_ascii=False) + "\\n"` round-trips `catalog.json`
+    and every `<style>.keeps.json` byte for byte, so a scripted edit loads and dumps
+    them; seven hand-wrapped style files (`clockwork_rings`, `field_lines`,
+    `floating_on_dreams`, `marbled_pour`, `molten_flow`, `pour_cells`, `stirred_ink`)
+    do not, and take a text edit.
+    """
     path = path or catalog_path()
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n")
@@ -133,7 +145,11 @@ def keeps_of(style: str) -> dict[str, dict[str, Any]]:
 
 
 def check(catalog: dict[str, Any]) -> list[str]:
-    """Each way the catalog disagrees with itself or the styles; empty when it holds."""
+    """Each way the catalog disagrees with itself or the styles; empty when it holds.
+
+    Run on every read by [`load`], which raises on any problem; only tests call it
+    directly. The dearer [`check_reached`] is the fast lane's alone.
+    """
     from fractal_wallpapers import style_palettes, styles
 
     if catalog.get("schema") != SCHEMA:
@@ -223,6 +239,145 @@ def check(catalog: dict[str, Any]) -> list[str]:
         if knobs:
             problems += [f"{name}: {problem}" for problem in styles.check_public(document)]
     return problems
+
+
+def check_reached(catalog: dict[str, Any]) -> list[str]:
+    """Each published row's shown keep that its published stack cannot draw ([`unreached`])
+    and [`UNREACHED_SHOWN`] does not name; empty when every Example opens at its keep.
+
+    Not part of [`check`] (it costs ~0.4 s, and `load` runs on every read): the fast
+    lane's `tests/test_style_catalog.py` runs it, so it fires on the item whose `show`
+    first names such a keep, not one website rebake later (089's marbled_pour, 090's
+    veil_shards).
+    """
+    from fractal_wallpapers import style_keeps, styles
+
+    problems = []
+    for row in catalog["modes"]:
+        if row.get("status") != "publish":
+            continue
+        name = row["style"]
+        document = styles.load(name)
+        record = style_keeps.read_record(name)
+        keeps = {entry["id"]: entry for entry in record["keeps"]}
+        for shown in row.get("show", []):
+            keep = keeps.get(shown.get("keep"), {})
+            render = keep.get("render", {})
+            if keep.get("id") in UNREACHED_SHOWN or render.get("stack") not in record["stacks"]:
+                continue
+            drawn = {"colormap": render["colormap"], "stack": record["stacks"][render["stack"]]}
+            differences = unreached(row, document, drawn)
+            if differences:
+                problems.append(
+                    f"{name}: shows '{keep['id']}', which no palette entry or knob setting of"
+                    f" the published stack draws ({differences[0]}; {len(differences)} in"
+                    " all): move the stack to it (data/styles/PALETTES.md, the lever rule)"
+                    " or show another keep"
+                )
+    return problems
+
+
+#: Shown keeps (by keep id) that no palette entry or knob setting of their mode's
+#: published stack draws, so the site's Example opens at the defaults instead of the kept
+#: picture: the website's `UNREACHED` (`explorer/style.test.mjs`) by keep id, which does
+#: not shift when `show` is edited. A new one is Matt's call: move the stack to the kept
+#: reading (`data/styles/PALETTES.md`, the lever rule) or show another keep.
+UNREACHED_SHOWN = frozenset(
+    {
+        "style_banded_lines_r1/formulations/f_glints__01_julia-mandelbrot_ac9b1000_banded_lines_rose",  # noqa: E501
+        "style_chrome_stars_hairlines_r1/hairline_rays/formulations/w3__r_six__00_julia-mandelbrot_291fb1ab",  # noqa: E501
+        "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_one__00_julia-multibrot5_ff8bfbca",  # noqa: E501
+        "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_plumes__00_julia-multibrot5_ff8bfbca",  # noqa: E501
+        "style_classic_escape_texture_r1/frost_stipple/formulations/fin_sA__s3_dust__00_m2_seahorse_tail_spiral",  # noqa: E501
+        "style_classic_escape_texture_r1/grain_fans/formulations/fin_gA__g3_six__00_julia-mandelbrot_53dd5a48",  # noqa: E501
+        "style_cut_paper_poster_r1/paper_layers/formulations/paper_a__p_tia__00_phoenix_fc131a7f",
+        "style_flame_veil_chalk_r1/formulations/f_blades_only__01_vj_d3_r1.08_t0.124_whole_flame_veil_chalk",  # noqa: E501
+        "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp",  # noqa: E501
+        "style_flame_wisps_r1/flame_wisp_spark/formulations/spark__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_spark",  # noqa: E501
+        "style_glossy_spirals_r1/golden_petals/locations/golden_petals__loc__05_julia-multibrot5_d032aac0_golden_petals",  # noqa: E501
+        "style_light_beams_r1/starburst_veils/formulations/sbf_long",
+        "style_november_r2/feather_plumes/kept/fp2_stack_2d84_tempest",
+        "style_organic_relief_r1/scaled_folds/formulations/f_nocells__01_phoenix-classic_9a93355d_horror_scales",  # noqa: E501
+        "style_star_eye_r1/formulations/f_fine__01_rg_d3_0.65_0.0_w4.5_star_eye",
+        "style_stirred_ink_r1/stirred_ink/locations/loc__01_phoenix_71e305f0_stirred_ink",
+        "style_teal_filaments_r1/formulations/f_flame__00_cu_0.285_0.01_0_0_w2.8_teal_filaments",
+        "style_tri_mosaic_r1/formulations_a/fo_f_inlay__00_phoenix_fc131a7f_tri_mosaic",
+        "style_tri_mosaic_r1/spiral/sp_f_spiral__00_julia-mandelbrot_35b23c31_tri_mosaic",
+        "style_webs_clouds_r1/storm_clouds/formulations/scf_ledges",
+        # Pixel-identical to the stack: 108 spelled the mosaic's `opacity` default (1.0)
+        # for the `facets` knob, and the site's `asRead` fills layer members only.
+        "showcase_g7/cube_facets/cube_facets__c06",
+        "showcase_g7/cube_facets/cube_facets__c08",
+        "showcase_g7/cube_facets/cube_facets__c11",
+        "showcase_g7/cube_facets/cube_facets__c17",
+        "style_flat_graphic_r1/cube_facets/locations/cf_loc_14_julia-mandelbrot_e696b870",
+    }
+)
+
+
+def _as_read(stack: dict[str, Any]) -> dict[str, Any]:
+    """A stack as the site compares it: each layer's `blend` and `opacity` filled."""
+    import copy
+
+    stack = copy.deepcopy(stack)
+    layers = stack.get("layers")
+    for layer in layers if isinstance(layers, list) else []:
+        layer.setdefault("blend", "normal")
+        layer.setdefault("opacity", 1.0)
+    return stack
+
+
+def _differences(ours: Any, theirs: Any, path: str = "") -> list[str]:
+    """Each pointer where two stacks differ, numbers compared exactly as the site does."""
+    if isinstance(ours, dict) and isinstance(theirs, dict):
+        out = []
+        for key in sorted(set(ours) | set(theirs)):
+            if key not in ours or key not in theirs:
+                out.append(f"{path}/{key} only in the {'keep' if key in theirs else 'stack'}")
+            else:
+                out += _differences(ours[key], theirs[key], f"{path}/{key}")
+        return out
+    if isinstance(ours, list) and isinstance(theirs, list) and len(ours) == len(theirs):
+        pairs = enumerate(zip(ours, theirs, strict=True))
+        return [d for i, (a, b) in pairs for d in _differences(a, b, f"{path}/{i}")]
+    if ours == theirs:
+        return []
+    return [f"{path}: {json.dumps(theirs)[:40]}, not {json.dumps(ours)[:40]}"]
+
+
+def unreached(row: dict[str, Any], document: dict[str, Any], shown: dict[str, Any]) -> list[str]:
+    """Where a shown keep's stack differs from every way the site can draw it; empty when
+    an entry plus an in-range knob setting rebuilds it (the keep is *reached*).
+
+    A Python twin of the website's `exampleCustom` (`explorer/style.js`): the entry for
+    the keep's map (else the default) on the published stack, `tone` dropped when the keep
+    drew none, then each knob set from the keep's value at its first target when that is
+    in range. It ignores projection knobs, which no published mode carries.
+    """
+    from fractal_wallpapers import style_palettes, styles
+
+    entry = style_palettes.entry_for(row, shown["colormap"]) or row["palettes"][0]
+    base = style_palettes.apply(document["style"], entry.get("values") or {})
+    keep = {**shown["stack"], "name": document["style"]["name"]}
+    if "tone" not in keep:
+        base.pop("tone", None)
+
+    def first(stack: dict[str, Any], pointer: str) -> Any:
+        found = styles.targets(stack, pointer)
+        return found[0][0][found[0][1]] if found else None
+
+    settings = {}
+    for knob in (document.get("public") or {}).get("knobs") or []:
+        pointer, scale, offset = styles.knob_targets(knob)[0]
+        theirs = first(keep, pointer)
+        if isinstance(theirs, bool) or not isinstance(theirs, int | float):
+            continue
+        if theirs != first(base, pointer):
+            value = (theirs - offset) / scale
+            if knob["range"][0] <= value <= knob["range"][1]:
+                settings[knob["name"]] = value
+    turned = styles.with_knobs({**document, "style": base}, settings)["style"]
+    return _differences(_as_read(turned), _as_read(keep))
 
 
 #: A `showcase` reading's fields; `passes` and `item` are required.

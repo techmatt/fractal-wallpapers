@@ -56,7 +56,7 @@ It is one more solve of the same solver, so it cannot disagree with the aim.
 An offset `c* + ε·s·e^{iθ}` can land in three materially different places, and
 they make three different pictures. Inside the component the Julia set is
 connected with an attracting `p`-cycle; **outside `M`** it is a Cantor dust and
-has no interior at all, which is the case `unresolved_share` leans on; and
+has no interior at all, which is what lets a render's unresolved share be read; and
 inside `M` but outside the component means the offset fell into the child bulb
 attached at that very root, where the cycle has period `p·q`. [`classify`] tells
 the three apart by reading the multiplier of the nearby `p`-cycle rather than by
@@ -118,8 +118,7 @@ TOL_DPS_MARGIN = 6
 #: Generous rather than policy-shaped, because this is arithmetic and not a
 #: picture: an offset at `ε = 1e-4` inside the component has `|λ|` within about
 #: `1e-4` of one, and an orbit settling onto that cycle needs order `1/(1 − |λ|)`
-#: steps. The cap that renders the picture is a separate question and
-#: `unresolved_share` is where it is asked.
+#: steps. The cap that renders the picture is a separate question, the render's own.
 CLASSIFY_CAP = 1 << 18
 
 #: Escape radius for the classification orbit, in the degree's own units.
@@ -464,8 +463,7 @@ def classify(c, period: int, seed=None, *, degree: int = 2, cap: int = CLASSIFY_
 
     * [`OUTSIDE`] — the critical orbit escapes, so the filled Julia set is a
       Cantor dust with **no interior**. That is what makes the unresolved share
-      readable off a render at all; see `Part 3` of this module's own pilot and
-      `unresolved_share` in `scratch`'s leg.
+      readable off a render at all.
     * [`INSIDE_COMPONENT`] — the orbit settles onto an attracting cycle of
       minimal period `period`. The Julia set is connected with a `p`-cycle basin.
     * [`INSIDE_OTHER`] — inside `M`, on some other component. Just across a

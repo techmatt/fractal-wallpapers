@@ -440,3 +440,11 @@ def test_remove_refuses_a_map_the_grouping_cut_placed(library) -> None:
     with pytest.raises(admit.AddError, match="cut placed it"):
         admit.remove("Garnet Tide", directory=where)
     assert _files(where) == before
+
+
+def test_palettes_add_takes_several_maps_for_one_ledger_tally():
+    """106 paid the ~20 s tally once a map for four maps; the command takes them together."""
+    from fractal_wallpapers import cli
+
+    args = cli.build_parser().parse_args(["palettes", "add", "a.json", "b.json", "--mode", "x"])
+    assert args.maps == ["a.json", "b.json"] and args.mode == "x"

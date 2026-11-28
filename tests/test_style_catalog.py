@@ -7,7 +7,7 @@ import json
 import pytest
 from tests.test_styles import tunnel
 
-from fractal_wallpapers import cli, style_catalog, styles
+from fractal_wallpapers import cli, style_catalog, style_palettes, styles
 
 
 def published():
@@ -40,20 +40,36 @@ def test_a_round_one_row_has_neither_score_nor_status():
     assert problems == [f"{row['style']}: score None is not 1 to 5"]
 
 
-#: Shown keeps whose record carries a projection member a knob writes, at a value outside
-#: the knob's range, by (style, keep): a picture the page shows that no setting of its
-#: own slider draws. `docs/qa-findings.md` has each; what to do is Matt's call.
-#: Empty since 107 deleted `teal_tunnel`, the one mode that had one.
-OUT_OF_RANGE_SHOWN: set[tuple[str, str]] = set()
+def test_a_shown_keep_is_one_its_published_stack_draws():
+    """089 and 090 showed keeps no entry or knob of the published stack reaches, so the
+    site's Example opened at the defaults; the website's ratchet caught each one rebake
+    late. `style_catalog.UNREACHED_SHOWN` is this repo's copy of that list, a ratchet:
+    each id in it is still shown and still unreached."""
+    catalog = style_catalog.load()
+    assert style_catalog.check_reached(catalog) == []
+    flagged = set()
+    for row in published():
+        document = styles.load(row["style"])
+        for shown in style_catalog.shown_of(row):
+            if shown.get("keep") in style_catalog.UNREACHED_SHOWN:
+                assert style_catalog.unreached(row, document, shown), shown["keep"]
+                flagged.add(shown["keep"])
+    assert flagged == style_catalog.UNREACHED_SHOWN
 
 
-@pytest.mark.parametrize("row", published(), ids=lambda row: row["style"])
-def test_a_shown_keep_is_one_its_own_knobs_can_draw(row):
+def test_a_keep_at_a_knob_setting_is_reached_and_a_member_no_knob_writes_is_not():
+    """Replaces 107's projection-only guard, which read no published mode: a keep drawn
+    at an in-range knob setting is reached; one carrying a member no knob writes is not."""
+    row = next(row for row in published() if row.get("public", {}).get("knobs"))
     document = styles.load(row["style"])
-    for shown in style_catalog.shown_of(row):
-        outside = outside_its_knobs(document, shown["location"])
-        named = (row["style"], shown.get("keep"))
-        assert bool(outside) == (named in OUT_OF_RANGE_SHOWN), outside
+    knob = document["public"]["knobs"][0]
+    entry = row["palettes"][0]
+    stack = style_palettes.apply(document["style"], entry.get("values") or {})
+    turned = styles.with_knobs({**document, "style": stack}, {knob["name"]: knob["range"][1]})
+    shown = {"colormap": entry["colormap"], "stack": turned["style"]}
+    assert style_catalog.unreached(row, document, shown) == []
+    stray = {"colormap": entry["colormap"], "stack": {**turned["style"], "stray": 1}}
+    assert style_catalog.unreached(row, document, stray) == ["/stray only in the keep"]
 
 
 def outside_its_knobs(document: dict, location: dict) -> list[tuple[str, float]]:
@@ -75,8 +91,9 @@ def outside_its_knobs(document: dict, location: dict) -> list[tuple[str, float]]
 
 
 def test_a_record_past_its_knob_s_range_is_caught():
-    """No published mode's knob writes a projection member since 107 (the guard above reads
-    none), so its rule is held here on a log-polar stand-in: `turns` is 3 to 6."""
+    """No published mode's knob writes a projection member since 107 (and
+    `style_catalog.unreached` ignores projection knobs), so a projection member past its
+    knob's range is held here on a log-polar stand-in: `turns` is 3 to 6."""
     document = tunnel()
     assert outside_its_knobs(document, {"projection": {"log_polar": {"turns": 8}}}) == [
         ("turns", 8)

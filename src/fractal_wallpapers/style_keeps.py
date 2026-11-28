@@ -42,6 +42,13 @@ it is refused), `style picker`, a choices file keeping it (`{name, rows: [{id, k
 notes}]}`), `style keep` (`--manifest <picker>/manifest.json` when the choices name
 none); then point the catalog's `show` at the new id and rebuild `style bundle` and
 `style gallery`.
+
+**A try-again against a showcase cell** (108) is the same route from a picker's renders
+sidecar: the cell's row in `artifacts/pickers/showcase_g<N>/renders.jsonl` holds its
+`location` and `stack` as drawn (entry values in); write that stack with the change as a
+draft `.json` and the location to a file, `style render <draft> --location <file>`, and
+picker the redraw beside the cell. A kept reading lands under the lever rule
+(`data/styles/PALETTES.md`); a cell's entry is its `colormap`, never parsed from a label.
 """
 
 from __future__ import annotations

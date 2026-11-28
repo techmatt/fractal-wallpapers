@@ -24,6 +24,11 @@ naming the build.
 **Which parity run is owed** is `style-wasm/README.md`'s *Parity: which run is owed*:
 the full run after engine style-path or module code, `style wasm-parity <name>` after one
 style's change, `--member <name>` ([`knob_writers`]) after a name-list edit.
+
+**Four seat notions, on purpose**: [`parity_jobs`] draws every shown keep's location;
+[`speed`] the first shown (what a page opens); [`kept_seats`] (`style cost`) the deepest
+*keep* first, which can be a seat the page never opens (080: flame_wisp_frost's keep at
+`maxiter` 9,062, not shown); [`POST_SEAT`] a Mandelbrot frame for a style with no keep.
 """
 
 from __future__ import annotations
@@ -172,6 +177,10 @@ def bundle() -> dict[str, Any]:
     and the pictures the catalog shows, each with the location and map it was drawn at:
     the places a page can open the mode at, known to hold the look (a lab example's is a
     draft's).
+
+    **The text a site reader sees** comes from three fields, all in American spelling
+    (106): the row's `what` (else the style file's `description`, a fallback no
+    published row now uses), each `show[].caption`, and each knob's `label` and `what`.
     """
     from fractal_wallpapers import style_catalog, style_palettes, styles
 

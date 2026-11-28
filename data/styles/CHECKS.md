@@ -6,7 +6,8 @@ small at its keeps, each public knob at both ends and each palette entry, flagge
 too: the flag is a symptom. What hunts found is
 `docs/qa-findings.md`. A `slow` flag is a timing: re-run it on an idle box. To tell a new
 flag from an old one, sweep also through the engine built from the commit before (a
-worktree's `cargo build`, `engine.engine_path` pointed at its binary) and compare bytes.
+worktree's `cargo build`, `FRACTAL_ENGINE=<worktree>/engine/target/release/fractal-engine`
+set for the run: `engine.ENGINE_ENV`) and compare bytes.
 
 A sweep's seats are distinct places: a keep at a place an earlier keep took (a later
 round's lever at its seat) is passed over for the next.
@@ -27,7 +28,11 @@ printed against Matt's 5-minute bar (`style_wasm.COST_BAR_SECONDS`), rows in `co
 idle, as every time here. A round-one mode has no kept seat and no shown one: give it
 one with `--location <record>`. A mode already known to be over (a whole frame held a
 worker 20+ minutes in 080) reads with `--shrink 4`: a quarter of each side, the time
-scaled by 16, the row's `read_seconds` what it took. Deepest is not always dearest: dew_bloom
+scaled by 16, the row's `read_seconds` what it took; so does one clearly over (a seat at
+`maxiter` 10k or more): never a whole frame first, and Node reads count against the
+three-worker pool as engines do. What drives cost is interior share times `maxiter`
+(096: ~100 s native at a 28%-interior seat at 11,946, 7-40 s elsewhere), so wasm ranks
+do not predict a native plan. Deepest is not always dearest: dew_bloom
 takes 21 s at its own deepest seat and about 260 s at `POST_SEAT`, whose interior runs
 every sample to the cap. Before it, `style wasm-parity <name>` writes
 each job's `wasm_seconds` (one thread, 640x400 ss2) to `parity.jsonl` and `seconds.json`
@@ -36,3 +41,9 @@ in its folder; 1280x800 is about four times that. Read it on an idle box. A roun
 deeper seats cost more. To
 scale from a native render there, `native_seconds` is the engine on
 `style_wasm.PARITY_NATIVE_THREADS` (three), not one thread: compare thread-seconds.
+
+**Pickers** (manifest, pictures, renders sidecar) live in `artifacts/pickers/<name>/`,
+never under `experiments/` (excluded here) or `out/`: `style keep` reads them there.
+`style render --location` reads a file: a bash `<(...)` substitution is no path on
+Windows, so write the record under `out/<item>/` first. A Python printing repo text
+(`·`, `λ`, curly quotes) on this box sets `PYTHONIOENCODING=utf-8` (cp1252 console).

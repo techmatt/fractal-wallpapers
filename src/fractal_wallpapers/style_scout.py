@@ -202,6 +202,8 @@ def location_of(seat: dict[str, Any]) -> dict[str, Any]:
             "seat": row["seat"],
             "key": row["key"],
             "p_spiral": row.get("p_spiral"),
+            # The family label as a field, so a plan groups seats without parsing `name`.
+            "partition": row["partition"],
         },
     }
 

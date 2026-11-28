@@ -10,6 +10,23 @@ import pytest
 from fractal_wallpapers import cli, style_keeps, style_picker, style_scout
 
 
+def test_a_render_log_row_names_its_seat_and_keeps_the_engine_s_timings(tmp_path):
+    """107's showcase sidecars wrote nameless locations, and seats are keyed by name; 096
+    had to keep stdout to time a picker. The row now carries both."""
+    location = {"family": {"kind": "mandelbrot"}, "render": {"maxiter": 500}}
+    report = {"seconds": {"paint": 1.5, "resample": 0.1}, "interior_fraction": 0.25, "x": 1}
+    row = style_picker.log_row(
+        tmp_path / "a.png", location, "yas", "yas", [64, 40], 1, {}, name="c03", report=report
+    )
+    assert row["location"] == {"family": {"kind": "mandelbrot"}, "maxiter": 500, "name": "c03"}
+    assert row["seconds"] == report["seconds"] and row["interior_fraction"] == 0.25
+    assert "x" not in row
+    named = style_picker.log_row(
+        tmp_path / "a.png", {**location, "name": "mine"}, "yas", "yas", [64, 40], 1, {}, "c03"
+    )
+    assert named["location"]["name"] == "mine"
+
+
 def seat(key, partition, spiral=False, p=0.05, width="0.01", kind="mandelbrot", degree=2):
     family = {"kind": kind, "degree": degree}
     if kind == "julia":

@@ -4,7 +4,10 @@
 the output folder, one row per picture:
 
     {"picture": "<file name>", "location": {<location record>}, "style": "<name>",
-     "colormap": "<map>", "resolution": [w, h], "supersample": n, "stack": {<as drawn>}}
+     "colormap": "<map>", "resolution": [w, h], "supersample": n, "stack": {<as drawn>},
+     "seconds": {"paint": s, "resample": s}, "interior_fraction": f}
+
+(the location always named: a record written without `name` takes its picture's).
 
 `style picker <plan.json>` turns pictures into a picker: it converts each to a JPEG under
 the picker's folder, writes the manifest (every row `"kind": "many"`, `"default": []`, so
@@ -53,17 +56,24 @@ def log_row(
     resolution: list[int],
     supersample: int,
     stack: dict[str, Any],
+    name: str | None = None,
+    report: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """One render log row; the location is the record as written, less what drew it.
 
     Its cap stays, lifted out of the render when that is where the record kept it, so
-    a redraw iterates exactly as the picture did.
+    a redraw iterates exactly as the picture did. A record written without a `name`
+    takes `name`, the one its picture is named by: a keep's seat is keyed by it (107's
+    showcase sidecars wrote none). `report` is the engine's, whose `seconds` and
+    `interior_fraction` the row keeps, so a picker's timings outlive its stdout.
     """
     place = {key: value for key, value in location.items() if key != "render"}
     cap = (location.get("render") or {}).get("maxiter")
     if "maxiter" not in place and cap is not None:
         place["maxiter"] = cap
-    return {
+    if name and not place.get("name"):
+        place["name"] = name
+    row = {
         "picture": picture.name,
         "location": place,
         "style": style,
@@ -72,6 +82,10 @@ def log_row(
         "supersample": int(supersample),
         "stack": stack,
     }
+    for key in ("seconds", "interior_fraction"):
+        if report and key in report:
+            row[key] = report[key]
+    return row
 
 
 def records_as_written(path: Path) -> list[dict[str, Any]]:

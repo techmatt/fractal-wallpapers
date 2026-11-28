@@ -221,3 +221,16 @@ def test_a_width_that_is_not_a_number_is_refused_rather_than_defaulted() -> None
     """A cap silently fallen back to would be a picture nobody asked for."""
     with pytest.raises(RuntimeError, match="widths"):
         engine.maxiter_for(["wide"])
+
+
+def test_the_engine_variable_names_another_binary_and_refuses_a_missing_one(tmp_path, monkeypatch):
+    """CHECKS.md's byte comparison against the commit before renders through a worktree's
+    build: `FRACTAL_ENGINE` names it, and a name that is no file refuses, never falls back."""
+    other = tmp_path / "fractal-engine.exe"
+    other.write_bytes(b"")
+    monkeypatch.setenv(engine.ENGINE_ENV, str(other))
+    assert engine.engine_path() == other
+    monkeypatch.setenv(engine.ENGINE_ENV, str(tmp_path / "gone"))
+    with pytest.raises(FileNotFoundError, match=engine.ENGINE_ENV):
+        engine.engine_path()
+    assert not engine.is_built()
