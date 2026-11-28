@@ -191,20 +191,16 @@
 {"schema": 1, "kind": "admitted", "map": "glow_filaments", "group": "map:glow_filaments", "joined": false, "nearest": "map:Emerald Furnace", "m1": 0.047482}
 {"schema": 1, "kind": "admitted", "map": "bronze_packing", "group": "map:Rust Kiln", "joined": true, "nearest": "map:Rust Kiln", "m1": 0.037838}
 {"schema": 1, "kind": "admitted", "map": "ribbon_packing", "group": "map:ribbon_packing", "joined": false, "nearest": "map:commons_Mandelbrot_5_B_C3_B4ng_Ng_C5_A9_Gi_C3_A1c", "m1": 0.06812}
-{"schema": 1, "kind": "admitted", "map": "gilded_orbs", "group": "map:desert-nights-25", "joined": true, "nearest": "map:desert-nights-25", "m1": 0.032275}
 {"schema": 1, "kind": "admitted", "map": "field_lines", "group": "map:field_lines", "joined": false, "nearest": "map:Wine & Slate Candle", "m1": 0.053113}
 {"schema": 1, "kind": "admitted", "map": "leaf_veins", "group": "map:leaf_veins", "joined": false, "nearest": "map:Deco Malachite", "m1": 0.055499}
-{"schema": 1, "kind": "admitted", "map": "shaded_blades", "group": "map:metal-emblem-25", "joined": true, "nearest": "map:metal-emblem-25", "m1": 0.038812}
 {"schema": 1, "kind": "admitted", "map": "glossy_lobes", "group": "map:glossy_lobes", "joined": false, "nearest": "map:Three Coals", "m1": 0.063752}
 {"schema": 1, "kind": "admitted", "map": "lit_petals", "group": "map:lit_petals", "joined": false, "nearest": "map:02598_asgardrealmofthegods_2560x1600", "m1": 0.056743}
 {"schema": 1, "kind": "admitted", "map": "seahorse_halo", "group": "map:seahorse_halo", "joined": false, "nearest": "map:CMRmap", "m1": 0.098276}
 {"schema": 1, "kind": "admitted", "map": "citadel_gold", "group": "map:citadel_gold", "joined": false, "nearest": "map:ribbon_packing", "m1": 0.06391}
 {"schema": 1, "kind": "admitted", "map": "teal_filaments", "group": "map:skyroads-25", "joined": true, "nearest": "map:skyroads-25", "m1": 0.038559}
-{"schema": 1, "kind": "admitted", "map": "ember_rose", "group": "map:ember_rose", "joined": false, "nearest": "map:gist_heat", "m1": 0.05213}
 {"schema": 1, "kind": "admitted", "map": "star_eye", "group": "m23", "joined": true, "nearest": "m23", "m1": 0.037931}
 {"schema": 1, "kind": "admitted", "map": "clockwork_rings", "group": "map:clockwork_rings", "joined": false, "nearest": "map:glow_filaments", "m1": 0.043079}
 {"schema": 1, "kind": "admitted", "map": "flame_veil_blue", "group": "map:flame_veil_blue", "joined": false, "nearest": "map:Signal & Sulphur", "m1": 0.084585}
-{"schema": 1, "kind": "admitted", "map": "flame_veil_teal", "group": "map:flame_veil_teal", "joined": false, "nearest": "map:Deep Current", "m1": 0.042643}
 {"schema": 1, "kind": "admitted", "map": "flame_veil_violet", "group": "map:flame_veil_violet", "joined": false, "nearest": "map:skyroads-blue-25", "m1": 0.071906}
 {"schema": 1, "kind": "admitted", "map": "flame_veil_chalk", "group": "map:flame_veil_chalk", "joined": false, "nearest": "map:moon-over-mandelbrot-25", "m1": 0.044014}
 {"schema": 1, "kind": "admitted", "map": "council_smooth", "group": "map:council_smooth", "joined": false, "nearest": "map:Oxblood Procession", "m1": 0.051076}
@@ -212,12 +208,10 @@
 {"schema": 1, "kind": "admitted", "map": "dalooka_smooth", "group": "map:dalooka_smooth", "joined": false, "nearest": "map:Cobalt-Rust Double Flare", "m1": 0.059654}
 {"schema": 1, "kind": "admitted", "map": "corkscrew_smooth", "group": "map:corkscrew_smooth", "joined": false, "nearest": "map:High Cyan, Low Gold", "m1": 0.053485}
 {"schema": 1, "kind": "admitted", "map": "flame_wisp_amber", "group": "map:flame_wisp_amber", "joined": false, "nearest": "map:Burnt Boulevard", "m1": 0.049531}
-{"schema": 1, "kind": "admitted", "map": "flame_wisp_crimson", "group": "map:flame_wisp_crimson", "joined": false, "nearest": "map:Nebula Flare", "m1": 0.122623}
 {"schema": 1, "kind": "admitted", "map": "flame_wisp_frost", "group": "map:Delft Deep", "joined": true, "nearest": "map:Delft Deep", "m1": 0.027773}
 {"schema": 1, "kind": "admitted", "map": "flame_wisp_spark", "group": "map:flame_wisp_spark", "joined": false, "nearest": "map:skyroads-blue-25", "m1": 0.053887}
 {"schema": 1, "kind": "admitted", "map": "flame_wisp_waves", "group": "map:flame_wisp_waves", "joined": false, "nearest": "map:flame_veil_teal", "m1": 0.047372}
 {"schema": 1, "kind": "admitted", "map": "molten_flow", "group": "map:molten_flow", "joined": false, "nearest": "map:Ember Terracotta", "m1": 0.045409}
-{"schema": 1, "kind": "admitted", "map": "chrome_orbs", "group": "map:peekaboo-25", "joined": true, "nearest": "map:peekaboo-25", "m1": 0.030606}
 {"schema": 1, "kind": "admitted", "map": "cauliflower_scales", "group": "map:cauliflower_scales", "joined": false, "nearest": "map:to-the-bone-25", "m1": 0.058906}
 {"schema": 1, "kind": "admitted", "map": "crescent_lines", "group": "map:crescent_lines", "joined": false, "nearest": "map:Opal & Ink", "m1": 0.056669}
 {"schema": 1, "kind": "admitted", "map": "copper_arms", "group": "map:copper_arms", "joined": false, "nearest": "map:Petrol Boundary", "m1": 0.059402}
@@ -246,7 +240,6 @@
 {"schema": 1, "kind": "admitted", "map": "malign_tubes", "group": "map:malign_tubes", "joined": false, "nearest": "map:jadanti", "m1": 0.076688}
 {"schema": 1, "kind": "admitted", "map": "greenhorn", "group": "map:greenhorn", "joined": false, "nearest": "map:house-of-ivory-25", "m1": 0.059886}
 {"schema": 1, "kind": "admitted", "map": "sliced_strips", "group": "map:sliced_strips", "joined": false, "nearest": "map:Copper Fathom", "m1": 0.062219}
-{"schema": 1, "kind": "admitted", "map": "cut_tiles", "group": "map:cut_tiles", "joined": false, "nearest": "map:riding-on-the-tide-25", "m1": 0.083507}
 {"schema": 1, "kind": "admitted", "map": "horror_scales", "group": "map:horror_scales", "joined": false, "nearest": "map:Oxblood Standard", "m1": 0.056892}
 {"schema": 1, "kind": "admitted", "map": "interstellar_webs", "group": "map:interstellar_webs", "joined": false, "nearest": "map:dessert-union-25", "m1": 0.049599}
 {"schema": 1, "kind": "admitted", "map": "tri_mosaic", "group": "map:tri_mosaic", "joined": false, "nearest": "map:02598_asgardrealmofthegods_2560x1600", "m1": 0.063642}
@@ -255,22 +248,15 @@
 {"schema": 1, "kind": "admitted", "map": "ring_pools", "group": "map:ring_pools", "joined": false, "nearest": "map:wallhaven_wallhaven-47xzoe", "m1": 0.078011}
 {"schema": 1, "kind": "admitted", "map": "paper_layers", "group": "map:paper_layers", "joined": false, "nearest": "map:lit_petals", "m1": 0.05586}
 {"schema": 1, "kind": "admitted", "map": "poster_curls", "group": "map:poster_curls", "joined": false, "nearest": "map:ring_pools", "m1": 0.075167}
-{"schema": 1, "kind": "admitted", "map": "gouache_cut", "group": "map:gouache_cut", "joined": false, "nearest": "map:Verdigris Furnace", "m1": 0.087984}
-{"schema": 1, "kind": "admitted", "map": "mercury_tubes", "group": "map:mercury_tubes", "joined": false, "nearest": "map:flame_wisp_spark", "m1": 0.074828}
-{"schema": 1, "kind": "admitted", "map": "neon_loops", "group": "map:neon_loops", "joined": false, "nearest": "map:ten-leaf-clover-25", "m1": 0.058257}
 {"schema": 1, "kind": "admitted", "map": "hairline_rays", "group": "map:hairline_rays", "joined": false, "nearest": "map:flame_veil_violet", "m1": 0.075455}
-{"schema": 1, "kind": "admitted", "map": "tan_star_beams", "group": "map:tan_star_beams", "joined": false, "nearest": "map:Warm Core in the Deep", "m1": 0.047584}
 {"schema": 1, "kind": "admitted", "map": "frost_stipple", "group": "map:frost_stipple", "joined": false, "nearest": "map:Rose Above", "m1": 0.05491}
 {"schema": 1, "kind": "admitted", "map": "grain_fans", "group": "map:grain_fans", "joined": false, "nearest": "map:abstract-wallpaper-backgrounds-hd", "m1": 0.06852}
-{"schema": 1, "kind": "admitted", "map": "frost_filaments", "group": "map:frost_filaments", "joined": false, "nearest": "map:skyroads-blue-25", "m1": 0.056672}
 {"schema": 1, "kind": "admitted", "map": "draped_folds", "group": "map:draped_folds", "joined": false, "nearest": "map:paper_layers", "m1": 0.048674}
 {"schema": 1, "kind": "admitted", "map": "gilded_leaves", "group": "map:gilded_leaves", "joined": false, "nearest": "map:02598_asgardrealmofthegods_2560x1600", "m1": 0.053656}
 {"schema": 1, "kind": "admitted", "map": "chrome_whorl", "group": "map:not-yet-lost-25", "joined": true, "nearest": "map:not-yet-lost-25", "m1": 0.039505}
 {"schema": 1, "kind": "admitted", "map": "dew_bloom", "group": "map:dew_bloom", "joined": false, "nearest": "map:wallhaven_wallhaven-45pqz1", "m1": 0.053365}
 {"schema": 1, "kind": "admitted", "map": "filigree_dials", "group": "map:filigree_dials", "joined": false, "nearest": "map:cet_linear_protanopic_deuteranopic_kbjyw_5_95_c25", "m1": 0.054173}
 {"schema": 1, "kind": "admitted", "map": "shadow_dials", "group": "map:shadow_dials", "joined": false, "nearest": "map:metal-emblem-25", "m1": 0.047144}
-{"schema": 1, "kind": "admitted", "map": "glass_orbs", "group": "map:fractal_abstraction_lines_130499_2560x1600", "joined": true, "nearest": "map:fractal_abstraction_lines_130499_2560x1600", "m1": 0.037827}
-{"schema": 1, "kind": "admitted", "map": "cobalt_orbs", "group": "map:cobalt_orbs", "joined": false, "nearest": "map:soft_veils_drift", "m1": 0.073529}
 {"schema": 1, "kind": "admitted", "map": "feather_plumes", "group": "map:feather_plumes", "joined": false, "nearest": "map:Butter Fathom", "m1": 0.054948}
 {"schema": 1, "kind": "admitted", "map": "tempest_plumes", "group": "map:tempest_plumes", "joined": false, "nearest": "map:Nebula Flare", "m1": 0.07259}
 {"schema": 1, "kind": "admitted", "map": "mean_plumes", "group": "map:mean_plumes", "joined": false, "nearest": "map:cet_linear_tritanopic_krjcw_5_95_c24", "m1": 0.047573}
@@ -305,7 +291,6 @@
 {"schema": 1, "kind": "admitted", "map": "silk_shards", "group": "map:silk_shards", "joined": false, "nearest": "map:Cochineal & Cream", "m1": 0.05266}
 {"schema": 1, "kind": "admitted", "map": "bone_star", "group": "map:bone_star", "joined": false, "nearest": "map:Umber & Ember", "m1": 0.042711}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_wine", "group": "map:soft_veils_wine", "joined": false, "nearest": "m61", "m1": 0.063072}
-{"schema": 1, "kind": "admitted", "map": "violet_threads", "group": "map:violet_threads", "joined": false, "nearest": "map:tempest_plumes", "m1": 0.039937}
 {"schema": 1, "kind": "admitted", "map": "blue_nebula", "group": "map:blue_nebula", "joined": false, "nearest": "map:Ice-to-Ember Cliff", "m1": 0.06631}
 {"schema": 1, "kind": "admitted", "map": "nautilus_fins", "group": "map:nautilus_fins", "joined": false, "nearest": "map:golden_petals", "m1": 0.049797}
 {"schema": 1, "kind": "admitted", "map": "shell_tunnels", "group": "map:shell_tunnels", "joined": false, "nearest": "map:Spice Procession", "m1": 0.048673}

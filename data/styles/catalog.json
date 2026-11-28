@@ -25,6 +25,34 @@
         {
           "keep": "style_bronze_packing_rekeep/rekeep/rekeep_2_05_julia-multibrot3_c8f1fd60",
           "caption": "Another three-fold Julia set, gold star-flowers among its discs"
+        },
+        {
+          "keep": "showcase_g3/bronze_packing/bronze_packing__c03",
+          "caption": "A spiral in a four-fold Julia set, in bronze_packing (showcase c03)"
+        },
+        {
+          "keep": "showcase_g3/bronze_packing/bronze_packing__c09",
+          "caption": "A dense four-fold Julia set, in bronze_packing (showcase c09)"
+        },
+        {
+          "keep": "showcase_g3/bronze_packing/bronze_packing__c11",
+          "caption": "A dense five-fold Julia set, in magma (showcase c11)"
+        },
+        {
+          "keep": "showcase_g3/bronze_packing/bronze_packing__c12",
+          "caption": "A dense Julia set of the Mandelbrot family, in bronze_packing (showcase c12)"
+        },
+        {
+          "keep": "showcase_g3/bronze_packing/bronze_packing__c14",
+          "caption": "Lace in a phoenix set, in bronze_packing (showcase c14)"
+        },
+        {
+          "keep": "showcase_g3/bronze_packing/bronze_packing__c17",
+          "caption": "A four-fold minibrot, in magma (showcase c17)"
+        },
+        {
+          "keep": "showcase_g3/bronze_packing/bronze_packing__c18",
+          "caption": "A spiral arm of the five-fold Mandelbrot set, in bronze_packing (showcase c18)"
         }
       ],
       "public": {
@@ -57,7 +85,12 @@
             "style_bronze_packing_rekeep/rekeep/rekeep_1_02_julia-multibrot3_b4307aa3",
             "style_bronze_packing_rekeep/rekeep/rekeep_2_05_julia-multibrot3_c8f1fd60",
             "style_geometric_sheets_r1/bronze_packing/greenhorn/baseline_bronze__00_02_julia-multibrot3_b4307aa3_bronze_packing",
-            "style_ornate_rings_orbs_r1/filigree_dials/formulations/fdf_bronze_packing"
+            "style_ornate_rings_orbs_r1/filigree_dials/formulations/fdf_bronze_packing",
+            "showcase_g3/bronze_packing/bronze_packing__c03",
+            "showcase_g3/bronze_packing/bronze_packing__c09",
+            "showcase_g3/bronze_packing/bronze_packing__c12",
+            "showcase_g3/bronze_packing/bronze_packing__c14",
+            "showcase_g3/bronze_packing/bronze_packing__c18"
           ],
           "score": 4
         },
@@ -65,7 +98,9 @@
           "colormap": "magma",
           "values": {},
           "keeps": [
-            "style_bronze_packing_r1/palettes/magma"
+            "style_bronze_packing_r1/palettes/magma",
+            "showcase_g3/bronze_packing/bronze_packing__c11",
+            "showcase_g3/bronze_packing/bronze_packing__c17"
           ],
           "score": 4
         },
@@ -115,7 +150,11 @@
           "reference": "greenhorn-25.jpg",
           "score": 3
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 7,
+        "item": "107"
+      }
     },
     {
       "style": "glossy_lobes",
@@ -142,6 +181,14 @@
         {
           "keep": "style_glossy_lobes_r1/locations/locations__09_mandelbrot_c7223dda_glossy_lobes",
           "caption": "Lit lobes along the edge of the Mandelbrot set"
+        },
+        {
+          "keep": "showcase_g6/glossy_lobes/glossy_lobes__c03",
+          "caption": "A spiral in a four-fold Julia set, in waltz_orbs (showcase c03)"
+        },
+        {
+          "keep": "showcase_g6/glossy_lobes/glossy_lobes__c17",
+          "caption": "A four-fold minibrot, in waltz_orbs (showcase c17)"
         }
       ],
       "public": {
@@ -176,12 +223,18 @@
             "/tone/p10": 0.04
           },
           "keeps": [
-            "style_shells_blooms_r1/glossy_lobes/waltz_orbs/glossy_lobes_b_waltz_orbs"
+            "style_shells_blooms_r1/glossy_lobes/waltz_orbs/glossy_lobes_b_waltz_orbs",
+            "showcase_g6/glossy_lobes/glossy_lobes__c03",
+            "showcase_g6/glossy_lobes/glossy_lobes__c17"
           ],
           "reference": "waltzing-in-shadows-25.jpg",
           "score": 3
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 2,
+        "item": "107"
+      }
     },
     {
       "style": "floating_on_dreams",
@@ -206,6 +259,14 @@
         {
           "keep": "style_floating_r1/shortlist/07_m2_eight_beaded_arms",
           "caption": "Eight beaded arms at the edge of the Mandelbrot set"
+        },
+        {
+          "keep": "showcase_g1/floating_on_dreams/floating_on_dreams__c11",
+          "caption": "A dense five-fold Julia set, in floating_on_dreams (showcase c11)"
+        },
+        {
+          "keep": "showcase_g1/floating_on_dreams/floating_on_dreams__c17",
+          "caption": "A four-fold minibrot, in floating_on_dreams (showcase c17)"
         }
       ],
       "public": {
@@ -229,7 +290,9 @@
           "keeps": [
             "style_floating_r1/shortlist/00_d5_julia_ten_spokes",
             "style_floating_r1/shortlist/06_d5_julia_bulb_ring",
-            "style_floating_r1/shortlist/07_m2_eight_beaded_arms"
+            "style_floating_r1/shortlist/07_m2_eight_beaded_arms",
+            "showcase_g1/floating_on_dreams/floating_on_dreams__c11",
+            "showcase_g1/floating_on_dreams/floating_on_dreams__c17"
           ],
           "score": 3
         },
@@ -279,7 +342,11 @@
           ],
           "score": 3
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 2,
+        "item": "107"
+      }
     },
     {
       "style": "yas",
@@ -304,6 +371,18 @@
         {
           "keep": "style_yas_r1/shortlist/04_m2_julia_ten_arm_rosette_whirl",
           "caption": "A ten-arm whirl in a Julia set"
+        },
+        {
+          "keep": "showcase_g2/yas/yas__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in Copper Fathom (showcase c06)"
+        },
+        {
+          "keep": "showcase_g2/yas/yas__c09",
+          "caption": "A dense four-fold Julia set, in Copper Fathom (showcase c09)"
+        },
+        {
+          "keep": "showcase_g2/yas/yas__c18",
+          "caption": "A spiral arm of the five-fold Mandelbrot set, in Copper Fathom (showcase c18)"
         }
       ],
       "public": {
@@ -338,7 +417,10 @@
           "keeps": [
             "style_yas_r1/palettes/03_d4_julia_seven_arm_rosette__copper_fathom",
             "style_yas_r1/palettes/08_m2_seahorse_rosette_centered__copper_fathom",
-            "style_yas_r1/palettes/09_m2_seahorse_tail_spiral__copper_fathom"
+            "style_yas_r1/palettes/09_m2_seahorse_tail_spiral__copper_fathom",
+            "showcase_g2/yas/yas__c06",
+            "showcase_g2/yas/yas__c09",
+            "showcase_g2/yas/yas__c18"
           ],
           "score": 3
         },
@@ -384,67 +466,11 @@
           ],
           "score": 3
         }
-      ]
-    },
-    {
-      "style": "teal_tunnel",
-      "score": 3,
-      "status": "publish",
-      "tier": "curated",
-      "item": "007",
-      "reference": "795548-3840x2160-desktop-4k-fractal-background.jpg",
-      "references": [
-        "795548-3840x2160-desktop-4k-fractal-background.jpg"
       ],
-      "variant": "current",
-      "show": [
-        {
-          "keep": "style_teal_tunnel_r1/variants/turns3",
-          "caption": "Teal arches curling off a branching Julia set, nine arms to a turn"
-        },
-        {
-          "keep": "style_teal_tunnel_r1/shortlist/09_m_seed4",
-          "caption": "Teal arches along a two-arm branch of the Mandelbrot set"
-        },
-        {
-          "keep": "style_teal_tunnel_r1/shortlist/01_j_dendrite_beta",
-          "caption": "Teal arches running down a branching Julia set toward its tip"
-        }
-      ],
-      "public": {
-        "name": "arch-tunnel",
-        "palette": "teal_tunnel",
-        "knobs": [
-          "turns",
-          "light_angle",
-          "arch_glow",
-          "brightness"
-        ]
-      },
-      "what": "Log-polar tunnel: beveled arches shrinking ring by ring to a vanishing point, navy cells between teal arms.",
-      "kept": "2 locations, yas palette, turns3 + straight",
-      "note": "Engine: log_polar projection, period on light/sheet · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The published stack is five turns; three (kept) is inside its Arm count knob. · Matt: 2 of 9 locations kept; the reference's corner gems are not drawn.",
-      "palettes": [
-        {
-          "colormap": "teal_tunnel",
-          "values": {},
-          "keeps": [
-            "style_teal_tunnel_r1/shortlist/01_j_dendrite_beta",
-            "style_teal_tunnel_r1/shortlist/09_m_seed4",
-            "style_teal_tunnel_r1/variants/straight",
-            "style_teal_tunnel_r1/variants/turns3"
-          ],
-          "score": 3
-        },
-        {
-          "colormap": "yas",
-          "values": {},
-          "keeps": [
-            "style_teal_tunnel_r1/palettes/yas"
-          ],
-          "score": 3
-        }
-      ]
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "ribbon_packing",
@@ -466,6 +492,10 @@
         {
           "keep": "style_ribbon_packing_r1/locations/locations__07_julia-multibrot6_9aa8f703_ribbon_packing",
           "caption": "Another six-fold Julia set packed with ribbons and discs"
+        },
+        {
+          "keep": "showcase_g6/ribbon_packing/ribbon_packing__c14",
+          "caption": "Lace in a phoenix set, in ribbon_packing (showcase c14)"
         }
       ],
       "public": {
@@ -491,102 +521,16 @@
             "style_retrospective_082/ribbon_packing/kept/r6_rp_default_s1",
             "style_retrospective_082/ribbon_packing/kept/r6_rp_default_s2",
             "style_retrospective_082/ribbon_packing/levers/r6_rp_cool_s1",
-            "style_retrospective_082/ribbon_packing/levers/r6_rp_lilac_s2"
+            "style_retrospective_082/ribbon_packing/levers/r6_rp_lilac_s2",
+            "showcase_g6/ribbon_packing/ribbon_packing__c14"
           ],
           "score": 3
         }
-      ]
-    },
-    {
-      "style": "gilded_orbs",
-      "score": 3,
-      "status": "publish",
-      "tier": "curated",
-      "item": "015",
-      "reference": "ancient-empires-25.jpg",
-      "references": [
-        "ancient-empires-25.jpg"
       ],
-      "variant": "current",
-      "show": [
-        {
-          "keep": "style_gilded_orbs_r1/locations/locations__05_mandelbrot_c0061186_gilded_orbs",
-          "caption": "Engraved gold filigree and jewel orbs along the Mandelbrot set"
-        },
-        {
-          "keep": "style_gilded_orbs_r1/formulations/f_many_orbs__01_multibrot3_1ec297e1_gilded_orbs",
-          "caption": "More and bigger orbs along a two-fold Multibrot set"
-        }
-      ],
-      "public": {
-        "name": "gilt-orbs",
-        "palette": "gilded_orbs",
-        "knobs": [
-          "orb_size",
-          "filigree",
-          "haze",
-          "sparkle",
-          "light_angle"
-        ]
-      },
-      "what": "Engraved gold filigree set with jewel orbs, a warm haze and sparkle.",
-      "kept": "1 location, many_orbs; retrospective (style_retrospective_082): the default at the many_orbs seat; the dimmed interior",
-      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · many_orbs (kept) is the top of the Orb size knob. · Matt: 1 of 12 locations kept; wide minibrot interiors wash to a pale blob. Retrospective (2026-11-24, style_retrospective_082): kept the default at the many_orbs seat; the dimmed interior; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
-      "palettes": [
-        {
-          "colormap": "gilded_orbs",
-          "values": {},
-          "keeps": [
-            "style_gilded_orbs_r1/formulations/f_many_orbs__01_multibrot3_1ec297e1_gilded_orbs",
-            "style_gilded_orbs_r1/locations/locations__05_mandelbrot_c0061186_gilded_orbs",
-            "style_retrospective_082/gilded_orbs/kept/r6_go_default_s2",
-            "style_retrospective_082/gilded_orbs/levers/r6_go_dim_blob"
-          ],
-          "score": 3
-        }
-      ]
-    },
-    {
-      "style": "shaded_blades",
-      "score": 3,
-      "status": "publish",
-      "tier": "curated",
-      "item": "018",
-      "reference": "chronoscope-25.jpg",
-      "references": [
-        "chronoscope-25.jpg"
-      ],
-      "variant": "lune_blades",
-      "show": [
-        {
-          "keep": "style_shaded_blades_r1/formulations/f_lune_blades__00_multibrot3_1ec297e1_shaded_blades",
-          "caption": "Smoothly shaded crescent blades along a two-fold Multibrot set"
-        }
-      ],
-      "public": {
-        "name": "steel-blades",
-        "palette": "shaded_blades",
-        "knobs": [
-          "blade_size",
-          "fine_detail",
-          "light_angle",
-          "sheen"
-        ]
-      },
-      "what": "Smoothly shaded crescent blades over a hairline of light along the set.",
-      "kept": "1 formulation; retrospective (style_retrospective_082): blades bounded at largest 0.08",
-      "note": "Engine: bubble strip, across, smallest (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Your one keep, the crescent-based lune_blades, is now the style's default stack; the strip shape is not published. Matt: giant foreground blades occlude the finer ones and kill the fractal feel, so Blade size tops out at the kept size. Retrospective (2026-11-24, style_retrospective_082): kept blades bounded at largest 0.08; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
-      "palettes": [
-        {
-          "colormap": "shaded_blades",
-          "values": {},
-          "keeps": [
-            "style_shaded_blades_r1/formulations/f_lune_blades__00_multibrot3_1ec297e1_shaded_blades",
-            "style_retrospective_082/shaded_blades/levers/r6_sb_b008_s1"
-          ],
-          "score": 3
-        }
-      ]
+      "showcase": {
+        "passes": 1,
+        "item": "107"
+      }
     },
     {
       "style": "lit_petals",
@@ -608,6 +552,22 @@
         {
           "keep": "style_lit_petals_rekeep/rekeep/rekeep_2_julia-mandelbrot_06abe945",
           "caption": "Lit petals with jeweled edges on a Julia set"
+        },
+        {
+          "keep": "showcase_g3/lit_petals/lit_petals__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in golden_egg_petals (showcase c06)"
+        },
+        {
+          "keep": "showcase_g3/lit_petals/lit_petals__c08",
+          "caption": "A chain of minibrots on the Mandelbrot set's rim, in lit_petals (showcase c08)"
+        },
+        {
+          "keep": "showcase_g3/lit_petals/lit_petals__c11",
+          "caption": "A dense five-fold Julia set, in lit_petals (showcase c11)"
+        },
+        {
+          "keep": "showcase_g3/lit_petals/lit_petals__c18",
+          "caption": "A spiral arm of the five-fold Mandelbrot set, in lit_petals (showcase c18)"
         }
       ],
       "public": {
@@ -632,7 +592,10 @@
             "style_lit_petals_r1/locations/locations__02_julia-mandelbrot_17e354d3_lit_petals",
             "style_lit_petals_r1/locations/locations__08_julia-mandelbrot_06abe945_lit_petals",
             "style_lit_petals_rekeep/rekeep/rekeep_2_julia-mandelbrot_06abe945",
-            "style_mode_entries_r1/lit_petals/golden_egg_petals/golden_egg_petals__default__00_julia-mandelbrot_17e354d3_lit_petals"
+            "style_mode_entries_r1/lit_petals/golden_egg_petals/golden_egg_petals__default__00_julia-mandelbrot_17e354d3_lit_petals",
+            "showcase_g3/lit_petals/lit_petals__c08",
+            "showcase_g3/lit_petals/lit_petals__c11",
+            "showcase_g3/lit_petals/lit_petals__c18"
           ],
           "score": 3
         },
@@ -646,11 +609,16 @@
             "/tone/p10": 0.194
           },
           "keeps": [
-            "style_mode_entries_r1/lit_petals/golden_egg_petals/golden_egg_petals__01_julia-mandelbrot_06abe945_golden_egg_petals"
+            "style_mode_entries_r1/lit_petals/golden_egg_petals/golden_egg_petals__01_julia-mandelbrot_06abe945_golden_egg_petals",
+            "showcase_g3/lit_petals/lit_petals__c06"
           ],
           "reference": "golden-egg-closeup-25.jpg"
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 4,
+        "item": "107"
+      }
     },
     {
       "style": "glow_filaments",
@@ -755,6 +723,18 @@
         {
           "keep": "style_teal_filaments_r1/formulations/f_flame__00_cu_0.285_0.01_0_0_w2.8_teal_filaments",
           "caption": "The same glow with a flame-like lift, round a Julia set's spiral"
+        },
+        {
+          "keep": "showcase_g6/teal_filaments/teal_filaments__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in teal_filaments (showcase c06)"
+        },
+        {
+          "keep": "showcase_g6/teal_filaments/teal_filaments__c08",
+          "caption": "A chain of minibrots on the Mandelbrot set's rim, in teal_filaments (showcase c08)"
+        },
+        {
+          "keep": "showcase_g6/teal_filaments/teal_filaments__c11",
+          "caption": "A dense five-fold Julia set, in teal_filaments (showcase c11)"
         }
       ],
       "public": {
@@ -771,11 +751,18 @@
           "values": {},
           "keeps": [
             "style_teal_filaments_r1/formulations/f_flame__00_cu_0.285_0.01_0_0_w2.8_teal_filaments",
-            "style_teal_filaments_r1/locations/locations__11_julia-mandelbrot_db420796_teal_filaments"
+            "style_teal_filaments_r1/locations/locations__11_julia-mandelbrot_db420796_teal_filaments",
+            "showcase_g6/teal_filaments/teal_filaments__c06",
+            "showcase_g6/teal_filaments/teal_filaments__c08",
+            "showcase_g6/teal_filaments/teal_filaments__c11"
           ],
           "score": 2
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "star_eye",
@@ -800,6 +787,18 @@
         {
           "keep": "style_star_eye_r1/formulations/f_fine__01_rg_d3_0.65_0.0_w4.5_star_eye",
           "caption": "Finer strands curving out of the ring"
+        },
+        {
+          "keep": "showcase_g2/star_eye/star_eye__c10",
+          "caption": "The spiral body of a phoenix set, in star_eye (showcase c10)"
+        },
+        {
+          "keep": "showcase_g2/star_eye/star_eye__c11",
+          "caption": "A dense five-fold Julia set, in soft_veils_amber (showcase c11)"
+        },
+        {
+          "keep": "showcase_g2/star_eye/star_eye__c17",
+          "caption": "A four-fold minibrot, in star_eye (showcase c17)"
         }
       ],
       "public": {
@@ -821,7 +820,9 @@
             "style_star_eye_r1/locations/locations__06_rg_d4_0.65_0.0_w4.5_star_eye",
             "style_retrospective_082/star_eye/kept/r5_se_default_s1",
             "style_retrospective_082/star_eye/kept/r5_se_default_s2",
-            "style_retrospective_082/star_eye/levers/r5_se_seamfree_s1"
+            "style_retrospective_082/star_eye/levers/r5_se_seamfree_s1",
+            "showcase_g2/star_eye/star_eye__c10",
+            "showcase_g2/star_eye/star_eye__c17"
           ],
           "score": 3
         },
@@ -829,56 +830,15 @@
           "colormap": "soft_veils_amber",
           "values": {},
           "keeps": [
-            "style_retrospective_082/star_eye/maps/r5_se_amber_s1"
+            "style_retrospective_082/star_eye/maps/r5_se_amber_s1",
+            "showcase_g2/star_eye/star_eye__c11"
           ]
         }
-      ]
-    },
-    {
-      "style": "ember_rose",
-      "score": 2,
-      "status": "publish",
-      "tier": "lab",
-      "item": "022",
-      "reference": "406031.jpg",
-      "references": [
-        "406031.jpg"
       ],
-      "variant": "current",
-      "show": [
-        {
-          "keep": "style_ember_rose_r1/locations/locations__03_fl_d2_1_7_r1.0_w0.8_ember_rose",
-          "caption": "A Julia flower, its petals ringed crimson to gold on black"
-        },
-        {
-          "keep": "style_ember_rose_r1/locations/locations__11_fl_d4_3_7_r1.0_w0.8_ember_rose",
-          "caption": "A quartic Julia flower, ringed crimson to gold"
-        },
-        {
-          "keep": "style_ember_rose_r1/formulations/f_fine_rings__01_fl_d3_3_7_r1.0_w0.8_ember_rose",
-          "caption": "Finer rings through a cubic Julia flower's petals"
-        }
-      ],
-      "public": {
-        "name": "ember-rose",
-        "palette": "ember_rose",
-        "knobs": []
-      },
-      "what": "A fractal rose on black: a Julia flower's petals ringed crimson to gold, with soft threads and a scattering of beads.",
-      "kept": "2 locations, fine_rings formulation",
-      "note": "Engine: nothing new (inside channel, falloff glow, bubble lattice) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Locations hand-placed (parabolic flowers are not in the galleries). · Matt: okay but nothing spectacular.",
-      "palettes": [
-        {
-          "colormap": "ember_rose",
-          "values": {},
-          "keeps": [
-            "style_ember_rose_r1/formulations/f_fine_rings__01_fl_d3_3_7_r1.0_w0.8_ember_rose",
-            "style_ember_rose_r1/locations/locations__03_fl_d2_1_7_r1.0_w0.8_ember_rose",
-            "style_ember_rose_r1/locations/locations__11_fl_d4_3_7_r1.0_w0.8_ember_rose"
-          ],
-          "score": 2
-        }
-      ]
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "leaf_veins",
@@ -942,6 +902,14 @@
         {
           "keep": "style_clockwork_rings_r1/locations/locations__08_cw_d3_+0.367-0.026i_w4.5_clockwork_rings",
           "caption": "A three-fold Julia set like a brass clockwork, small spoked discs circling it, more and smaller on each ring inwards"
+        },
+        {
+          "keep": "showcase_g1/clockwork_rings/clockwork_rings__c11",
+          "caption": "A dense five-fold Julia set, in clockwork_rings (showcase c11)"
+        },
+        {
+          "keep": "showcase_g1/clockwork_rings/clockwork_rings__c17",
+          "caption": "A four-fold minibrot, in clockwork_rings (showcase c17)"
         }
       ],
       "public": {
@@ -967,11 +935,17 @@
             "style_clockwork_rings_r1/formulations/f_big_discs__01_cw_d5_+0.530-0.001i_w4.5_clockwork_rings",
             "style_clockwork_rings_r1/locations/locations__01_cw_d2_+0.250+0.015i_w6.0_clockwork_rings",
             "style_clockwork_rings_r1/locations/locations__05_cw_d4_-0.235+0.389i_w4.5_clockwork_rings",
-            "style_clockwork_rings_r1/locations/locations__08_cw_d3_+0.367-0.026i_w4.5_clockwork_rings"
+            "style_clockwork_rings_r1/locations/locations__08_cw_d3_+0.367-0.026i_w4.5_clockwork_rings",
+            "showcase_g1/clockwork_rings/clockwork_rings__c11",
+            "showcase_g1/clockwork_rings/clockwork_rings__c17"
           ],
           "score": 4
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 2,
+        "item": "107"
+      }
     },
     {
       "style": "flame_veil_blue",
@@ -993,6 +967,10 @@
         {
           "keep": "style_flame_veil_blue_r1/locations/locations__08_vm_d4_flame_veil_blue",
           "caption": "Blue flame veils crossing a quartic Julia set"
+        },
+        {
+          "keep": "showcase_g2/flame_veil_blue/flame_veil_blue__c10",
+          "caption": "The spiral body of a phoenix set, in flame_veil_blue (showcase c10)"
         }
       ],
       "public": {
@@ -1011,47 +989,16 @@
             "style_flame_veil_blue_r1/locations/locations__05_vj_d2_r1.0_t0.196_whole_flame_veil_blue",
             "style_flame_veil_blue_r1/locations/locations__08_vm_d4_flame_veil_blue",
             "style_retrospective_082/flame_veil_blue/kept/r4_blue_ship_s1",
-            "style_retrospective_082/flame_veil_blue/levers/r4_blue_over_s1"
+            "style_retrospective_082/flame_veil_blue/levers/r4_blue_over_s1",
+            "showcase_g2/flame_veil_blue/flame_veil_blue__c10"
           ],
           "score": 2
         }
-      ]
-    },
-    {
-      "style": "flame_veil_teal",
-      "score": 2,
-      "status": "publish",
-      "tier": "lab",
-      "item": "028",
-      "reference": "celestial-domain-25.jpg",
-      "references": [
-        "celestial-domain-25.jpg"
       ],
-      "variant": "current",
-      "show": [
-        {
-          "keep": "style_flame_veil_teal_r1/formulations/f_no_views__01_vj_d2_r1.08_t0.131_whole_flame_veil_teal",
-          "caption": "Teal veils and wisps swept round a magenta glow"
-        }
-      ],
-      "public": {
-        "name": "teal-nebula",
-        "palette": "flame_veil_teal",
-        "knobs": []
-      },
-      "what": "Teal and aqua flame veils and wisps sweeping round a magenta nebula with a white star at its core, on a dark slate ground.",
-      "kept": "the one-view formulation",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak.",
-      "palettes": [
-        {
-          "colormap": "flame_veil_teal",
-          "values": {},
-          "keeps": [
-            "style_flame_veil_teal_r1/formulations/f_no_views__01_vj_d2_r1.08_t0.131_whole_flame_veil_teal"
-          ],
-          "score": 2
-        }
-      ]
+      "showcase": {
+        "passes": 1,
+        "item": "107"
+      }
     },
     {
       "style": "flame_veil_violet",
@@ -1076,6 +1023,18 @@
         {
           "keep": "style_flame_veil_violet_r1/locations/locations__07_vm_d3_flame_veil_violet",
           "caption": "A third, wrapped closer in violet ribbons"
+        },
+        {
+          "keep": "showcase_g1/flame_veil_violet/flame_veil_violet__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in flame_veil_violet (showcase c06)"
+        },
+        {
+          "keep": "showcase_g1/flame_veil_violet/flame_veil_violet__c10",
+          "caption": "The spiral body of a phoenix set, in flame_veil_violet (showcase c10)"
+        },
+        {
+          "keep": "showcase_g1/flame_veil_violet/flame_veil_violet__c17",
+          "caption": "A four-fold minibrot, in flame_veil_violet (showcase c17)"
         }
       ],
       "public": {
@@ -1097,11 +1056,18 @@
             "style_flame_veil_violet_r1/locations/locations__07_vm_d3_flame_veil_violet",
             "style_retrospective_082/flame_veil_violet/kept/r4_violet_nostrands_s2",
             "style_retrospective_082/flame_veil_violet/kept/r4_violet_ship_s2",
-            "style_retrospective_082/flame_veil_violet/levers/r4_violet_over_s1"
+            "style_retrospective_082/flame_veil_violet/levers/r4_violet_over_s1",
+            "showcase_g1/flame_veil_violet/flame_veil_violet__c06",
+            "showcase_g1/flame_veil_violet/flame_veil_violet__c10",
+            "showcase_g1/flame_veil_violet/flame_veil_violet__c17"
           ],
           "score": 2
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "flame_veil_chalk",
@@ -1127,6 +1093,18 @@
         {
           "keep": "style_flame_veil_chalk_r1/formulations/f_blades_only__01_vj_d3_r1.08_t0.124_whole_flame_veil_chalk",
           "caption": "The shards alone, round a cubic Julia set"
+        },
+        {
+          "keep": "showcase_g5/flame_veil_chalk/flame_veil_chalk__c03",
+          "caption": "A spiral in a four-fold Julia set, in flame_veil_chalk (showcase c03)"
+        },
+        {
+          "keep": "showcase_g5/flame_veil_chalk/flame_veil_chalk__c09",
+          "caption": "A dense four-fold Julia set, in flame_veil_chalk (showcase c09)"
+        },
+        {
+          "keep": "showcase_g5/flame_veil_chalk/flame_veil_chalk__c10",
+          "caption": "The spiral body of a phoenix set, in flame_veil_chalk (showcase c10)"
         }
       ],
       "public": {
@@ -1145,11 +1123,18 @@
             "style_flame_veil_chalk_r1/formulations/f_blades_only__01_vj_d3_r1.08_t0.124_whole_flame_veil_chalk",
             "style_flame_veil_chalk_r1/locations/locations__00_vj_d2_r1.08_t0.131_whole_flame_veil_chalk",
             "style_flame_veil_chalk_r1/locations/locations__04_vj_d2_r1.0_t0.767_whole_flame_veil_chalk",
-            "style_geometric_sheets_r1/flame_veil_chalk/ivory_lace/baseline_chalk__00_vj_d3_r1.08_t0.124_whole_flame_veil_chalk"
+            "style_geometric_sheets_r1/flame_veil_chalk/ivory_lace/baseline_chalk__00_vj_d3_r1.08_t0.124_whole_flame_veil_chalk",
+            "showcase_g5/flame_veil_chalk/flame_veil_chalk__c03",
+            "showcase_g5/flame_veil_chalk/flame_veil_chalk__c09",
+            "showcase_g5/flame_veil_chalk/flame_veil_chalk__c10"
           ],
           "score": 2
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "corkscrew_smooth",
@@ -1187,6 +1172,14 @@
           "colormap": "corkscrew_smooth",
           "picture": "artifacts/pickers/style_smooth_palettes_r1/corkscrew_smooth/locations/corkscrew__loc__00_mandelbrot_a576a186_corkscrew_smooth.jpg",
           "caption": "Banded ribbons with a metallic sheen spiraling into the Mandelbrot set"
+        },
+        {
+          "keep": "showcase_g8/corkscrew_smooth/corkscrew_smooth__c10",
+          "caption": "The spiral body of a phoenix set, in corkscrew_smooth (showcase c10)"
+        },
+        {
+          "keep": "showcase_g8/corkscrew_smooth/corkscrew_smooth__c17",
+          "caption": "A four-fold minibrot, in corkscrew_smooth (showcase c17)"
         }
       ],
       "public": {
@@ -1201,10 +1194,17 @@
         {
           "colormap": "corkscrew_smooth",
           "values": {},
-          "keeps": [],
+          "keeps": [
+            "showcase_g8/corkscrew_smooth/corkscrew_smooth__c10",
+            "showcase_g8/corkscrew_smooth/corkscrew_smooth__c17"
+          ],
           "score": 2
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 2,
+        "item": "107"
+      }
     },
     {
       "style": "flame_wisp_waves",
@@ -1241,6 +1241,10 @@
           "colormap": "flame_wisp_waves",
           "picture": "artifacts/pickers/style_flame_wisps_r1/flame_wisp_waves/locations/waves__loc__00_vj_d3_r0.9_t0.213_whole_flame_wisp_waves.jpg",
           "caption": "Teal flame wisps over smoldering red streaks round a cubic Julia set"
+        },
+        {
+          "keep": "showcase_g4/flame_wisp_waves/flame_wisp_waves__c11",
+          "caption": "A dense five-fold Julia set, in flame_wisp_waves (showcase c11)"
         }
       ],
       "public": {
@@ -1255,10 +1259,16 @@
         {
           "colormap": "flame_wisp_waves",
           "values": {},
-          "keeps": [],
+          "keeps": [
+            "showcase_g4/flame_wisp_waves/flame_wisp_waves__c11"
+          ],
           "score": 2
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 1,
+        "item": "107"
+      }
     },
     {
       "style": "flame_wisp_amber",
@@ -1275,6 +1285,10 @@
         {
           "keep": "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp",
           "caption": "Orange and gold flame ribbons curling round a Julia set"
+        },
+        {
+          "keep": "showcase_g6/flame_wisp_amber/flame_wisp_amber__c08",
+          "caption": "A chain of minibrots on the Mandelbrot set's rim, in flame_wisp_amber (showcase c08)"
         }
       ],
       "public": {
@@ -1292,11 +1306,16 @@
           "keeps": [
             "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp",
             "style_retrospective_082/flame_wisp_amber/kept/r3_am_cv_s1",
-            "style_retrospective_082/flame_wisp_amber/levers/r3_am_cvtie_s2_g"
+            "style_retrospective_082/flame_wisp_amber/levers/r3_am_cvtie_s2_g",
+            "showcase_g6/flame_wisp_amber/flame_wisp_amber__c08"
           ],
           "score": 2
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 1,
+        "item": "107"
+      }
     },
     {
       "style": "flame_wisp_spark",
@@ -1313,6 +1332,22 @@
         {
           "keep": "style_flame_wisps_r1/flame_wisp_spark/formulations/spark__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_spark",
           "caption": "Lit blue flame veils strewn with gold sparks round a Julia set"
+        },
+        {
+          "keep": "showcase_g3/flame_wisp_spark/flame_wisp_spark__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in flame_wisp_spark (showcase c06)"
+        },
+        {
+          "keep": "showcase_g3/flame_wisp_spark/flame_wisp_spark__c09",
+          "caption": "A dense four-fold Julia set, in flame_wisp_spark (showcase c09)"
+        },
+        {
+          "keep": "showcase_g3/flame_wisp_spark/flame_wisp_spark__c10",
+          "caption": "The spiral body of a phoenix set, in flame_wisp_spark (showcase c10)"
+        },
+        {
+          "keep": "showcase_g3/flame_wisp_spark/flame_wisp_spark__c17",
+          "caption": "A four-fold minibrot, in flame_wisp_spark (showcase c17)"
         }
       ],
       "public": {
@@ -1330,11 +1365,19 @@
           "keeps": [
             "style_flame_wisps_r1/flame_wisp_spark/formulations/spark__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_spark",
             "style_retrospective_082/flame_wisp_spark/kept/r3_sp_cv_s1",
-            "style_retrospective_082/flame_wisp_spark/levers/r3_sp_star_s2"
+            "style_retrospective_082/flame_wisp_spark/levers/r3_sp_star_s2",
+            "showcase_g3/flame_wisp_spark/flame_wisp_spark__c06",
+            "showcase_g3/flame_wisp_spark/flame_wisp_spark__c09",
+            "showcase_g3/flame_wisp_spark/flame_wisp_spark__c10",
+            "showcase_g3/flame_wisp_spark/flame_wisp_spark__c17"
           ],
           "score": 2
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 4,
+        "item": "107"
+      }
     },
     {
       "style": "flame_wisp_frost",
@@ -1352,6 +1395,26 @@
         {
           "keep": "style_flame_wisps_r1/flame_wisp_frost/locations/frost__loc__05_phoenix-classic_618cd4e4_flame_wisp_frost",
           "caption": "A phoenix fractal's frosted fronds curling into spirals, feathered blue strands sweeping round them on a dark ground"
+        },
+        {
+          "keep": "showcase_g7/flame_wisp_frost/flame_wisp_frost__c03",
+          "caption": "A spiral in a four-fold Julia set, in flame_wisp_frost (showcase c03)"
+        },
+        {
+          "keep": "showcase_g7/flame_wisp_frost/flame_wisp_frost__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in flame_wisp_frost (showcase c06)"
+        },
+        {
+          "keep": "showcase_g7/flame_wisp_frost/flame_wisp_frost__c10",
+          "caption": "The spiral body of a phoenix set, in flame_wisp_frost (showcase c10)"
+        },
+        {
+          "keep": "showcase_g7/flame_wisp_frost/flame_wisp_frost__c11",
+          "caption": "A dense five-fold Julia set, in flame_wisp_frost (showcase c11)"
+        },
+        {
+          "keep": "showcase_g7/flame_wisp_frost/flame_wisp_frost__c17",
+          "caption": "A four-fold minibrot, in flame_wisp_frost (showcase c17)"
         }
       ],
       "public": {
@@ -1375,65 +1438,20 @@
           "keeps": [
             "style_flame_wisps_r1/flame_wisp_frost/locations/frost__loc__03_phoenix_1b501757_flame_wisp_frost",
             "style_flame_wisps_r1/flame_wisp_frost/locations/frost__loc__05_phoenix-classic_618cd4e4_flame_wisp_frost",
-            "style_flames_r1/feather_plumes/formulations/fpf_flame_wisp_frost"
+            "style_flames_r1/feather_plumes/formulations/fpf_flame_wisp_frost",
+            "showcase_g7/flame_wisp_frost/flame_wisp_frost__c03",
+            "showcase_g7/flame_wisp_frost/flame_wisp_frost__c06",
+            "showcase_g7/flame_wisp_frost/flame_wisp_frost__c10",
+            "showcase_g7/flame_wisp_frost/flame_wisp_frost__c11",
+            "showcase_g7/flame_wisp_frost/flame_wisp_frost__c17"
           ],
           "score": 4
         }
-      ]
-    },
-    {
-      "style": "flame_wisp_crimson",
-      "score": 2,
-      "status": "publish",
-      "tier": "lab",
-      "item": "032",
-      "reference": "deaths-icy-hand-25.jpg",
-      "references": [
-        "deaths-icy-hand-25.jpg"
       ],
-      "variant": "current",
-      "show": [
-        {
-          "location": {
-            "schema": 1,
-            "name": "vj_d3_r1.08_t0.233_half",
-            "family": {
-              "kind": "julia",
-              "degree": 3,
-              "c": [
-                "0.5725430504740137",
-                "0.2247090894760434"
-              ]
-            },
-            "viewport": {
-              "center_re": "0.22343447665427688",
-              "center_im": "0.20019249397075162",
-              "width": "1.595"
-            },
-            "maxiter": 800,
-            "note": "degree-3 Julia set, fixed-point multiplier 1.08*e^(2 pi i 0.233), half-zoomed towards the fixed point; seed 28, draw 7"
-          },
-          "colormap": "flame_wisp_crimson",
-          "picture": "artifacts/pickers/style_flame_wisps_r1/flame_wisp_crimson/locations/crimson__loc__00_vj_d3_r1.08_t0.233_half_flame_wisp_crimson.jpg",
-          "caption": "Flame swirls turning cobalt to crimson round a cubic Julia set"
-        }
-      ],
-      "public": {
-        "name": "crimson-swirl",
-        "palette": "flame_wisp_crimson",
-        "knobs": []
-      },
-      "what": "Dense flame swirls and strands, cobalt blue on one side turning through violet to crimson round a red glow on the other.",
-      "kept": "nothing",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. · Matt: lost the fractal feel; not promoted.",
-      "palettes": [
-        {
-          "colormap": "flame_wisp_crimson",
-          "values": {},
-          "keeps": [],
-          "score": 2
-        }
-      ]
+      "showcase": {
+        "passes": 5,
+        "item": "107"
+      }
     },
     {
       "style": "molten_flow",
@@ -1455,6 +1473,22 @@
         {
           "keep": "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__09_julia-multibrot3_84b3a609_molten_flow",
           "caption": "Close in on the same three-fold Julia set, golden lace curling into spirals as streams of molten orange sweep past"
+        },
+        {
+          "keep": "showcase_g7/molten_flow/molten_flow__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in molten_flow (showcase c06)"
+        },
+        {
+          "keep": "showcase_g7/molten_flow/molten_flow__c08",
+          "caption": "A chain of minibrots on the Mandelbrot set's rim, in molten_flow (showcase c08)"
+        },
+        {
+          "keep": "showcase_g7/molten_flow/molten_flow__c10",
+          "caption": "The spiral body of a phoenix set, in molten_flow (showcase c10)"
+        },
+        {
+          "keep": "showcase_g7/molten_flow/molten_flow__c17",
+          "caption": "A four-fold minibrot, in molten_flow (showcase c17)"
         }
       ],
       "public": {
@@ -1484,7 +1518,11 @@
             "style_webs_clouds_r1/storm_clouds/formulations/scf_molten_flow",
             "style_retrospective_082/molten_flow/kept/r2_mf_default_7e31",
             "style_retrospective_082/molten_flow/levers/r2_mf_shadowdeep_whitest_7e31",
-            "style_retrospective_082/molten_flow/levers/r2_mf_shadowdeep_whitest_ff8b"
+            "style_retrospective_082/molten_flow/levers/r2_mf_shadowdeep_whitest_ff8b",
+            "showcase_g7/molten_flow/molten_flow__c06",
+            "showcase_g7/molten_flow/molten_flow__c08",
+            "showcase_g7/molten_flow/molten_flow__c10",
+            "showcase_g7/molten_flow/molten_flow__c17"
           ],
           "score": 4
         },
@@ -1523,89 +1561,11 @@
           "reference": "interstellar-25.jpg",
           "score": 3
         }
-      ]
-    },
-    {
-      "style": "chrome_orbs",
-      "score": 2,
-      "status": "publish",
-      "tier": "lab",
-      "item": "033",
-      "reference": "crystal-flood-25.jpg",
-      "references": [
-        "crystal-flood-25.jpg"
       ],
-      "variant": "current",
-      "show": [
-        {
-          "location": {
-            "schema": 1,
-            "name": "phoenix_8944e53b",
-            "family": {
-              "c": [
-                "-0.5266783574752247",
-                "-0.652322729101436"
-              ],
-              "kind": "phoenix",
-              "p": [
-                "-0.28353182998131243",
-                "-0.02545285599096059"
-              ],
-              "z_prev": [
-                "-0.10324356398202189",
-                "0.43684294503006016"
-              ]
-            },
-            "viewport": {
-              "center_re": "0.3689396303645971",
-              "center_im": "0.544919975370715",
-              "width": "0.004227518793228761"
-            },
-            "maxiter": 15365,
-            "note": "final139_general seat 765 (stripe, phoenix)",
-            "gallery": {
-              "record": "final139_general",
-              "seat": 765,
-              "key": "8944e53b63ac90a6",
-              "p_spiral": 0.091065
-            },
-            "ink": 0.04698
-          },
-          "colormap": "chrome_orbs",
-          "picture": "artifacts/pickers/style_liquid_surfaces_r1/chrome_orbs/locations/chrome_orbs__loc__00_phoenix_8944e53b_chrome_orbs.jpg",
-          "caption": "Mirror-bright chrome swirls and red orbs on a Phoenix fractal"
-        }
-      ],
-      "public": {
-        "name": "chrome-orbs",
-        "palette": "chrome_orbs",
-        "knobs": []
-      },
-      "what": "Glossy chrome swirls: a mirror-bright relief in silver and slate, chrome ribbons, and red orbs swelling to gold along the arms.",
-      "kept": "nothing; retrospective (style_retrospective_082): library map mercury_tubes (highlight and de glow from the map)",
-      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. Matt: not interesting enough, or too grayscale. Retrospective (2026-11-24, style_retrospective_082): kept library map mercury_tubes (highlight and de glow from the map); Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
-      "palettes": [
-        {
-          "colormap": "chrome_orbs",
-          "values": {},
-          "keeps": [],
-          "score": 2
-        },
-        {
-          "colormap": "mercury_tubes",
-          "values": {
-            "/layers/1/light/highlight": {
-              "palette": 0.95
-            },
-            "/layers/5/color": {
-              "palette": 0.9
-            }
-          },
-          "keeps": [
-            "style_retrospective_082/chrome_orbs/maps/r2_co_map_mercury_tubes"
-          ]
-        }
-      ]
+      "showcase": {
+        "passes": 4,
+        "item": "107"
+      }
     },
     {
       "style": "cauliflower_scales",
@@ -1623,6 +1583,18 @@
         {
           "keep": "style_retrospective_082/cauliflower_scales/entries/r2_cs_horror_8fa2",
           "caption": "Dark red and bone-gray lit scales curling through a phoenix spiral on black, small domed cells packed into the broad folds"
+        },
+        {
+          "keep": "showcase_g7/cauliflower_scales/cauliflower_scales__c09",
+          "caption": "A dense four-fold Julia set, in cauliflower_scales (showcase c09)"
+        },
+        {
+          "keep": "showcase_g7/cauliflower_scales/cauliflower_scales__c10",
+          "caption": "The spiral body of a phoenix set, in horror_scales (showcase c10)"
+        },
+        {
+          "keep": "showcase_g7/cauliflower_scales/cauliflower_scales__c11",
+          "caption": "A dense five-fold Julia set, in cauliflower_scales (showcase c11)"
         }
       ],
       "public": {
@@ -1639,7 +1611,9 @@
           "values": {},
           "keeps": [
             "style_organic_relief_r1/cauliflower_scales/horror_scales/baseline_cauli__01_phoenix-classic_9a93355d_cauliflower_scales",
-            "style_retrospective_082/cauliflower_scales/kept/r2_cs_default_8fa2"
+            "style_retrospective_082/cauliflower_scales/kept/r2_cs_default_8fa2",
+            "showcase_g7/cauliflower_scales/cauliflower_scales__c09",
+            "showcase_g7/cauliflower_scales/cauliflower_scales__c11"
           ],
           "score": 2
         },
@@ -1660,7 +1634,8 @@
           },
           "keeps": [
             "style_organic_relief_r1/cauliflower_scales/locations/loc__07_phoenix-classic_8fa28807_horror_scales",
-            "style_retrospective_082/cauliflower_scales/entries/r2_cs_horror_8fa2"
+            "style_retrospective_082/cauliflower_scales/entries/r2_cs_horror_8fa2",
+            "showcase_g7/cauliflower_scales/cauliflower_scales__c10"
           ],
           "reference": "horror-25.jpg",
           "score": 3
@@ -1672,7 +1647,11 @@
             "style_retrospective_082/cauliflower_scales/maps/r2_cs_map_soft_veils_ember"
           ]
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "crescent_lines",
@@ -1698,6 +1677,22 @@
         {
           "keep": "style_crescent_lines_r1/crescent_lines/formulations/crescent_lines__f_ribbons__01_minibrot-p7_14_crescent_lines",
           "caption": "A small Mandelbrot island at the center of a glowing star of spokes, with the field round it drawn as broad flowing ribbons"
+        },
+        {
+          "keep": "showcase_g6/crescent_lines/crescent_lines__c10",
+          "caption": "The spiral body of a phoenix set, in copper_feathers (showcase c10)"
+        },
+        {
+          "keep": "showcase_g6/crescent_lines/crescent_lines__c11",
+          "caption": "A dense five-fold Julia set, in copper_feathers (showcase c11)"
+        },
+        {
+          "keep": "showcase_g6/crescent_lines/crescent_lines__c14",
+          "caption": "Lace in a phoenix set, in copper_feathers (showcase c14)"
+        },
+        {
+          "keep": "showcase_g6/crescent_lines/crescent_lines__c17",
+          "caption": "A four-fold minibrot, in crescent_lines (showcase c17)"
         }
       ],
       "public": {
@@ -1723,7 +1718,8 @@
             "style_crescent_lines_r1/crescent_lines/locations/crescent_lines__loc__03_minibrot-p9_06_crescent_lines",
             "style_crescent_lines_r1/crescent_lines/locations/crescent_lines__loc__08_minibrot-p9_07_crescent_lines",
             "style_retrospective_082/crescent_lines/kept/r5_cl_default_s1",
-            "style_retrospective_082/crescent_lines/levers/r5_cl_slow_s1"
+            "style_retrospective_082/crescent_lines/levers/r5_cl_slow_s1",
+            "showcase_g6/crescent_lines/crescent_lines__c17"
           ],
           "score": 3
         },
@@ -1734,12 +1730,19 @@
             "/tone/p10": 0.025
           },
           "keeps": [
-            "style_texture_lace_r1/crescent_lines/copper_feathers/cl_b_e_copper_feathers"
+            "style_texture_lace_r1/crescent_lines/copper_feathers/cl_b_e_copper_feathers",
+            "showcase_g6/crescent_lines/crescent_lines__c10",
+            "showcase_g6/crescent_lines/crescent_lines__c11",
+            "showcase_g6/crescent_lines/crescent_lines__c14"
           ],
           "reference": "wallhaven_wallhaven-xld8rd.jpg",
           "score": 3
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 4,
+        "item": "107"
+      }
     },
     {
       "style": "glossy_spirals",
@@ -1771,6 +1774,10 @@
         {
           "keep": "style_glossy_spirals_r1/copper_arms/locations/copper_arms__loc__05_multibrot3_f95d4b63_copper_arms",
           "caption": "Deep inside a three-armed fractal, a copper spiral of lace with polished blades fanned over a teal sea"
+        },
+        {
+          "keep": "showcase_g8/glossy_spirals/glossy_spirals__c10_alt",
+          "caption": "The spiral body of a phoenix set, in violet_star_arms (showcase c10, the second draft)"
         }
       ],
       "public": {
@@ -1796,7 +1803,8 @@
           "keeps": [
             "style_glossy_spirals_r1/violet_star_arms/formulations/violet_star_arms__f_ghost__00_julia-mandelbrot_7508d913_violet_star_arms",
             "style_glossy_spirals_r1/violet_star_arms/locations/violet_star_arms__loc__03_phoenix-classic_3d18ef0b_violet_star_arms",
-            "style_glossy_spirals_r1/violet_star_arms/locations/violet_star_arms__loc__07_julia-mandelbrot_16885724_violet_star_arms"
+            "style_glossy_spirals_r1/violet_star_arms/locations/violet_star_arms__loc__07_julia-mandelbrot_16885724_violet_star_arms",
+            "showcase_g8/glossy_spirals/glossy_spirals__c10_alt"
           ],
           "score": 3
         },
@@ -1983,7 +1991,11 @@
         "golden_petals",
         "copper_arms",
         "cream_tubes"
-      ]
+      ],
+      "showcase": {
+        "passes": 1,
+        "item": "107"
+      }
     },
     {
       "style": "smooth_bands",
@@ -2016,6 +2028,18 @@
         {
           "keep": "style_smooth_palettes_r1/dalooka_smooth/locations/dalooka__loc__03_mandelbrot_4f741337_dalooka_smooth",
           "caption": "Smooth bands in a third palette at the edge of the Mandelbrot set"
+        },
+        {
+          "keep": "showcase_g6/smooth_bands/smooth_bands__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in dalooka_smooth (showcase c06)"
+        },
+        {
+          "keep": "showcase_g6/smooth_bands/smooth_bands__c11",
+          "caption": "A dense five-fold Julia set, in dalooka_smooth (showcase c11)"
+        },
+        {
+          "keep": "showcase_g6/smooth_bands/smooth_bands__c18",
+          "caption": "A spiral arm of the five-fold Mandelbrot set, in dalooka_smooth (showcase c18)"
         }
       ],
       "public": {
@@ -2077,7 +2101,10 @@
           },
           "keeps": [
             "style_smooth_palettes_r1/dalooka_smooth/formulations/dalooka__f_no_hair__00_mandelbrot_984f58af_dalooka_smooth",
-            "style_smooth_palettes_r1/dalooka_smooth/locations/dalooka__loc__03_mandelbrot_4f741337_dalooka_smooth"
+            "style_smooth_palettes_r1/dalooka_smooth/locations/dalooka__loc__03_mandelbrot_4f741337_dalooka_smooth",
+            "showcase_g6/smooth_bands/smooth_bands__c06",
+            "showcase_g6/smooth_bands/smooth_bands__c11",
+            "showcase_g6/smooth_bands/smooth_bands__c18"
           ],
           "score": 2
         },
@@ -2136,7 +2163,11 @@
         "dalooka_smooth",
         "forest_smooth",
         "mandelbrot3_smooth"
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "teal_tubes",
@@ -2195,6 +2226,22 @@
         {
           "keep": "style_lace_holes_resave/redrawn/02_copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail",
           "caption": "A copper chain of lit beads strung through glowing strands"
+        },
+        {
+          "keep": "showcase_g4/lace_holes/lace_holes__c03",
+          "caption": "A spiral in a four-fold Julia set, in cream_lace (showcase c03)"
+        },
+        {
+          "keep": "showcase_g4/lace_holes/lace_holes__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in cream_lace (showcase c06)"
+        },
+        {
+          "keep": "showcase_g4/lace_holes/lace_holes__c11",
+          "caption": "A dense five-fold Julia set, in cream_lace (showcase c11)"
+        },
+        {
+          "keep": "showcase_g4/lace_holes/lace_holes__c17",
+          "caption": "A four-fold minibrot, in cream_lace (showcase c17)"
         }
       ],
       "public": {
@@ -2222,7 +2269,11 @@
             "style_lace_holes_resave/redrawn/04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace",
             "style_webs_clouds_r1/hollow_webs/formulations/hwf_lace_holes",
             "style_retrospective_082/lace_holes/levers/r6_lh_cream_now_f",
-            "style_retrospective_082/lace_holes/entries/r6_lh_cream_now"
+            "style_retrospective_082/lace_holes/entries/r6_lh_cream_now",
+            "showcase_g4/lace_holes/lace_holes__c03",
+            "showcase_g4/lace_holes/lace_holes__c06",
+            "showcase_g4/lace_holes/lace_holes__c11",
+            "showcase_g4/lace_holes/lace_holes__c17"
           ],
           "score": 3
         },
@@ -2351,7 +2402,11 @@
         "copper_mail",
         "cream_lace",
         "gold_arcs"
-      ]
+      ],
+      "showcase": {
+        "passes": 4,
+        "item": "107"
+      }
     },
     {
       "style": "ember_plume",
@@ -2409,6 +2464,18 @@
         {
           "keep": "style_soft_veils_r1/locations/loc__00_vj_d3_r1.08_t0.124_whole_soft_veils_ember",
           "caption": "A three-fold Julia set in smoky bronze, its sheets of light thinning into a dark ground"
+        },
+        {
+          "keep": "showcase_g2/soft_veils/soft_veils__c03",
+          "caption": "A spiral in a four-fold Julia set, in soft_veils_ember (showcase c03)"
+        },
+        {
+          "keep": "showcase_g2/soft_veils/soft_veils__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in soft_veils_ember (showcase c06)"
+        },
+        {
+          "keep": "showcase_g2/soft_veils/soft_veils__c14",
+          "caption": "Lace in a phoenix set, in soft_veils_ember (showcase c14)"
         }
       ],
       "public": {
@@ -2461,7 +2528,10 @@
             "/tone/p10": 0.072
           },
           "keeps": [
-            "style_soft_veils_r1/locations/loc__00_vj_d3_r1.08_t0.124_whole_soft_veils_ember"
+            "style_soft_veils_r1/locations/loc__00_vj_d3_r1.08_t0.124_whole_soft_veils_ember",
+            "showcase_g2/soft_veils/soft_veils__c03",
+            "showcase_g2/soft_veils/soft_veils__c06",
+            "showcase_g2/soft_veils/soft_veils__c14"
           ],
           "score": 5,
           "reference": "detonation-25.jpg"
@@ -2843,7 +2913,12 @@
           },
           "keeps": []
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107",
+        "note": "the green here seems to be a \"noop\", only the brown one is well calibrated. redo this with more palettes and adjust the constants so the green one gets more of the \"faded echoes\" effect."
+      }
     },
     {
       "style": "plastic_orbs",
@@ -2883,6 +2958,30 @@
         {
           "keep": "style_banded_lines_r1/formulations/f_glints__01_julia-mandelbrot_ac9b1000_banded_lines_rose",
           "caption": "Rose hairline bands with glints along a Julia set"
+        },
+        {
+          "keep": "showcase_g8/banded_lines/banded_lines__c03",
+          "caption": "A spiral in a four-fold Julia set, in banded_lines_teal (showcase c03)"
+        },
+        {
+          "keep": "showcase_g8/banded_lines/banded_lines__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in banded_lines_teal (showcase c06)"
+        },
+        {
+          "keep": "showcase_g8/banded_lines/banded_lines__c09",
+          "caption": "A dense four-fold Julia set, in banded_lines_teal (showcase c09)"
+        },
+        {
+          "keep": "showcase_g8/banded_lines/banded_lines__c10",
+          "caption": "The spiral body of a phoenix set, in banded_lines_teal (showcase c10)"
+        },
+        {
+          "keep": "showcase_g8/banded_lines/banded_lines__c11",
+          "caption": "A dense five-fold Julia set, in banded_lines_teal (showcase c11)"
+        },
+        {
+          "keep": "showcase_g8/banded_lines/banded_lines__c17",
+          "caption": "A four-fold minibrot, in banded_lines_teal (showcase c17)"
         }
       ],
       "public": {
@@ -2913,12 +3012,22 @@
             "/tone/p10": 0.165
           },
           "keeps": [
-            "style_banded_lines_r1/banded_lines_teal/pal__01_julia-multibrot4_364f02ea_banded_lines_teal"
+            "style_banded_lines_r1/banded_lines_teal/pal__01_julia-multibrot4_364f02ea_banded_lines_teal",
+            "showcase_g8/banded_lines/banded_lines__c03",
+            "showcase_g8/banded_lines/banded_lines__c06",
+            "showcase_g8/banded_lines/banded_lines__c09",
+            "showcase_g8/banded_lines/banded_lines__c10",
+            "showcase_g8/banded_lines/banded_lines__c11",
+            "showcase_g8/banded_lines/banded_lines__c17"
           ],
           "score": 2,
           "reference": "echoes-of-the-mind-25.jpg"
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 6,
+        "item": "107"
+      }
     },
     {
       "style": "jewel_lace",
@@ -2961,6 +3070,18 @@
         {
           "keep": "style_glossy_tubes_r1/ribbed_tubes/heliograph_scales/heliograph_scales__02_phoenix-classic_c0dc1f27_heliograph_scales",
           "caption": "Bronze and black scale bands checkering a phoenix spiral's arms on a sand ground"
+        },
+        {
+          "keep": "showcase_g7/ribbed_tubes/ribbed_tubes__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in heliograph_scales (showcase c06)"
+        },
+        {
+          "keep": "showcase_g7/ribbed_tubes/ribbed_tubes__c11",
+          "caption": "A dense five-fold Julia set, in ribbed_tubes (showcase c11)"
+        },
+        {
+          "keep": "showcase_g7/ribbed_tubes/ribbed_tubes__c17",
+          "caption": "A four-fold minibrot, in ribbed_tubes (showcase c17)"
         }
       ],
       "public": {
@@ -2983,7 +3104,9 @@
             "style_petal_spirals_r1/chrome_whorl/formulations/cwf_ribbed_tubes",
             "style_retrospective_082/ribbed_tubes/kept/r7_rt_default_s1",
             "style_retrospective_082/ribbed_tubes/kept/r7_rt_default_s2",
-            "style_retrospective_082/ribbed_tubes/levers/r7_rt_scales_shafts_s1"
+            "style_retrospective_082/ribbed_tubes/levers/r7_rt_scales_shafts_s1",
+            "showcase_g7/ribbed_tubes/ribbed_tubes__c11",
+            "showcase_g7/ribbed_tubes/ribbed_tubes__c17"
           ],
           "score": 2
         },
@@ -3003,11 +3126,16 @@
           },
           "keeps": [
             "style_glossy_tubes_r1/ribbed_tubes/heliograph_scales/heliograph_scales__02_phoenix-classic_c0dc1f27_heliograph_scales",
-            "style_retrospective_082/ribbed_tubes/entries/r7_rt_helio_stars_s2"
+            "style_retrospective_082/ribbed_tubes/entries/r7_rt_helio_stars_s2",
+            "showcase_g7/ribbed_tubes/ribbed_tubes__c06"
           ],
           "score": 2
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "sliced_strips",
@@ -3028,6 +3156,10 @@
         {
           "keep": "style_geometric_sheets_r1/sliced_strips/locations/loc__02_phoenix_62efdf3b_sliced_strips",
           "caption": "Blue and copper lace sprinkled over dark folds, a broad slice carrying a shifted copy across the middle"
+        },
+        {
+          "keep": "showcase_g7/sliced_strips/sliced_strips__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in sliced_strips (showcase c06)"
         }
       ],
       "public": {
@@ -3047,47 +3179,16 @@
             "style_geometric_sheets_r1/sliced_strips/formulations/f_bold__00_phoenix_807fd2ea_sliced_strips",
             "style_geometric_sheets_r1/sliced_strips/formulations/f_default__00_phoenix_807fd2ea_sliced_strips",
             "style_geometric_sheets_r1/sliced_strips/locations/loc__02_phoenix_62efdf3b_sliced_strips",
-            "style_geometric_sheets_r1/sliced_strips/locations/loc__07_phoenix_6046d762_sliced_strips"
+            "style_geometric_sheets_r1/sliced_strips/locations/loc__07_phoenix_6046d762_sliced_strips",
+            "showcase_g7/sliced_strips/sliced_strips__c06"
           ],
           "score": 3
         }
-      ]
-    },
-    {
-      "style": "cut_tiles",
-      "score": 3,
-      "status": "publish",
-      "tier": "lab",
-      "item": "053",
-      "reference": "lethe-25.jpg",
-      "references": [
-        "lethe-25.jpg"
       ],
-      "variant": "current",
-      "show": [
-        {
-          "keep": "style_geometric_sheets_r1/cut_tiles/locations/loc__00_julia-mandelbrot_9178ac7c_cut_tiles",
-          "caption": "Hard-cut violet, peach and blue tiles ringing a dark spiral center, each tile etched with the set's lace"
-        }
-      ],
-      "public": {
-        "name": "cut-tiles",
-        "palette": "cut_tiles",
-        "knobs": []
-      },
-      "what": "Flat hard-cut tiles in violet, peach and blue round small spirals, white gaps holding the set's gray lace, over a brick-patterned escape band.",
-      "kept": "1 location",
-      "note": "Engine: nothing new (the strip trap's step through the map, laid normal) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5.",
-      "palettes": [
-        {
-          "colormap": "cut_tiles",
-          "values": {},
-          "keeps": [
-            "style_geometric_sheets_r1/cut_tiles/locations/loc__00_julia-mandelbrot_9178ac7c_cut_tiles"
-          ],
-          "score": 3
-        }
-      ]
+      "showcase": {
+        "passes": 1,
+        "item": "107"
+      }
     },
     {
       "style": "scaled_folds",
@@ -3123,7 +3224,13 @@
           ],
           "score": 3
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 0,
+        "item": "107",
+        "note": "too dark, try again with lighter palettes and this palette with some techniques to make things less dark overall",
+        "held": "kept for a later try-again pass (Matt, 2026-11-27)"
+      }
     },
     {
       "style": "copper_webs",
@@ -3144,6 +3251,22 @@
         {
           "keep": "style_organic_relief_r1/copper_webs/locations/loc__36_phoenix_ec850bb9_interstellar_webs",
           "caption": "A copper web of star-shaped lace folding over a blue starfield"
+        },
+        {
+          "keep": "showcase_g4/copper_webs/copper_webs__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in interstellar_webs (showcase c06)"
+        },
+        {
+          "keep": "showcase_g4/copper_webs/copper_webs__c08",
+          "caption": "A chain of minibrots on the Mandelbrot set's rim, in interstellar_webs (showcase c08)"
+        },
+        {
+          "keep": "showcase_g4/copper_webs/copper_webs__c11",
+          "caption": "A dense five-fold Julia set, in interstellar_webs (showcase c11)"
+        },
+        {
+          "keep": "showcase_g4/copper_webs/copper_webs__c17",
+          "caption": "A four-fold minibrot, in interstellar_webs (showcase c17)"
         }
       ],
       "public": {
@@ -3161,11 +3284,19 @@
           "keeps": [
             "style_organic_relief_r1/copper_webs/locations/loc__12_phoenix_71e305f0_interstellar_webs",
             "style_organic_relief_r1/copper_webs/locations/loc__36_phoenix_ec850bb9_interstellar_webs",
-            "style_retrospective_082/copper_webs/kept/r2_cw_default_364f"
+            "style_retrospective_082/copper_webs/kept/r2_cw_default_364f",
+            "showcase_g4/copper_webs/copper_webs__c06",
+            "showcase_g4/copper_webs/copper_webs__c08",
+            "showcase_g4/copper_webs/copper_webs__c11",
+            "showcase_g4/copper_webs/copper_webs__c17"
           ],
           "score": 3
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 4,
+        "item": "107"
+      }
     },
     {
       "style": "tri_mosaic",
@@ -3194,6 +3325,34 @@
         {
           "keep": "style_tri_mosaic_r1/spiral/sp_f_spiral__00_julia-mandelbrot_35b23c31_tri_mosaic",
           "caption": "The spiral lattice: turned quads winding into a Julia spiral, each showing the fractal broken along its seams"
+        },
+        {
+          "keep": "showcase_g4/tri_mosaic/tri_mosaic__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in tri_mosaic_ice (showcase c06)"
+        },
+        {
+          "keep": "showcase_g4/tri_mosaic/tri_mosaic__c08",
+          "caption": "A chain of minibrots on the Mandelbrot set's rim, in tri_mosaic (showcase c08)"
+        },
+        {
+          "keep": "showcase_g4/tri_mosaic/tri_mosaic__c09",
+          "caption": "A dense four-fold Julia set, in tri_mosaic_ice (showcase c09)"
+        },
+        {
+          "keep": "showcase_g4/tri_mosaic/tri_mosaic__c11",
+          "caption": "A dense five-fold Julia set, in tri_mosaic (showcase c11)"
+        },
+        {
+          "keep": "showcase_g4/tri_mosaic/tri_mosaic__c12",
+          "caption": "A dense Julia set of the Mandelbrot family, in tri_mosaic_ice (showcase c12)"
+        },
+        {
+          "keep": "showcase_g4/tri_mosaic/tri_mosaic__c17",
+          "caption": "A four-fold minibrot, in tri_mosaic_ice (showcase c17)"
+        },
+        {
+          "keep": "showcase_g4/tri_mosaic/tri_mosaic__c18",
+          "caption": "A spiral arm of the five-fold Mandelbrot set, in tri_mosaic (showcase c18)"
         }
       ],
       "public": {
@@ -3222,7 +3381,10 @@
             "style_retrospective_082/tri_mosaic/levers/r1_tm_plates_thin_3bb3",
             "style_retrospective_082/tri_mosaic/levers/r1_tm_shards_m43_fc13",
             "style_flat_graphic_r1/cube_facets/forms_a/cf_a_baseline",
-            "style_flat_graphic_r1/cube_facets/forms_b/cf_b_baseline"
+            "style_flat_graphic_r1/cube_facets/forms_b/cf_b_baseline",
+            "showcase_g4/tri_mosaic/tri_mosaic__c08",
+            "showcase_g4/tri_mosaic/tri_mosaic__c11",
+            "showcase_g4/tri_mosaic/tri_mosaic__c18"
           ],
           "score": 3
         },
@@ -3238,12 +3400,20 @@
             "style_tri_mosaic_r1/formulations_a/fo_e_tri_mosaic_ice__00_phoenix_fc131a7f_tri_mosaic_ice",
             "style_tri_mosaic_r1/formulations_b/fo_e_tri_mosaic_ice__01_julia-multibrot3_70e1da1e_tri_mosaic_ice",
             "style_retrospective_082/tri_mosaic/entries/r8_tm_ice_inlay_fc13",
-            "style_retrospective_082/tri_mosaic/entries/r8_tm_ice_fine_70e1"
+            "style_retrospective_082/tri_mosaic/entries/r8_tm_ice_fine_70e1",
+            "showcase_g4/tri_mosaic/tri_mosaic__c06",
+            "showcase_g4/tri_mosaic/tri_mosaic__c09",
+            "showcase_g4/tri_mosaic/tri_mosaic__c12",
+            "showcase_g4/tri_mosaic/tri_mosaic__c17"
           ],
           "score": 3,
           "reference": "wallhaven_wallhaven-4xy8el.png"
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 7,
+        "item": "107"
+      }
     },
     {
       "style": "stirred_ink",
@@ -3272,6 +3442,30 @@
         {
           "keep": "style_stirred_ink_r1/stirred_ink/locations/loc__01_phoenix_71e305f0_stirred_ink",
           "caption": "Round one's tighter stir at a phoenix seat: dark glossy streams combed through bright spray"
+        },
+        {
+          "keep": "showcase_g5/stirred_ink/stirred_ink__c03",
+          "caption": "A spiral in a four-fold Julia set, in molten_flow (showcase c03)"
+        },
+        {
+          "keep": "showcase_g5/stirred_ink/stirred_ink__c08",
+          "caption": "A chain of minibrots on the Mandelbrot set's rim, in molten_flow (showcase c08)"
+        },
+        {
+          "keep": "showcase_g5/stirred_ink/stirred_ink__c09",
+          "caption": "A dense four-fold Julia set, in stirred_ink (showcase c09)"
+        },
+        {
+          "keep": "showcase_g5/stirred_ink/stirred_ink__c11",
+          "caption": "A dense five-fold Julia set, in stirred_ink (showcase c11)"
+        },
+        {
+          "keep": "showcase_g5/stirred_ink/stirred_ink__c17",
+          "caption": "A four-fold minibrot, in molten_flow (showcase c17)"
+        },
+        {
+          "keep": "showcase_g5/stirred_ink/stirred_ink__c18",
+          "caption": "A spiral arm of the five-fold Mandelbrot set, in stirred_ink (showcase c18)"
         }
       ],
       "public": {
@@ -3299,7 +3493,10 @@
             "style_retrospective_082/stirred_ink/levers/r1_si_strong_rays_f_7e31",
             "style_poured_paint_r1/marbled_pour/forms_a/mp_a_baseline_stirred_ink",
             "style_poured_paint_r1/marbled_pour/forms_b/mp_b_baseline_stirred_ink",
-            "style_poured_paint_r1/pour_cells/forms_b/pc_b_baseline_stirred_ink"
+            "style_poured_paint_r1/pour_cells/forms_b/pc_b_baseline_stirred_ink",
+            "showcase_g5/stirred_ink/stirred_ink__c09",
+            "showcase_g5/stirred_ink/stirred_ink__c11",
+            "showcase_g5/stirred_ink/stirred_ink__c18"
           ],
           "score": 4
         },
@@ -3309,7 +3506,10 @@
             "/stir/0/steps": 4
           },
           "keeps": [
-            "style_retrospective_082/stirred_ink/maps/r1_si_map_molten_flow"
+            "style_retrospective_082/stirred_ink/maps/r1_si_map_molten_flow",
+            "showcase_g5/stirred_ink/stirred_ink__c03",
+            "showcase_g5/stirred_ink/stirred_ink__c08",
+            "showcase_g5/stirred_ink/stirred_ink__c17"
           ]
         },
         {
@@ -3332,7 +3532,11 @@
           ],
           "reference": "whispers-on-golden-sand-25.jpg"
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 6,
+        "item": "107"
+      }
     },
     {
       "style": "ring_pools",
@@ -3374,6 +3578,18 @@
         {
           "keep": "style_cut_paper_poster_r1/paper_layers/formulations/paper_a__p_tia__00_phoenix_fc131a7f",
           "caption": "Cream sheets pooled round a phoenix island, rust and slate strips of paper fanning out beneath them"
+        },
+        {
+          "keep": "showcase_g8/paper_layers/paper_layers__c03",
+          "caption": "A spiral in a four-fold Julia set, in paper_layers (showcase c03)"
+        },
+        {
+          "keep": "showcase_g8/paper_layers/paper_layers__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in paper_layers (showcase c06)"
+        },
+        {
+          "keep": "showcase_g8/paper_layers/paper_layers__c17",
+          "caption": "A four-fold minibrot, in paper_layers (showcase c17)"
         }
       ],
       "public": {
@@ -3390,11 +3606,18 @@
           "values": {},
           "keeps": [
             "style_cut_paper_poster_r1/paper_layers/formulations/paper_a__p_tia__00_phoenix_fc131a7f",
-            "style_cut_paper_poster_r1/paper_layers/locations/paper_loc__p_stack__01_phoenix_71e305f0"
+            "style_cut_paper_poster_r1/paper_layers/locations/paper_loc__p_stack__01_phoenix_71e305f0",
+            "showcase_g8/paper_layers/paper_layers__c03",
+            "showcase_g8/paper_layers/paper_layers__c06",
+            "showcase_g8/paper_layers/paper_layers__c17"
           ],
           "score": 4
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "poster_curls",
@@ -3418,169 +3641,6 @@
       ]
     },
     {
-      "style": "gouache_cut",
-      "score": 3,
-      "status": "publish",
-      "tier": "lab",
-      "item": "061",
-      "reference": "wallhaven_wallhaven-4omjp5.jpg",
-      "references": [
-        "wallhaven_wallhaven-4omjp5.jpg",
-        "wallhaven_wallhaven-m9v5l9.png"
-      ],
-      "variant": "current",
-      "show": [
-        {
-          "keep": "style_cut_paper_poster_r1/gouache_cut/formulations/gouache_a__g_stack__00_phoenix_f7199609",
-          "caption": "Flat teal, navy and mint shapes with dry-brush ragged edges round a phoenix seat, lime knife strokes along the rims"
-        }
-      ],
-      "public": {
-        "name": "gouache-cut",
-        "palette": "gouache_cut",
-        "knobs": []
-      },
-      "what": "Gouache: broad flat teal, navy and mint shapes with dry-brush ragged edges and a few lime knife strokes.",
-      "kept": "1 tile: the stack at the formulations seat, kept as the mode's example (round one's picks kept nothing)",
-      "note": "Engine: the post stage's paper pass (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5; no tile picked, so the stack tile from the scoring page is kept for the mode to open in lab.",
-      "palettes": [
-        {
-          "colormap": "gouache_cut",
-          "values": {},
-          "keeps": [
-            "style_cut_paper_poster_r1/gouache_cut/formulations/gouache_a__g_stack__00_phoenix_f7199609"
-          ],
-          "score": 3
-        }
-      ]
-    },
-    {
-      "style": "mercury_tubes",
-      "score": 4,
-      "status": "publish",
-      "tier": "lab",
-      "item": "062",
-      "reference": "visionary-spires-25.jpg",
-      "references": [
-        "visionary-spires-25.jpg",
-        "wallhaven_wallhaven-ym8rqk.png"
-      ],
-      "variant": "current",
-      "show": [
-        {
-          "keep": "style_chrome_stars_hairlines_r1/mercury_tubes/locations/w1__m_stack__03_phoenix_8b21e0ae",
-          "caption": "A ring of chrome stars round a spiral of fine lace, mercury tubes sweeping out across the blue"
-        },
-        {
-          "keep": "style_chrome_stars_hairlines_r1/mercury_tubes/formulations/w1__m_fine__00_phoenix_fc131a7f",
-          "caption": "Chrome stars joined by mercury tubes thinning to hairlines, over a navy-to-cyan ground"
-        }
-      ],
-      "public": {
-        "name": "mercury-tubes",
-        "palette": "mercury_tubes",
-        "knobs": []
-      },
-      "what": "Liquid chrome: mirror-bright star nodes joined by mercury tubes thinning to hairlines, hairline loops, on a calm navy-to-cyan ground.",
-      "kept": "2 tiles: m_fine at the formulations seat, the stack at a second phoenix seat",
-      "note": "Engine: the stroke trap (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 4/5.",
-      "palettes": [
-        {
-          "colormap": "mercury_tubes",
-          "values": {},
-          "keeps": [
-            "style_chrome_stars_hairlines_r1/mercury_tubes/formulations/w1__m_fine__00_phoenix_fc131a7f",
-            "style_chrome_stars_hairlines_r1/mercury_tubes/locations/w1__m_stack__03_phoenix_8b21e0ae"
-          ],
-          "score": 4
-        }
-      ]
-    },
-    {
-      "style": "neon_loops",
-      "score": 3,
-      "status": "publish",
-      "tier": "lab",
-      "item": "062",
-      "reference": "ten-leaf-clover-25.jpg",
-      "references": [
-        "ten-leaf-clover-25.jpg",
-        "tinan-25.jpg",
-        "tianan-25.jpg",
-        "wallhaven_wallhaven-r21py7.png"
-      ],
-      "variant": "current",
-      "show": [
-        {
-          "keep": "style_chrome_stars_hairlines_r1/neon_loops/entries/w2__e_tan_star_beams__00_phoenix_8b21e0ae",
-          "caption": "Blue-white beams arcing over a tan lace spiral on a dark navy ground"
-        }
-      ],
-      "public": {
-        "name": "neon-loops",
-        "palette": "neon_loops",
-        "knobs": []
-      },
-      "what": "Neon outline: glowing white loops and beams of one clean weight over the set's pale lace, on a blue-to-green ground (blue-white beams between tan stars as a palette entry).",
-      "kept": "2 tiles: the tan_star_beams entry, and the violet_threads entry at seat b (style_light_lines_nebulae_r1); the stack's own formulations and the cream_ribbons entry kept nothing",
-      "note": "Engine: the stroke trap (mercury_tubes') · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5, the tan_star_beams entry 3/5. Item 092's violet_threads entry (2026-11-26): \"good\", 3/5.",
-      "palettes": [
-        {
-          "colormap": "neon_loops",
-          "values": {},
-          "keeps": [],
-          "score": 3
-        },
-        {
-          "colormap": "tan_star_beams",
-          "values": {
-            "/layers/0/palette/gamma": 1.2,
-            "/layers/1/opacity": 0.3,
-            "/layers/2/falloff": 0.0008,
-            "/layers/2/opacity": 0.55,
-            "/layers/3/channel/stroke/smallest": 0.1,
-            "/layers/3/channel/stroke/steps": 8,
-            "/layers/3/channel/stroke/taper": 0.7,
-            "/layers/3/channel/stroke/width": 0.01,
-            "/layers/3/opacity": 0.36,
-            "/layers/3/power": 0.25,
-            "/layers/4/channel/stroke/smallest": 0.1,
-            "/layers/4/channel/stroke/steps": 8,
-            "/layers/4/channel/stroke/taper": 0.7,
-            "/layers/4/channel/stroke/width": 0.01,
-            "/layers/5/channel/stroke/smallest": 0.1,
-            "/layers/5/channel/stroke/steps": 8,
-            "/layers/5/channel/stroke/width": 0.0015,
-            "/layers/5/opacity": 0.12,
-            "/layers/5/power": 0.25,
-            "/layers/6/channel/stroke/smallest": 0.1,
-            "/layers/6/channel/stroke/steps": 8,
-            "/layers/6/channel/stroke/width": 0.0015,
-            "/layers/6/opacity": 0.3,
-            "/tone/median": 0.156,
-            "/tone/p10": 0.034
-          },
-          "keeps": [
-            "style_chrome_stars_hairlines_r1/neon_loops/entries/w2__e_tan_star_beams__00_phoenix_8b21e0ae"
-          ],
-          "reference": "tianan-25.jpg",
-          "score": 3
-        },
-        {
-          "colormap": "violet_threads",
-          "values": {
-            "/tone/median": 0.106,
-            "/tone/p10": 0.019
-          },
-          "keeps": [
-            "style_light_lines_nebulae_r1/neon_loops/violet_threads/nl_b_e_violet_threads"
-          ],
-          "reference": "wallhaven_wallhaven-r21py7.png",
-          "score": 3
-        }
-      ]
-    },
-    {
       "style": "hairline_rays",
       "score": 4,
       "status": "publish",
@@ -3599,6 +3659,18 @@
         {
           "keep": "style_chrome_stars_hairlines_r1/hairline_rays/locations/w3__r_stack__02_phoenix_d93f2b17",
           "caption": "Hairline loops winding into a phoenix spiral, frosted lace along its edges"
+        },
+        {
+          "keep": "showcase_g1/hairline_rays/hairline_rays__c08",
+          "caption": "A chain of minibrots on the Mandelbrot set's rim, in hairline_rays (showcase c08)"
+        },
+        {
+          "keep": "showcase_g1/hairline_rays/hairline_rays__c12",
+          "caption": "A dense Julia set of the Mandelbrot family, in hairline_rays (showcase c12)"
+        },
+        {
+          "keep": "showcase_g1/hairline_rays/hairline_rays__c17",
+          "caption": "A four-fold minibrot, in hairline_rays (showcase c17)"
         }
       ],
       "public": {
@@ -3615,11 +3687,18 @@
           "values": {},
           "keeps": [
             "style_chrome_stars_hairlines_r1/hairline_rays/formulations/w3__r_six__00_julia-mandelbrot_291fb1ab",
-            "style_chrome_stars_hairlines_r1/hairline_rays/locations/w3__r_stack__02_phoenix_d93f2b17"
+            "style_chrome_stars_hairlines_r1/hairline_rays/locations/w3__r_stack__02_phoenix_d93f2b17",
+            "showcase_g1/hairline_rays/hairline_rays__c08",
+            "showcase_g1/hairline_rays/hairline_rays__c12",
+            "showcase_g1/hairline_rays/hairline_rays__c17"
           ],
           "score": 4
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "frost_stipple",
@@ -3637,6 +3716,22 @@
         {
           "keep": "style_classic_escape_texture_r1/frost_stipple/formulations/fin_sA__s3_dust__00_m2_seahorse_tail_spiral",
           "caption": "A seahorse-tail spiral in lilac and gray, fine frost grain sweeping round it and sparkle stipple on its mottled cells"
+        },
+        {
+          "keep": "showcase_g1/frost_stipple/frost_stipple__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in frost_stipple (showcase c06)"
+        },
+        {
+          "keep": "showcase_g1/frost_stipple/frost_stipple__c11",
+          "caption": "A dense five-fold Julia set, in frost_stipple (showcase c11)"
+        },
+        {
+          "keep": "showcase_g1/frost_stipple/frost_stipple__c12",
+          "caption": "A dense Julia set of the Mandelbrot family, in frost_stipple (showcase c12)"
+        },
+        {
+          "keep": "showcase_g1/frost_stipple/frost_stipple__c17",
+          "caption": "A four-fold minibrot, in frost_stipple (showcase c17)"
         }
       ],
       "public": {
@@ -3653,11 +3748,19 @@
           "values": {},
           "keeps": [
             "style_classic_escape_texture_r1/frost_stipple/formulations/fin_sA__s3_dust__00_m2_seahorse_tail_spiral",
-            "style_gilded_leaves_r1/formulations_phoenix/baseA__frost_stipple__phoenix_d4ce71a6_frost_stipple"
+            "style_gilded_leaves_r1/formulations_phoenix/baseA__frost_stipple__phoenix_d4ce71a6_frost_stipple",
+            "showcase_g1/frost_stipple/frost_stipple__c06",
+            "showcase_g1/frost_stipple/frost_stipple__c11",
+            "showcase_g1/frost_stipple/frost_stipple__c12",
+            "showcase_g1/frost_stipple/frost_stipple__c17"
           ],
           "score": 4
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 4,
+        "item": "107"
+      }
     },
     {
       "style": "grain_fans",
@@ -3674,6 +3777,18 @@
         {
           "keep": "style_classic_escape_texture_r1/grain_fans/formulations/fin_gA__g3_six__00_julia-mandelbrot_53dd5a48",
           "caption": "Teal and orange fans spiraling round a Julia set's beaded eyes, each band scooped darker toward its edge and finely grained"
+        },
+        {
+          "keep": "showcase_g7/grain_fans/grain_fans__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in grain_fans (showcase c06)"
+        },
+        {
+          "keep": "showcase_g7/grain_fans/grain_fans__c10",
+          "caption": "The spiral body of a phoenix set, in grain_fans (showcase c10)"
+        },
+        {
+          "keep": "showcase_g7/grain_fans/grain_fans__c11",
+          "caption": "A dense five-fold Julia set, in grain_fans (showcase c11)"
         }
       ],
       "public": {
@@ -3689,49 +3804,18 @@
           "colormap": "grain_fans",
           "values": {},
           "keeps": [
-            "style_classic_escape_texture_r1/grain_fans/formulations/fin_gA__g3_six__00_julia-mandelbrot_53dd5a48"
+            "style_classic_escape_texture_r1/grain_fans/formulations/fin_gA__g3_six__00_julia-mandelbrot_53dd5a48",
+            "showcase_g7/grain_fans/grain_fans__c06",
+            "showcase_g7/grain_fans/grain_fans__c10",
+            "showcase_g7/grain_fans/grain_fans__c11"
           ],
           "score": 4
         }
-      ]
-    },
-    {
-      "style": "frost_filaments",
-      "score": 3,
-      "status": "publish",
-      "tier": "lab",
-      "item": "064",
-      "reference": "valhalla.jpg",
-      "references": [
-        "valhalla.jpg",
-        "under-a-brighter-sky-25.jpg",
-        "toxic-spire-25.jpg"
       ],
-      "what": "A deep-blue spiral whose filaments glow white, feathered with frost spikes and sparkles, faint circle arcs across it (navy dendrites on pale ice, gold dendrites in green as palette entries).",
-      "variant": "current",
-      "show": [
-        {
-          "keep": "style_classic_escape_texture_r1/frost_filaments/formulations/fin_fA__f3_stack__00_julia-mandelbrot_f682af93",
-          "caption": "A deep-blue Julia spiral, its filaments glowing white and feathered with frost spikes"
-        }
-      ],
-      "public": {
-        "name": "frost-filaments",
-        "palette": "frost_filaments",
-        "knobs": []
-      },
-      "kept": "1 tile: the stack at the formulations seat, kept as the mode's example (no tile picked)",
-      "note": "Matt: 3/5 (2026-11-22, from the 073 review page); no tile picked, so the stack tile is kept for the mode to open in lab; entries icy_sky and toxic_spire kept nothing and leave the set and the library.",
-      "palettes": [
-        {
-          "colormap": "frost_filaments",
-          "values": {},
-          "keeps": [
-            "style_classic_escape_texture_r1/frost_filaments/formulations/fin_fA__f3_stack__00_julia-mandelbrot_f682af93"
-          ],
-          "score": 3
-        }
-      ]
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "draped_folds",
@@ -3753,6 +3837,22 @@
         {
           "keep": "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_plumes__00_julia-multibrot5_ff8bfbca",
           "caption": "The same five-fold Julia spiral, its folds feathered into fine amber plumes"
+        },
+        {
+          "keep": "showcase_g5/draped_folds/draped_folds__c03",
+          "caption": "A spiral in a four-fold Julia set, in draped_folds (showcase c03)"
+        },
+        {
+          "keep": "showcase_g5/draped_folds/draped_folds__c11",
+          "caption": "A dense five-fold Julia set, in draped_folds (showcase c11)"
+        },
+        {
+          "keep": "showcase_g5/draped_folds/draped_folds__c14",
+          "caption": "Lace in a phoenix set, in draped_folds (showcase c14)"
+        },
+        {
+          "keep": "showcase_g5/draped_folds/draped_folds__c17",
+          "caption": "A four-fold minibrot, in draped_folds (showcase c17)"
         }
       ],
       "public": {
@@ -3769,50 +3869,19 @@
           "values": {},
           "keeps": [
             "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_one__00_julia-multibrot5_ff8bfbca",
-            "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_plumes__00_julia-multibrot5_ff8bfbca"
+            "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_plumes__00_julia-multibrot5_ff8bfbca",
+            "showcase_g5/draped_folds/draped_folds__c03",
+            "showcase_g5/draped_folds/draped_folds__c11",
+            "showcase_g5/draped_folds/draped_folds__c14",
+            "showcase_g5/draped_folds/draped_folds__c17"
           ],
           "score": 4
         }
-      ]
-    },
-    {
-      "style": "gilded_leaves",
-      "score": 4,
-      "status": "publish",
-      "tier": "lab",
-      "item": "066",
-      "reference": "velvet-flowers-25.jpg",
-      "references": [
-        "velvet-flowers-25.jpg"
       ],
-      "variant": "current",
-      "show": [
-        {
-          "keep": "style_gilded_leaves_r1/locations/loc__p_stack__julia-mandelbrot_45222fc4_gilded_leaves",
-          "caption": "A quadratic Julia spiral: gold leaf sprays sweeping round a cream core on dark crackled stone"
-        }
-      ],
-      "public": {
-        "name": "gilded-leaves",
-        "palette": "gilded_leaves",
-        "knobs": []
-      },
-      "what": "Translucent gilded-glass leaves on dark crackled stone: curved almond blades bright at the spine and fading to their tips, sweeping in sprays and spirals, small copies inlaid in each, the smaller blades faint gray ghosts.",
-      "kept": "4 tiles: the stack at a Julia spiral seat, p_crossed and p_large at the phoenix seat, p_dim at the quartic seat",
-      "note": "Engine: the bubble member fade (066) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 4/5.",
-      "palettes": [
-        {
-          "colormap": "gilded_leaves",
-          "values": {},
-          "keeps": [
-            "style_gilded_leaves_r1/formulations_phoenix/finA__p_crossed__phoenix_d4ce71a6_gilded_leaves",
-            "style_gilded_leaves_r1/formulations_phoenix/finA__p_large__phoenix_d4ce71a6_gilded_leaves",
-            "style_gilded_leaves_r1/formulations_star/finD__p_dim__multibrot4_47d600f4_gilded_leaves",
-            "style_gilded_leaves_r1/locations/loc__p_stack__julia-mandelbrot_45222fc4_gilded_leaves"
-          ],
-          "score": 4
-        }
-      ]
+      "showcase": {
+        "passes": 4,
+        "item": "107"
+      }
     },
     {
       "style": "chrome_whorl",
@@ -3875,7 +3944,13 @@
             "style_november_r2/chrome_whorl/maps/cw2_map_twilight"
           ]
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 0,
+        "item": "107",
+        "note": "too high frequency, try again with some techniques to get the same effect but not so high frequency",
+        "held": "kept for a later try-again pass (Matt, 2026-11-27)"
+      }
     },
     {
       "style": "dew_bloom",
@@ -3893,6 +3968,14 @@
         {
           "keep": "style_petal_spirals_r1/dew_bloom/locations/dwl_08",
           "caption": "A translucent violet bloom, its petals ringed by glowing pink rims, dew sparkling on the dark lace"
+        },
+        {
+          "keep": "showcase_g4/dew_bloom/dew_bloom__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in dew_bloom (showcase c06)"
+        },
+        {
+          "keep": "showcase_g4/dew_bloom/dew_bloom__c11",
+          "caption": "A dense five-fold Julia set, in dew_bloom (showcase c11)"
         }
       ],
       "public": {
@@ -3909,7 +3992,9 @@
           "keeps": [
             "style_petal_spirals_r1/dew_bloom/formulations/dwf_dew_tubes",
             "style_petal_spirals_r1/dew_bloom/locations/dwl_08",
-            "style_november_r2/dew_bloom/kept/dw2_stack_be08"
+            "style_november_r2/dew_bloom/kept/dw2_stack_be08",
+            "showcase_g4/dew_bloom/dew_bloom__c06",
+            "showcase_g4/dew_bloom/dew_bloom__c11"
           ],
           "score": 3
         },
@@ -3923,7 +4008,13 @@
             "style_november_r2/dew_bloom/maps/dw2_map_tempest_plumes"
           ]
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 2,
+        "item": "107",
+        "note": "too high frequency",
+        "held": "kept for a later try-again pass (Matt, 2026-11-27)"
+      }
     },
     {
       "style": "filigree_dials",
@@ -4028,57 +4119,13 @@
             "style_november_r2/filigree_dials/maps/fd2_map_soft_veils_amber"
           ]
         }
-      ]
-    },
-    {
-      "style": "glass_orbs",
-      "score": 3,
-      "status": "publish",
-      "tier": "lab",
-      "item": "074",
-      "reference": "orbits-25.jpg",
-      "references": [
-        "orbits-25.jpg",
-        "time-delay-25.jpg",
-        "wallhaven_wallhaven-0wl9zq.jpg"
       ],
-      "what": "Translucent glass orbs strung along glowing blue lace, each a glossy dome with a bright rim and a soft inner light, faint ripple rings round the crossings (pearl orbs on steel-blue satin, and cobalt bubbles on copper lace as palette entries).",
-      "variant": "current",
-      "show": [
-        {
-          "keep": "style_ornate_rings_orbs_r1/glass_orbs/formulations/gof_no_ripples",
-          "caption": "Translucent glass orbs strung along glowing blue lace"
-        }
-      ],
-      "public": {
-        "name": "glass-orbs",
-        "palette": "glass_orbs",
-        "knobs": []
-      },
-      "kept": "2 tiles: the no-ripples formulation and cobalt_orbs at seat 1",
-      "note": "Matt: round one 3/5 (2026-11-23); kept gof_no_ripples and entry cobalt_orbs (seat 1); no location kept; satin_orbs kept nothing and leaves the set and the library.",
-      "palettes": [
-        {
-          "colormap": "glass_orbs",
-          "values": {},
-          "keeps": [
-            "style_ornate_rings_orbs_r1/glass_orbs/formulations/gof_no_ripples"
-          ],
-          "score": 3
-        },
-        {
-          "colormap": "cobalt_orbs",
-          "values": {
-            "/tone/median": 0.138,
-            "/tone/p10": 0.031
-          },
-          "keeps": [
-            "style_ornate_rings_orbs_r1/glass_orbs/entries/e_cobalt_orbs_1"
-          ],
-          "reference": "wallhaven_wallhaven-0wl9zq.jpg",
-          "score": 3
-        }
-      ]
+      "showcase": {
+        "passes": 0,
+        "item": "107",
+        "note": "too many discontinuities, try again with some techniques that make it more continuous",
+        "held": "kept for a later try-again pass (Matt, 2026-11-27)"
+      }
     },
     {
       "style": "feather_plumes",
@@ -4102,6 +4149,18 @@
         {
           "keep": "style_november_r2/feather_plumes/kept/fp2_stack_2d84_tempest",
           "caption": "Violet feather plumes combed out of a phoenix set's spirals, white star sparks on an indigo night"
+        },
+        {
+          "keep": "showcase_g4/feather_plumes/feather_plumes__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in tempest_plumes (showcase c06)"
+        },
+        {
+          "keep": "showcase_g4/feather_plumes/feather_plumes__c10",
+          "caption": "The spiral body of a phoenix set, in mean_plumes (showcase c10)"
+        },
+        {
+          "keep": "showcase_g4/feather_plumes/feather_plumes__c14",
+          "caption": "Lace in a phoenix set, in tempest_plumes (showcase c14)"
         }
       ],
       "public": {
@@ -4119,7 +4178,9 @@
             "style_flames_r1/feather_plumes/entries/e_tempest_plumes_2",
             "style_november_r2/feather_plumes/kept/fp2_long_2d84_tempest",
             "style_november_r2/feather_plumes/kept/fp2_stack_2d84_tempest",
-            "style_november_r2/feather_plumes/levers/fp2_long_tips_tempest"
+            "style_november_r2/feather_plumes/levers/fp2_long_tips_tempest",
+            "showcase_g4/feather_plumes/feather_plumes__c06",
+            "showcase_g4/feather_plumes/feather_plumes__c14"
           ],
           "reference": "tempest-25.jpg",
           "score": 4
@@ -4145,7 +4206,8 @@
             "/tone/p10": 0.063
           },
           "keeps": [
-            "style_flames_r1/feather_plumes/entries/e_mean_plumes_2"
+            "style_flames_r1/feather_plumes/entries/e_mean_plumes_2",
+            "showcase_g4/feather_plumes/feather_plumes__c10"
           ],
           "reference": "mean-25.jpg",
           "score": 3
@@ -4233,7 +4295,11 @@
       ],
       "aliases": [
         "lilac_kaleidoscope"
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "hollow_webs",
@@ -4254,6 +4320,18 @@
         {
           "keep": "style_webs_clouds_r1/hollow_webs/formulations/hwf_stack",
           "caption": "Dark wells ringed in nested rims on a gold-lit lace, a fiber membrane between"
+        },
+        {
+          "keep": "showcase_g8/hollow_webs/hollow_webs__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in hollow_webs (showcase c06)"
+        },
+        {
+          "keep": "showcase_g8/hollow_webs/hollow_webs__c14",
+          "caption": "Lace in a phoenix set, in hollow_webs (showcase c14)"
+        },
+        {
+          "keep": "showcase_g8/hollow_webs/hollow_webs__c17",
+          "caption": "A four-fold minibrot, in knit_webs (showcase c17)"
         }
       ],
       "public": {
@@ -4268,7 +4346,9 @@
           "colormap": "hollow_webs",
           "values": {},
           "keeps": [
-            "style_webs_clouds_r1/hollow_webs/formulations/hwf_stack"
+            "style_webs_clouds_r1/hollow_webs/formulations/hwf_stack",
+            "showcase_g8/hollow_webs/hollow_webs__c06",
+            "showcase_g8/hollow_webs/hollow_webs__c14"
           ],
           "score": 3
         },
@@ -4279,12 +4359,17 @@
             "/tone/p10": 0.145
           },
           "keeps": [
-            "style_texture_lace_r1/hollow_webs/knit_webs/hw_a_e_knit_webs"
+            "style_texture_lace_r1/hollow_webs/knit_webs/hw_a_e_knit_webs",
+            "showcase_g8/hollow_webs/hollow_webs__c17"
           ],
           "reference": "within-25.jpg",
           "score": 3
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "storm_clouds",
@@ -4305,6 +4390,26 @@
         {
           "keep": "style_webs_clouds_r1/storm_clouds/formulations/scf_ledges",
           "caption": "Crinkled violet and teal cloud banks combed out of a spiral's lace"
+        },
+        {
+          "keep": "showcase_g6/storm_clouds/storm_clouds__c03",
+          "caption": "A spiral in a four-fold Julia set, in storm_clouds (showcase c03)"
+        },
+        {
+          "keep": "showcase_g6/storm_clouds/storm_clouds__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in tributary_clouds (showcase c06)"
+        },
+        {
+          "keep": "showcase_g6/storm_clouds/storm_clouds__c11",
+          "caption": "A dense five-fold Julia set, in storm_clouds (showcase c11)"
+        },
+        {
+          "keep": "showcase_g6/storm_clouds/storm_clouds__c17",
+          "caption": "A four-fold minibrot, in storm_clouds (showcase c17)"
+        },
+        {
+          "keep": "showcase_g6/storm_clouds/storm_clouds__c18",
+          "caption": "A spiral arm of the five-fold Mandelbrot set, in tributary_clouds (showcase c18)"
         }
       ],
       "public": {
@@ -4324,7 +4429,10 @@
             "style_webs_clouds_r1/storm_clouds/locations/scl_03",
             "style_webs_clouds_r1/storm_clouds/locations/scl_05",
             "style_november_r2/storm_clouds/kept/sc2_ledges_9a93",
-            "style_november_r2/storm_clouds/kept/sc2_ledges_bf30"
+            "style_november_r2/storm_clouds/kept/sc2_ledges_bf30",
+            "showcase_g6/storm_clouds/storm_clouds__c03",
+            "showcase_g6/storm_clouds/storm_clouds__c11",
+            "showcase_g6/storm_clouds/storm_clouds__c17"
           ],
           "score": 3
         },
@@ -4335,7 +4443,9 @@
             "/tone/p10": 0.248
           },
           "keeps": [
-            "style_webs_clouds_r1/storm_clouds/entries/e_tributary_clouds_2"
+            "style_webs_clouds_r1/storm_clouds/entries/e_tributary_clouds_2",
+            "showcase_g6/storm_clouds/storm_clouds__c06",
+            "showcase_g6/storm_clouds/storm_clouds__c18"
           ],
           "reference": "tributaries-25.jpg",
           "score": 3
@@ -4385,7 +4495,11 @@
           ],
           "reference": "wallhaven_wallhaven-jewqgw.png"
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 5,
+        "item": "107"
+      }
     },
     {
       "style": "starburst_veils",
@@ -4407,6 +4521,18 @@
         {
           "keep": "style_light_beams_r1/starburst_veils/formulations/sbf_long",
           "caption": "Violet veils over a spiral's lace, its brightest sparks six-pointed stars"
+        },
+        {
+          "keep": "showcase_g1/starburst_veils/starburst_veils__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in starburst_veils (showcase c06)"
+        },
+        {
+          "keep": "showcase_g1/starburst_veils/starburst_veils__c11",
+          "caption": "A dense five-fold Julia set, in jade_starbursts (showcase c11)"
+        },
+        {
+          "keep": "showcase_g1/starburst_veils/starburst_veils__c17",
+          "caption": "A four-fold minibrot, in jade_starbursts (showcase c17)"
         }
       ],
       "public": {
@@ -4424,7 +4550,8 @@
             "style_light_beams_r1/starburst_veils/formulations/sbf_long",
             "style_light_beams_r1/starburst_veils/locations/sbl_13",
             "style_november_r2/starburst_veils/kept/sb2_long_8b21",
-            "style_november_r2/starburst_veils/levers/sb2_subtler_c480"
+            "style_november_r2/starburst_veils/levers/sb2_subtler_c480",
+            "showcase_g1/starburst_veils/starburst_veils__c06"
           ],
           "score": 2
         },
@@ -4442,7 +4569,9 @@
           },
           "keeps": [
             "style_light_beams_r1/starburst_veils/entries/e_jade_starbursts",
-            "style_november_r2/starburst_veils/entries/sb2_jade_starbursts_subtler"
+            "style_november_r2/starburst_veils/entries/sb2_jade_starbursts_subtler",
+            "showcase_g1/starburst_veils/starburst_veils__c11",
+            "showcase_g1/starburst_veils/starburst_veils__c17"
           ],
           "reference": "splendor-25.jpg",
           "score": 2
@@ -4546,7 +4675,11 @@
             "style_november_r2/starburst_veils/maps/sb2_map_soft_veils_teal"
           ]
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "light_shafts",
@@ -4566,6 +4699,14 @@
         {
           "keep": "style_november_r2/light_shafts/levers/ls2_subtler",
           "caption": "Pale blue spiral lace in a dark void, fine shafts of light streaming out of it"
+        },
+        {
+          "keep": "showcase_g1/light_shafts/light_shafts__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in light_shafts (showcase c06)"
+        },
+        {
+          "keep": "showcase_g1/light_shafts/light_shafts__c14",
+          "caption": "Lace in a phoenix set, in light_shafts (showcase c14)"
         }
       ],
       "public": {
@@ -4581,11 +4722,17 @@
           "values": {},
           "keeps": [
             "style_light_beams_r1/light_shafts/locations/lsl_21",
-            "style_november_r2/light_shafts/levers/ls2_subtler"
+            "style_november_r2/light_shafts/levers/ls2_subtler",
+            "showcase_g1/light_shafts/light_shafts__c06",
+            "showcase_g1/light_shafts/light_shafts__c14"
           ],
           "score": 2
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 2,
+        "item": "107"
+      }
     },
     {
       "style": "flat_spirals",
@@ -4608,6 +4755,14 @@
         {
           "keep": "style_flat_graphic_r1/flat_spirals/locations/fs_loc_04_julia-multibrot3_0111cda1",
           "caption": "Teal and ice bands as hard flat rings round a cubic Julia set's spiral, packed with flat discs along each ring"
+        },
+        {
+          "keep": "showcase_g5/flat_spirals/flat_spirals__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in flat_spirals (showcase c06)"
+        },
+        {
+          "keep": "showcase_g5/flat_spirals/flat_spirals__c09",
+          "caption": "A dense four-fold Julia set, in flat_spirals (showcase c09)"
         }
       ],
       "public": {
@@ -4628,7 +4783,9 @@
             "style_flat_graphic_r1/flat_spirals/locations/fs_loc_02_multibrot3_5ada26e6",
             "style_flat_graphic_r1/flat_spirals/locations/fs_loc_04_julia-multibrot3_0111cda1",
             "style_flat_graphic_r1/flat_spirals/locations/fs_loc_06_julia-mandelbrot_51ed3c1b",
-            "style_flat_graphic_r1/flat_spirals/locations/fs_loc_09_mandelbrot_8bd15b44"
+            "style_flat_graphic_r1/flat_spirals/locations/fs_loc_09_mandelbrot_8bd15b44",
+            "showcase_g5/flat_spirals/flat_spirals__c06",
+            "showcase_g5/flat_spirals/flat_spirals__c09"
           ],
           "score": 4
         },
@@ -4679,7 +4836,11 @@
           ],
           "score": 4
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 2,
+        "item": "107"
+      }
     },
     {
       "style": "cube_facets",
@@ -4698,6 +4859,22 @@
         {
           "keep": "style_flat_graphic_r1/cube_facets/locations/cf_loc_14_julia-mandelbrot_e696b870",
           "caption": "Large calm cubes in slate and sand splitting into ever smaller cubes along a Julia set's gold edge"
+        },
+        {
+          "keep": "showcase_g7/cube_facets/cube_facets__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in crimson_cubes (showcase c06)"
+        },
+        {
+          "keep": "showcase_g7/cube_facets/cube_facets__c08",
+          "caption": "A chain of minibrots on the Mandelbrot set's rim, in crimson_cubes (showcase c08)"
+        },
+        {
+          "keep": "showcase_g7/cube_facets/cube_facets__c11",
+          "caption": "A dense five-fold Julia set, in crimson_cubes (showcase c11)"
+        },
+        {
+          "keep": "showcase_g7/cube_facets/cube_facets__c17",
+          "caption": "A four-fold minibrot, in crimson_cubes (showcase c17)"
         }
       ],
       "public": {
@@ -4729,11 +4906,21 @@
             "/tone/p10": 0.038
           },
           "keeps": [
-            "style_flat_graphic_r1/cube_facets/entries/cf_e_crimson_cubes_0"
+            "style_flat_graphic_r1/cube_facets/entries/cf_e_crimson_cubes_0",
+            "showcase_g7/cube_facets/cube_facets__c06",
+            "showcase_g7/cube_facets/cube_facets__c08",
+            "showcase_g7/cube_facets/cube_facets__c11",
+            "showcase_g7/cube_facets/cube_facets__c17"
           ],
           "score": 3
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 4,
+        "item": "107",
+        "note": "make this less... discretizing. so more of the underlying geometry is present, but still discretized enough to get the effect. or at least make this a parameter.",
+        "held": "kept for a later try-again pass (Matt, 2026-11-27)"
+      }
     },
     {
       "style": "marbled_pour",
@@ -4752,6 +4939,10 @@
         {
           "keep": "style_poured_paint_r1/marbled_pour/forms_a/mp_a_f_broad",
           "caption": "Red, cream and blue-gray inks combed into broad hooks and S-curls, tightening into fine marbling at the set"
+        },
+        {
+          "keep": "showcase_g8/marbled_pour/marbled_pour__c18",
+          "caption": "A spiral arm of the five-fold Mandelbrot set, in teal_marbling (showcase c18)"
         }
       ],
       "public": {
@@ -4792,11 +4983,16 @@
             "/tone/p10": 0.011
           },
           "keeps": [
-            "style_poured_paint_r1/marbled_pour/entries/mp_b_e_teal_marbling"
+            "style_poured_paint_r1/marbled_pour/entries/mp_b_e_teal_marbling",
+            "showcase_g8/marbled_pour/marbled_pour__c18"
           ],
           "score": 4
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 1,
+        "item": "107"
+      }
     },
     {
       "style": "pour_cells",
@@ -4815,6 +5011,22 @@
         {
           "keep": "style_poured_paint_r1/pour_cells/locations/pc_loc_04_phoenix_71e305f0",
           "caption": "Teal and copper paint dragged into folds round a phoenix set, studded with round cells along the flow"
+        },
+        {
+          "keep": "showcase_g6/pour_cells/pour_cells__c03",
+          "caption": "A spiral in a four-fold Julia set, in pour_cells (showcase c03)"
+        },
+        {
+          "keep": "showcase_g6/pour_cells/pour_cells__c08",
+          "caption": "A chain of minibrots on the Mandelbrot set's rim, in pour_cells (showcase c08)"
+        },
+        {
+          "keep": "showcase_g6/pour_cells/pour_cells__c14",
+          "caption": "Lace in a phoenix set, in pour_cells (showcase c14)"
+        },
+        {
+          "keep": "showcase_g6/pour_cells/pour_cells__c18",
+          "caption": "A spiral arm of the five-fold Mandelbrot set, in pour_cells (showcase c18)"
         }
       ],
       "public": {
@@ -4839,7 +5051,11 @@
             "style_poured_paint_r1/pour_cells/locations/pc_loc_04_phoenix_71e305f0",
             "style_poured_paint_r1/pour_cells/locations/pc_loc_06_phoenix_2d843082",
             "style_poured_paint_r1/pour_cells/locations/pc_loc_07_phoenix_43558166",
-            "style_poured_paint_r1/pour_cells/locations/pc_loc_11_julia-multibrot3_7e312206"
+            "style_poured_paint_r1/pour_cells/locations/pc_loc_11_julia-multibrot3_7e312206",
+            "showcase_g6/pour_cells/pour_cells__c03",
+            "showcase_g6/pour_cells/pour_cells__c08",
+            "showcase_g6/pour_cells/pour_cells__c14",
+            "showcase_g6/pour_cells/pour_cells__c18"
           ],
           "score": 4
         },
@@ -4854,7 +5070,11 @@
           ],
           "score": 4
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 4,
+        "item": "107"
+      }
     },
     {
       "style": "veil_shards",
@@ -4874,6 +5094,18 @@
         {
           "keep": "style_flame_veils_r1/veil_shards/forms_a/vs_a_f_broad",
           "caption": "Green veils of light netted into curved shards round a cubic Julia set, each pane rimmed in gold, the shards growing finer toward the set"
+        },
+        {
+          "keep": "showcase_g8/veil_shards/veil_shards__c03",
+          "caption": "A spiral in a four-fold Julia set, in bone_star (showcase c03)"
+        },
+        {
+          "keep": "showcase_g8/veil_shards/veil_shards__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in veil_shards (showcase c06)"
+        },
+        {
+          "keep": "showcase_g8/veil_shards/veil_shards__c10",
+          "caption": "The spiral body of a phoenix set, in bone_star (showcase c10)"
         }
       ],
       "public": {
@@ -4893,7 +5125,8 @@
             "style_flame_veils_r1/veil_shards/forms_b/vs_b_f_broad",
             "style_flame_veils_r1/veil_shards/forms_b/vs_b_f_gilt",
             "style_flame_veils_r1/veil_shards/locations/vs_loc_05_vm_d3",
-            "style_flame_veils_r1/veil_shards/locations/vs_loc_16_rg_d3_0.65_0.0_w4.5"
+            "style_flame_veils_r1/veil_shards/locations/vs_loc_16_rg_d3_0.65_0.0_w4.5",
+            "showcase_g8/veil_shards/veil_shards__c06"
           ],
           "score": 5
         },
@@ -4917,7 +5150,9 @@
           },
           "keeps": [
             "style_flame_veils_r1/veil_shards/bone_star/vs_a_e_bone_star",
-            "style_flame_veils_r1/veil_shards/bone_star/vs_b_e_bone_star"
+            "style_flame_veils_r1/veil_shards/bone_star/vs_b_e_bone_star",
+            "showcase_g8/veil_shards/veil_shards__c03",
+            "showcase_g8/veil_shards/veil_shards__c10"
           ],
           "score": 5,
           "reference": "wallhaven_wallhaven-wqg52p.png"
@@ -4961,7 +5196,11 @@
           "score": 5,
           "reference": "wallhaven_wallhaven-kwg7v6.png"
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "veil_star",
@@ -4979,6 +5218,22 @@
         {
           "keep": "style_flame_veils_r1/veil_shards/forms_a/vs_a_s_base",
           "caption": "Green shards of veil, each pane rimmed in gold, folded by a kaleidoscope into a five-point star round a Julia set's lace"
+        },
+        {
+          "keep": "showcase_g3/veil_star/veil_star__c03",
+          "caption": "A spiral in a four-fold Julia set, in veil_shards (showcase c03)"
+        },
+        {
+          "keep": "showcase_g3/veil_star/veil_star__c10",
+          "caption": "The spiral body of a phoenix set, in bone_star (showcase c10)"
+        },
+        {
+          "keep": "showcase_g3/veil_star/veil_star__c11",
+          "caption": "A dense five-fold Julia set, in bone_star (showcase c11)"
+        },
+        {
+          "keep": "showcase_g3/veil_star/veil_star__c14",
+          "caption": "Lace in a phoenix set, in bone_star (showcase c14)"
         }
       ],
       "public": {
@@ -4993,7 +5248,8 @@
           "colormap": "veil_shards",
           "values": {},
           "keeps": [
-            "style_flame_veils_r1/veil_shards/forms_a/vs_a_s_base"
+            "style_flame_veils_r1/veil_shards/forms_a/vs_a_s_base",
+            "showcase_g3/veil_star/veil_star__c03"
           ],
           "score": 5
         },
@@ -5001,12 +5257,19 @@
           "colormap": "bone_star",
           "values": {},
           "keeps": [
-            "style_flame_veils_r1/veil_shards/bone_star/vs_star_e_bone_star"
+            "style_flame_veils_r1/veil_shards/bone_star/vs_star_e_bone_star",
+            "showcase_g3/veil_star/veil_star__c10",
+            "showcase_g3/veil_star/veil_star__c11",
+            "showcase_g3/veil_star/veil_star__c14"
           ],
           "score": 5,
           "reference": "wallhaven_wallhaven-wqg52p.png"
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 4,
+        "item": "107"
+      }
     },
     {
       "style": "nautilus_fins",
@@ -5027,6 +5290,18 @@
         {
           "keep": "style_shells_blooms_r1/nautilus_fins/locations/nf_loc_29_phoenix_c34a0553",
           "caption": "Layered gold fins round small coiled shells, each fin lit like a curved chamber wall, with soft gold beads drifting over the pale shell"
+        },
+        {
+          "keep": "showcase_g5/nautilus_fins/nautilus_fins__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in nautilus_fins (showcase c06)"
+        },
+        {
+          "keep": "showcase_g5/nautilus_fins/nautilus_fins__c10",
+          "caption": "The spiral body of a phoenix set, in nautilus_fins (showcase c10)"
+        },
+        {
+          "keep": "showcase_g5/nautilus_fins/nautilus_fins__c11",
+          "caption": "A dense five-fold Julia set, in shell_tunnels (showcase c11)"
         }
       ],
       "public": {
@@ -5044,7 +5319,9 @@
             "style_shells_blooms_r1/nautilus_fins/forms_b/nf_b_nf_layered",
             "style_shells_blooms_r1/nautilus_fins/forms_b/nf_b_nf_glass",
             "style_shells_blooms_r1/nautilus_fins/locations/nf_loc_29_phoenix_c34a0553",
-            "style_shells_blooms_r1/nautilus_fins/locations/nf_loc_03_julia-multibrot5_7ba4bcab"
+            "style_shells_blooms_r1/nautilus_fins/locations/nf_loc_03_julia-multibrot5_7ba4bcab",
+            "showcase_g5/nautilus_fins/nautilus_fins__c06",
+            "showcase_g5/nautilus_fins/nautilus_fins__c10"
           ],
           "score": 3
         },
@@ -5059,11 +5336,16 @@
             "/tone/p10": 0.364
           },
           "keeps": [
-            "style_shells_blooms_r1/nautilus_fins/shell_tunnels/nf_a_e_shell_tunnels"
+            "style_shells_blooms_r1/nautilus_fins/shell_tunnels/nf_a_e_shell_tunnels",
+            "showcase_g5/nautilus_fins/nautilus_fins__c11"
           ],
           "score": 3
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 3,
+        "item": "107"
+      }
     },
     {
       "style": "bokeh_bloom",
@@ -5081,6 +5363,14 @@
         {
           "keep": "style_shells_blooms_r1/bokeh_bloom/forms_b/bb_b_bb_base",
           "caption": "Glowing rust and gold petals veined with dark lace round spiral hearts, the far field sunk into shadow behind soft out-of-focus discs"
+        },
+        {
+          "keep": "showcase_g3/bokeh_bloom/bokeh_bloom__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in bokeh_bloom (showcase c06)"
+        },
+        {
+          "keep": "showcase_g3/bokeh_bloom/bokeh_bloom__c10",
+          "caption": "The spiral body of a phoenix set, in bokeh_bloom (showcase c10)"
         }
       ],
       "public": {
@@ -5099,11 +5389,17 @@
             "style_shells_blooms_r1/bokeh_bloom/forms_b/bb_b_bb_base",
             "style_shells_blooms_r1/bokeh_bloom/locations/bb_loc_01_julia-multibrot4_2b93af96",
             "style_shells_blooms_r1/bokeh_bloom/locations/bb_loc_08_phoenix-classic_af53ce85",
-            "style_shells_blooms_r1/bokeh_bloom/locations/bb_loc_09_julia-mandelbrot_df5d31a1"
+            "style_shells_blooms_r1/bokeh_bloom/locations/bb_loc_09_julia-mandelbrot_df5d31a1",
+            "showcase_g3/bokeh_bloom/bokeh_bloom__c06",
+            "showcase_g3/bokeh_bloom/bokeh_bloom__c10"
           ],
           "score": 3
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 2,
+        "item": "107"
+      }
     },
     {
       "style": "netted_leaves",
@@ -5121,6 +5417,22 @@
         {
           "keep": "style_texture_lace_r1/netted_leaves/locations/nl_loc_07_julia-multibrot3_017f4085",
           "caption": "Curled olive, gold and rust leaves along a three-fold Julia set, each lit like a shallow bowl and covered in a fine dark net that tightens toward the lace"
+        },
+        {
+          "keep": "showcase_g2/netted_leaves/netted_leaves__c06",
+          "caption": "Threads along the Mandelbrot set's rim, in netted_leaves (showcase c06)"
+        },
+        {
+          "keep": "showcase_g2/netted_leaves/netted_leaves__c10",
+          "caption": "The spiral body of a phoenix set, in netted_leaves (showcase c10)"
+        },
+        {
+          "keep": "showcase_g2/netted_leaves/netted_leaves__c11",
+          "caption": "A dense five-fold Julia set, in netted_leaves (showcase c11)"
+        },
+        {
+          "keep": "showcase_g2/netted_leaves/netted_leaves__c17",
+          "caption": "A four-fold minibrot, in netted_leaves (showcase c17)"
         }
       ],
       "public": {
@@ -5143,11 +5455,19 @@
             "style_texture_lace_r1/netted_leaves/locations/nl_loc_01_julia-multibrot4_0169f258",
             "style_texture_lace_r1/netted_leaves/locations/nl_loc_04_phoenix_2d843082",
             "style_texture_lace_r1/netted_leaves/locations/nl_loc_07_julia-multibrot3_017f4085",
-            "style_texture_lace_r1/netted_leaves/locations/nl_loc_10_phoenix_0275fee1"
+            "style_texture_lace_r1/netted_leaves/locations/nl_loc_10_phoenix_0275fee1",
+            "showcase_g2/netted_leaves/netted_leaves__c06",
+            "showcase_g2/netted_leaves/netted_leaves__c10",
+            "showcase_g2/netted_leaves/netted_leaves__c11",
+            "showcase_g2/netted_leaves/netted_leaves__c17"
           ],
           "score": 4
         }
-      ]
+      ],
+      "showcase": {
+        "passes": 4,
+        "item": "107"
+      }
     }
   ]
 }

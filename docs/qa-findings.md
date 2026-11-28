@@ -37,6 +37,7 @@ of the style ones is `fractal-wallpapers style sweep` (`data/styles/CHECKS.md`'s
   kept at, and no setting returns it to 8. Options: widen the range to 8 (if eight turns still holds the look), drop `turns` from
   those records (the picture was drawn at 8, so its caption would lie), or show another
   keep. Recommend widening the range to 3..8, read off a sweep at 8. *(Matt's call)*
+  **Moot since 107**: `teal_tunnel` had no showcase pick and was deleted.
 - **Field-lines interior needs the orbit within 1e-9 of its cycle after `settle`
   steps**, so the outer part of a bulb whose multiplier is near 1 (|λ| over about 0.98 at
   period 1, 0.85 at period 8) gets no lines, where `TRAPS.md` says only a parabolic or

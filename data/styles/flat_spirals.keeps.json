@@ -9,6 +9,81 @@
   "folder": "fractal-drive-sync/style-keeps/flat_spirals",
   "keeps": [
     {
+      "id": "showcase_g5/flat_spirals/flat_spirals__c06",
+      "picker": "showcase_g5",
+      "picked": [
+        {
+          "row": "flat_spirals",
+          "key": "flat_spirals__c06"
+        }
+      ],
+      "label": "c06 · entry flat_spirals · knobs as tuned · framing as located",
+      "image": "showcase_g5__flat_spirals__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0011150013310299034"
+          },
+          "maxiter": 17672
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@f65283b7",
+        "colormap": "flat_spirals",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g5/flat_spirals/flat_spirals__c09",
+      "picker": "showcase_g5",
+      "picked": [
+        {
+          "row": "flat_spirals",
+          "key": "flat_spirals__c09"
+        }
+      ],
+      "label": "c09 · entry flat_spirals · knobs as tuned · framing as located",
+      "image": "showcase_g5__flat_spirals__c09.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c09_dense_julia-multibrot4_8fe72981",
+          "family": {
+            "c": [
+              "0.021187082785644677",
+              "-0.7454317655920734"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.8563255424487223",
+            "center_im": "-0.3731878560790924",
+            "width": "0.18798837353340095"
+          },
+          "maxiter": 8795
+        },
+        "style": "flat_spirals",
+        "stack": "flat_spirals@f65283b7",
+        "colormap": "flat_spirals",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_flat_graphic_r1/flat_spirals/entries/fs_e_coral_spirals_1",
       "picker": "style_flat_graphic_r1",
       "picked": [

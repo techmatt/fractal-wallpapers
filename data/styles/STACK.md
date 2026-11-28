@@ -53,8 +53,8 @@ the style's projection member by member (`styles.projected`); a style with no
 projection ignores it. Both come from the point's multiplier `λ` (the derivative of its
 cycle) and the steps `p` per repeat: the smooth count climbs by `p` each time the
 structure shrinks by `|λ|`, so `ring = k·p` with `k` the repeats nearest the ring size
-the style wants (`teal_tunnel`'s notes find `λ` for a Julia fixed point and a
-Misiurewicz point).
+the style wants. For a quadratic Julia set at its fixed point `(1 ∓ √(1 − 4c))/2`,
+`λ = 2z`; a Misiurewicz point is found by Newton on `f^{k+p}(0) = f^k(0)`.
 
 ## Channels
 

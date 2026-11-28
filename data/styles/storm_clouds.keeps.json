@@ -9,6 +9,193 @@
   "folder": "fractal-drive-sync/style-keeps/storm_clouds",
   "keeps": [
     {
+      "id": "showcase_g6/storm_clouds/storm_clouds__c03",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "storm_clouds",
+          "key": "storm_clouds__c03"
+        }
+      ],
+      "label": "c03 · entry storm_clouds · knobs as tuned · framing as located",
+      "image": "showcase_g6__storm_clouds__c03.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c03_spiral_julia-multibrot4_03bb1789",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6187020985618776",
+            "center_im": "0.1416242909446768",
+            "width": "0.08860066258073733"
+          },
+          "maxiter": 10097
+        },
+        "style": "storm_clouds",
+        "stack": "storm_clouds@362cd86e",
+        "colormap": "storm_clouds",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g6/storm_clouds/storm_clouds__c06",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "storm_clouds",
+          "key": "storm_clouds__c06"
+        }
+      ],
+      "label": "c06 · entry tributary_clouds · knobs as tuned · framing as located",
+      "image": "showcase_g6__storm_clouds__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0011150013310299034"
+          },
+          "maxiter": 17672
+        },
+        "style": "storm_clouds",
+        "stack": "storm_clouds@f19b3642",
+        "colormap": "tributary_clouds",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g6/storm_clouds/storm_clouds__c11",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "storm_clouds",
+          "key": "storm_clouds__c11"
+        }
+      ],
+      "label": "c11 · entry storm_clouds · knobs as tuned · framing as located",
+      "image": "showcase_g6__storm_clouds__c11.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c11_dense_julia-multibrot5_3419754c",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.6149843012079393",
+              "0.5310701294563551"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.1367938266766141",
+            "center_im": "-0.16122010789011787",
+            "width": "0.09342453562993397"
+          },
+          "maxiter": 3000
+        },
+        "style": "storm_clouds",
+        "stack": "storm_clouds@362cd86e",
+        "colormap": "storm_clouds",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g6/storm_clouds/storm_clouds__c17",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "storm_clouds",
+          "key": "storm_clouds__c17"
+        }
+      ],
+      "label": "c17 · entry storm_clouds · knobs as tuned · cap 5,000 (was 9,997)",
+      "image": "showcase_g6__storm_clouds__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "2.16438122656e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "storm_clouds",
+        "stack": "storm_clouds@362cd86e",
+        "colormap": "storm_clouds",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g6/storm_clouds/storm_clouds__c18",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "storm_clouds",
+          "key": "storm_clouds__c18"
+        }
+      ],
+      "label": "c18 · entry tributary_clouds · knobs as tuned · cap 5,000 (was 17,304)",
+      "image": "showcase_g6__storm_clouds__c18.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c18_power_multibrot5_7bf95814",
+          "family": {
+            "degree": 5,
+            "kind": "multibrot"
+          },
+          "viewport": {
+            "center_re": "0.5242488448823401",
+            "center_im": "0.6378211713626364",
+            "width": "0.001378936736204261"
+          },
+          "maxiter": 5000
+        },
+        "style": "storm_clouds",
+        "stack": "storm_clouds@f19b3642",
+        "colormap": "tributary_clouds",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_light_lines_nebulae_r1/star_nebula/forms_a/sn_a_baseline",
       "picker": "style_light_lines_nebulae_r1",
       "picked": [
@@ -1153,6 +1340,179 @@
       "tone": {
         "median": 0.271,
         "p10": 0.026
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 0.8,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "warp": {
+            "channel": {
+              "field": {
+                "kind": "stripe",
+                "density": 3.0
+              }
+            },
+            "amount": 0.35
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "blend": "screen",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.72
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "falloff": 0.005
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 1.5,
+            "azimuth": 110.0,
+            "elevation": 35.0,
+            "ambient": 0.5,
+            "diffuse": 0.7,
+            "specular": 0.4,
+            "shininess": 8.0,
+            "rim": 0.4,
+            "rim_power": 2.5,
+            "highlight": {
+              "palette": 0.95
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 64.0
+            }
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "power": 6.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 64.0
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.03
+          },
+          "blend": "multiply",
+          "opacity": 0.3,
+          "power": 6.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.15,
+          "power": 40.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "power": 0.0001
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.25,
+          "falloff": 0.001
+        }
+      ]
+    },
+    "storm_clouds@f19b3642": {
+      "name": "storm_clouds",
+      "interior": {
+        "palette": 0.02
+      },
+      "tone": {
+        "median": 0.364,
+        "p10": 0.248
       },
       "layers": [
         {

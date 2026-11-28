@@ -81,8 +81,9 @@ was drawn with.
 ## Parity: which run is owed
 
 `style wasm-parity` and `style wasm-speed` hold the module to the native engine under Node
-(`style_wasm.py`). The whole run is 38 to 48 minutes at its default three workers, the
-render pool's count and its cap (six threads with the native side; 223 jobs, 083's reading): a detached run of its own, so owe it only where
+(`style_wasm.py`). The whole run is about 71 minutes at its default three workers, the
+render pool's count and its cap (six threads with the native side; 357 jobs, 107's reading,
+the module's side the bound: 223 jobs read 38 to 48 minutes before the showcase's Examples): a detached run of its own, so owe it only where
 nothing cheaper covers the change. What a change owes, after its last code edit:
 
 | The change | Owed |
@@ -95,9 +96,12 @@ nothing cheaper covers the change. What a change owes, after its last code edit:
 
 The native side draws beside the workers (`style_wasm.PARITY_WORKERS` and
 `PARITY_NATIVE_THREADS` have the counts and what bounds the run; never shorter than its
-longest job, one keep's tiled draw). A clean whole run is all identical but two:
-`flame_veil_teal__0__knobs` and `flame_veil_chalk__1` each read one pixel one step off, the
-same on main since 063's reading; any other miss is the change. A mode's jobs are its shown keeps (`style_catalog.shown_of`), not its
+longest job, one keep's tiled draw). A clean whole run is all identical but five, all
+multi-view flame stacks: `flame_veil_chalk__1` reads one pixel one step off (on main since
+063's reading); the showcase's Examples add `flame_veil_blue__2` (13 pixels, worst step 2)
+and `flame_veil_chalk__3`, `__4`, `__5` (11, 455 and 7 pixels; worst 1, 12, 1), 107's
+reading, the same divergence at deeper seats (a module item, not a catalog one).
+`flame_veil_teal__0__knobs`, a sixth, left with its mode in 107. Any other miss is the change. A mode's jobs are its shown keeps (`style_catalog.shown_of`), not its
 palette entries: an entry's new values or a new entry moves no job, a new `show` does. A
 draft not yet in `data/styles/` is checked with its job list (`style_wasm.request`, `run_node`, `native_rgb`,
 `compare`).

@@ -9,6 +9,176 @@
   "folder": "fractal-drive-sync/style-keeps/crescent_lines",
   "keeps": [
     {
+      "id": "showcase_g6/crescent_lines/crescent_lines__c10",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "crescent_lines",
+          "key": "crescent_lines__c10"
+        }
+      ],
+      "label": "c10 · entry copper_feathers · knobs as tuned · cap 2,000 (c10 reframe)",
+      "image": "showcase_g6__crescent_lines__c10.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c10_dense_phoenix-classic_2ef353cb",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.44117424450399023",
+            "center_im": "-1.0633931165914965",
+            "width": "0.03045862475066717"
+          },
+          "maxiter": 2000
+        },
+        "style": "crescent_lines",
+        "stack": "crescent_lines@94862c31",
+        "colormap": "copper_feathers",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g6/crescent_lines/crescent_lines__c11",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "crescent_lines",
+          "key": "crescent_lines__c11"
+        }
+      ],
+      "label": "c11 · entry copper_feathers · knobs as tuned · framing as located",
+      "image": "showcase_g6__crescent_lines__c11.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c11_dense_julia-multibrot5_3419754c",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.6149843012079393",
+              "0.5310701294563551"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.1367938266766141",
+            "center_im": "-0.16122010789011787",
+            "width": "0.09342453562993397"
+          },
+          "maxiter": 3000
+        },
+        "style": "crescent_lines",
+        "stack": "crescent_lines@94862c31",
+        "colormap": "copper_feathers",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g6/crescent_lines/crescent_lines__c14",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "crescent_lines",
+          "key": "crescent_lines__c14"
+        }
+      ],
+      "label": "c14 · entry copper_feathers · knobs as tuned · framing as located",
+      "image": "showcase_g6__crescent_lines__c14.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c14_lace_phoenix_62efdf3b",
+          "family": {
+            "c": [
+              "0.23053583532499533",
+              "0.14928369481268455"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.2440666959533996",
+              "-0.7108918620308173"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.10103429036388192",
+            "center_im": "-0.04557291666666671",
+            "width": "1.3213109797674565"
+          },
+          "maxiter": 5419
+        },
+        "style": "crescent_lines",
+        "stack": "crescent_lines@94862c31",
+        "colormap": "copper_feathers",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g6/crescent_lines/crescent_lines__c17",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "crescent_lines",
+          "key": "crescent_lines__c17"
+        }
+      ],
+      "label": "c17 · entry crescent_lines · knobs as tuned · cap 5,000 (was 9,997)",
+      "image": "showcase_g6__crescent_lines__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "2.16438122656e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "crescent_lines",
+        "stack": "crescent_lines@3864667b",
+        "colormap": "crescent_lines",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_crescent_lines_r1/crescent_lines/formulations/crescent_lines__f_ribbons__01_minibrot-p7_14_crescent_lines",
       "picker": "style_crescent_lines_r1",
       "picked": [
@@ -330,6 +500,90 @@
       "tone": {
         "median": 0.272,
         "p10": 0.153
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 6.0
+            }
+          },
+          "palette": {
+            "cycles": 3.0
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "invert": true
+          },
+          "palette": {
+            "cycles": 1.0,
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.2
+          },
+          "blend": "overlay",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.003,
+          "color": {
+            "rgb": "#b0562a"
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#ff9a3c"
+          },
+          "blend": "screen",
+          "opacity": 0.9
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0001,
+          "color": {
+            "rgb": "#ffe2a8"
+          },
+          "blend": "add",
+          "opacity": 0.8
+        }
+      ]
+    },
+    "crescent_lines@94862c31": {
+      "name": "crescent_lines",
+      "interior": {
+        "rgb": "#020208"
+      },
+      "tone": {
+        "median": 0.268,
+        "p10": 0.025
       },
       "layers": [
         {

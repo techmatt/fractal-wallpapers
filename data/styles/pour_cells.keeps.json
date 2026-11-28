@@ -9,6 +9,164 @@
   "folder": "fractal-drive-sync/style-keeps/pour_cells",
   "keeps": [
     {
+      "id": "showcase_g6/pour_cells/pour_cells__c03",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "pour_cells",
+          "key": "pour_cells__c03"
+        }
+      ],
+      "label": "c03 · entry pour_cells · knobs as tuned · framing as located",
+      "image": "showcase_g6__pour_cells__c03.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c03_spiral_julia-multibrot4_03bb1789",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6187020985618776",
+            "center_im": "0.1416242909446768",
+            "width": "0.08860066258073733"
+          },
+          "maxiter": 10097
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@b9a970b3",
+        "colormap": "pour_cells",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g6/pour_cells/pour_cells__c08",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "pour_cells",
+          "key": "pour_cells__c08"
+        }
+      ],
+      "label": "c08 · entry pour_cells · knobs as tuned · framing as located",
+      "image": "showcase_g6__pour_cells__c08.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c08_rim_mandelbrot_0b06de47",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-1.2514946371626112",
+            "center_im": "0.041108581786355486",
+            "width": "1.214842568782454e-06"
+          },
+          "maxiter": 3685
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@b9a970b3",
+        "colormap": "pour_cells",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g6/pour_cells/pour_cells__c14",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "pour_cells",
+          "key": "pour_cells__c14"
+        }
+      ],
+      "label": "c14 · entry pour_cells · knobs as tuned · framing as located",
+      "image": "showcase_g6__pour_cells__c14.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c14_lace_phoenix_62efdf3b",
+          "family": {
+            "c": [
+              "0.23053583532499533",
+              "0.14928369481268455"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.2440666959533996",
+              "-0.7108918620308173"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.10103429036388192",
+            "center_im": "-0.04557291666666671",
+            "width": "1.3213109797674565"
+          },
+          "maxiter": 5419
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@b9a970b3",
+        "colormap": "pour_cells",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g6/pour_cells/pour_cells__c18",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "pour_cells",
+          "key": "pour_cells__c18"
+        }
+      ],
+      "label": "c18 · entry pour_cells · knobs as tuned · zoom x1.25; cap 5,000 (was 17,304)",
+      "image": "showcase_g6__pour_cells__c18.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c18_power_multibrot5_7bf95814_zoom_in",
+          "family": {
+            "degree": 5,
+            "kind": "multibrot"
+          },
+          "viewport": {
+            "center_re": "0.5242488448823401",
+            "center_im": "0.6378211713626364",
+            "width": "0.0011031493889634089"
+          },
+          "maxiter": 5000
+        },
+        "style": "pour_cells",
+        "stack": "pour_cells@b9a970b3",
+        "colormap": "pour_cells",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_poured_paint_r1/pour_cells/entries/pc_a_e_crimson_cells",
       "picker": "style_poured_paint_r1",
       "picked": [

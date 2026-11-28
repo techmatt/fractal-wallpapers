@@ -9,6 +9,131 @@
   "folder": "fractal-drive-sync/style-keeps/soft_veils",
   "keeps": [
     {
+      "id": "showcase_g2/soft_veils/soft_veils__c03",
+      "picker": "showcase_g2",
+      "picked": [
+        {
+          "row": "soft_veils",
+          "key": "soft_veils__c03"
+        }
+      ],
+      "label": "c03 · entry soft_veils_ember · knobs as tuned · framing as located",
+      "image": "showcase_g2__soft_veils__c03.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c03_spiral_julia-multibrot4_03bb1789",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6187020985618776",
+            "center_im": "0.1416242909446768",
+            "width": "0.08860066258073733"
+          },
+          "maxiter": 10097
+        },
+        "style": "soft_veils",
+        "stack": "soft_veils@860e6156",
+        "colormap": "soft_veils_ember",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      },
+      "note": "the green here seems to be a \"noop\", only the brown one is well calibrated. redo this with more palettes and adjust the constants so the green one gets more of the \"faded echoes\" effect."
+    },
+    {
+      "id": "showcase_g2/soft_veils/soft_veils__c06",
+      "picker": "showcase_g2",
+      "picked": [
+        {
+          "row": "soft_veils",
+          "key": "soft_veils__c06"
+        }
+      ],
+      "label": "c06 · entry soft_veils_ember · knobs as tuned · framing as located",
+      "image": "showcase_g2__soft_veils__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0011150013310299034"
+          },
+          "maxiter": 17672
+        },
+        "style": "soft_veils",
+        "stack": "soft_veils@860e6156",
+        "colormap": "soft_veils_ember",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      },
+      "note": "the green here seems to be a \"noop\", only the brown one is well calibrated. redo this with more palettes and adjust the constants so the green one gets more of the \"faded echoes\" effect."
+    },
+    {
+      "id": "showcase_g2/soft_veils/soft_veils__c14",
+      "picker": "showcase_g2",
+      "picked": [
+        {
+          "row": "soft_veils",
+          "key": "soft_veils__c14"
+        }
+      ],
+      "label": "c14 · entry soft_veils_ember · knobs as tuned · framing as located",
+      "image": "showcase_g2__soft_veils__c14.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c14_lace_phoenix_62efdf3b",
+          "family": {
+            "c": [
+              "0.23053583532499533",
+              "0.14928369481268455"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.2440666959533996",
+              "-0.7108918620308173"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.10103429036388192",
+            "center_im": "-0.04557291666666671",
+            "width": "1.3213109797674565"
+          },
+          "maxiter": 5419
+        },
+        "style": "soft_veils",
+        "stack": "soft_veils@860e6156",
+        "colormap": "soft_veils_ember",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      },
+      "note": "the green here seems to be a \"noop\", only the brown one is well calibrated. redo this with more palettes and adjust the constants so the green one gets more of the \"faded echoes\" effect."
+    },
+    {
       "id": "style_flame_veils_r1/soft_veils/soft_veils_wine/sv_a_e_soft_veils_wine",
       "picker": "style_flame_veils_r1",
       "picked": [
@@ -5776,6 +5901,582 @@
           },
           "blend": "screen",
           "opacity": 0.25,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0015,
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.35
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.00025,
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.8
+        }
+      ]
+    },
+    "soft_veils@860e6156": {
+      "name": "soft_veils",
+      "interior": {
+        "palette": 0.04
+      },
+      "tone": {
+        "median": 0.226,
+        "p10": 0.072,
+        "log_density": 8.0
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "palette": 0.04
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "opacity": 0.08
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.5,
+              "shift": [
+                -0.079,
+                -0.108
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.37
+          },
+          "blend": "screen",
+          "opacity": 0.08
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.609,
+              "shift": [
+                -0.057,
+                0.181
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.39
+          },
+          "blend": "screen",
+          "opacity": 0.08
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 0.742,
+              "shift": [
+                0.22,
+                -0.075
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.41
+          },
+          "blend": "screen",
+          "opacity": 0.08
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            },
+            "view": {
+              "turn": 190.0,
+              "zoom": 0.903,
+              "shift": [
+                -0.22,
+                -0.154
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.43
+          },
+          "blend": "screen",
+          "opacity": 0.08
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            },
+            "view": {
+              "turn": 327.5,
+              "zoom": 1.1,
+              "shift": [
+                0.006,
+                0.3
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.45
+          },
+          "blend": "screen",
+          "opacity": 0.08
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "phase": 0.0,
+            "fill": 0.2,
+            "edge": 0.05
+          },
+          "color": {
+            "palette": 0.5
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 4.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.5,
+              "shift": [
+                -0.079,
+                -0.108
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "phase": 0.37,
+            "fill": 0.2,
+            "edge": 0.05
+          },
+          "color": {
+            "palette": 0.57
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 4.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.609,
+              "shift": [
+                -0.057,
+                0.181
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "phase": 0.74,
+            "fill": 0.2,
+            "edge": 0.05
+          },
+          "color": {
+            "palette": 0.64
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 4.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 0.742,
+              "shift": [
+                0.22,
+                -0.075
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "phase": 0.11,
+            "fill": 0.2,
+            "edge": 0.05
+          },
+          "color": {
+            "palette": 0.71
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 4.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 190.0,
+              "zoom": 0.903,
+              "shift": [
+                -0.22,
+                -0.154
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "phase": 0.48,
+            "fill": 0.2,
+            "edge": 0.05
+          },
+          "color": {
+            "palette": 0.78
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 4.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 327.5,
+              "zoom": 1.1,
+              "shift": [
+                0.006,
+                0.3
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "phase": 0.85,
+            "fill": 0.2,
+            "edge": 0.05
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 4.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.5,
+              "shift": [
+                -0.079,
+                -0.108
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.609,
+              "shift": [
+                -0.057,
+                0.181
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 0.742,
+              "shift": [
+                0.22,
+                -0.075
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            },
+            "view": {
+              "turn": 190.0,
+              "zoom": 0.903,
+              "shift": [
+                -0.22,
+                -0.154
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            },
+            "view": {
+              "turn": 327.5,
+              "zoom": 1.1,
+              "shift": [
+                0.006,
+                0.3
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.3,
           "mask": {
             "channel": {
               "field": {

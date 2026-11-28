@@ -9,6 +9,41 @@
   "folder": "fractal-drive-sync/style-keeps/sliced_strips",
   "keeps": [
     {
+      "id": "showcase_g7/sliced_strips/sliced_strips__c06",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "sliced_strips",
+          "key": "sliced_strips__c06"
+        }
+      ],
+      "label": "c06 · entry sliced_strips · knobs as tuned · framing as located",
+      "image": "showcase_g7__sliced_strips__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0011150013310299034"
+          },
+          "maxiter": 17672
+        },
+        "style": "sliced_strips",
+        "stack": "sliced_strips@73104240",
+        "colormap": "sliced_strips",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_geometric_sheets_r1/sliced_strips/formulations/f_blue__01_phoenix_2d843082_sliced_strips",
       "picker": "style_geometric_sheets_r1",
       "picked": [

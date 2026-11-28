@@ -9,6 +9,117 @@
   "folder": "fractal-drive-sync/style-keeps/hairline_rays",
   "keeps": [
     {
+      "id": "showcase_g1/hairline_rays/hairline_rays__c08",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "hairline_rays",
+          "key": "hairline_rays__c08"
+        }
+      ],
+      "label": "c08 · entry hairline_rays · knobs as tuned · zoom x1.25",
+      "image": "showcase_g1__hairline_rays__c08.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c08_rim_mandelbrot_0b06de47_zoom_in",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-1.2514946371626112",
+            "center_im": "0.041108581786355486",
+            "width": "9.718740550259632e-07"
+          },
+          "maxiter": 3685
+        },
+        "style": "hairline_rays",
+        "stack": "hairline_rays@260dc53a",
+        "colormap": "hairline_rays",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g1/hairline_rays/hairline_rays__c12",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "hairline_rays",
+          "key": "hairline_rays__c12"
+        }
+      ],
+      "label": "c12 · entry hairline_rays · knobs as tuned · zoom x0.80",
+      "image": "showcase_g1__hairline_rays__c12.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c12_dense_julia-mandelbrot_de99162c_zoom_out",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-0.1672358484368567",
+              "-0.6504049641617877"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "0.029684231847858157"
+          },
+          "maxiter": 1547
+        },
+        "style": "hairline_rays",
+        "stack": "hairline_rays@260dc53a",
+        "colormap": "hairline_rays",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g1/hairline_rays/hairline_rays__c17",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "hairline_rays",
+          "key": "hairline_rays__c17"
+        }
+      ],
+      "label": "c17 · entry hairline_rays · knobs as tuned · cap 5,000 (was 9,997)",
+      "image": "showcase_g1__hairline_rays__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "2.16438122656e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "hairline_rays",
+        "stack": "hairline_rays@260dc53a",
+        "colormap": "hairline_rays",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_chrome_stars_hairlines_r1/hairline_rays/formulations/w3__r_six__00_julia-mandelbrot_291fb1ab",
       "picker": "style_chrome_stars_hairlines_r1",
       "picked": [

@@ -9,6 +9,53 @@
   "folder": "fractal-drive-sync/style-keeps/ribbon_packing",
   "keeps": [
     {
+      "id": "showcase_g6/ribbon_packing/ribbon_packing__c14",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "ribbon_packing",
+          "key": "ribbon_packing__c14"
+        }
+      ],
+      "label": "c14 · entry ribbon_packing · knobs as tuned · zoom x0.80",
+      "image": "showcase_g6__ribbon_packing__c14.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c14_lace_phoenix_62efdf3b_zoom_out",
+          "family": {
+            "c": [
+              "0.23053583532499533",
+              "0.14928369481268455"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.2440666959533996",
+              "-0.7108918620308173"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.10103429036388192",
+            "center_im": "-0.04557291666666671",
+            "width": "1.6516387247093207"
+          },
+          "maxiter": 5419
+        },
+        "style": "ribbon_packing",
+        "stack": "ribbon_packing@791b57f9",
+        "colormap": "ribbon_packing",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_retrospective_082/ribbon_packing/kept/r6_rp_default_s1",
       "picker": "style_retrospective_082",
       "picked": [

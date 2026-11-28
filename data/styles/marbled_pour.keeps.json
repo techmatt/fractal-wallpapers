@@ -9,6 +9,42 @@
   "folder": "fractal-drive-sync/style-keeps/marbled_pour",
   "keeps": [
     {
+      "id": "showcase_g8/marbled_pour/marbled_pour__c18",
+      "picker": "showcase_g8",
+      "picked": [
+        {
+          "row": "marbled_pour",
+          "key": "marbled_pour__c18"
+        }
+      ],
+      "label": "c18 · entry teal_marbling · knobs as tuned · cap 5,000 (was 17,304)",
+      "image": "showcase_g8__marbled_pour__c18.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c18_power_multibrot5_7bf95814",
+          "family": {
+            "degree": 5,
+            "kind": "multibrot"
+          },
+          "viewport": {
+            "center_re": "0.5242488448823401",
+            "center_im": "0.6378211713626364",
+            "width": "0.001378936736204261"
+          },
+          "maxiter": 5000
+        },
+        "style": "marbled_pour",
+        "stack": "marbled_pour@71f09191",
+        "colormap": "teal_marbling",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_poured_paint_r1/marbled_pour/entries/mp_b_e_teal_marbling",
       "picker": "style_poured_paint_r1",
       "picked": [

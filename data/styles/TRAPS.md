@@ -49,7 +49,8 @@ leaving finer detail to the layers beneath. **`fade`** (a share in (0, 1]) thins
 `height` to 0 towards either bound, from `(1 − fade)·largest` and `(1 + fade)·smallest`,
 as a stroke thins: unfaded, a neighbour reading the next entry where `largest` passed over
 one meets it at a seam; faded, shapes come and go softly, and several `hit`s laid
-additively draw each shape whole (`gilded_leaves`). A loop is shared only by reads with
+additively draw each shape whole (107 deleted `gilded_leaves`, which did; `bokeh_bloom` lays
+one). A loop is shared only by reads with
 one `fade`: a `step` read beside a faded height runs a loop of its own unless it takes the
 same `fade`. Fade suits a height read laid additively: an inverted `height` (a rim glow)
 reads 1 where the height faded, so it lights the faded part of each shape as a hard-edged

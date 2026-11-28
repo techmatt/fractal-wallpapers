@@ -9,6 +9,124 @@
   "folder": "fractal-drive-sync/style-keeps/flame_veil_violet",
   "keeps": [
     {
+      "id": "showcase_g1/flame_veil_violet/flame_veil_violet__c06",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "flame_veil_violet",
+          "key": "flame_veil_violet__c06"
+        }
+      ],
+      "label": "c06 · entry flame_veil_violet · knobs as tuned · zoom x1.25",
+      "image": "showcase_g1__flame_veil_violet__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31_zoom_in",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0008920010648239227"
+          },
+          "maxiter": 17672
+        },
+        "style": "flame_veil_violet",
+        "stack": "flame_veil_violet@ef0eba35",
+        "colormap": "flame_veil_violet",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g1/flame_veil_violet/flame_veil_violet__c10",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "flame_veil_violet",
+          "key": "flame_veil_violet__c10"
+        }
+      ],
+      "label": "c10 · entry flame_veil_violet · knobs as tuned · zoom x0.80; cap 2,000 (c10 reframe)",
+      "image": "showcase_g1__flame_veil_violet__c10.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c10_dense_phoenix-classic_2ef353cb_zoom_out",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.44117424450399023",
+            "center_im": "-1.0633931165914965",
+            "width": "0.03807328093833397"
+          },
+          "maxiter": 2000
+        },
+        "style": "flame_veil_violet",
+        "stack": "flame_veil_violet@ef0eba35",
+        "colormap": "flame_veil_violet",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g1/flame_veil_violet/flame_veil_violet__c17",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "flame_veil_violet",
+          "key": "flame_veil_violet__c17"
+        }
+      ],
+      "label": "c17 · entry flame_veil_violet · knobs as tuned · zoom x0.80; cap 5,000 (was 9,997)",
+      "image": "showcase_g1__flame_veil_violet__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0_zoom_out",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "2.7054765332e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "flame_veil_violet",
+        "stack": "flame_veil_violet@ef0eba35",
+        "colormap": "flame_veil_violet",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_flame_veil_violet_r1/formulations/f_no_strands__00_vm_d3_flame_veil_violet",
       "picker": "style_flame_veil_violet_r1",
       "picked": [

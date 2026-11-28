@@ -9,6 +9,117 @@
   "folder": "fractal-drive-sync/style-keeps/paper_layers",
   "keeps": [
     {
+      "id": "showcase_g8/paper_layers/paper_layers__c03",
+      "picker": "showcase_g8",
+      "picked": [
+        {
+          "row": "paper_layers",
+          "key": "paper_layers__c03"
+        }
+      ],
+      "label": "c03 · entry paper_layers · knobs as tuned · framing as located",
+      "image": "showcase_g8__paper_layers__c03.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c03_spiral_julia-multibrot4_03bb1789",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6187020985618776",
+            "center_im": "0.1416242909446768",
+            "width": "0.08860066258073733"
+          },
+          "maxiter": 10097
+        },
+        "style": "paper_layers",
+        "stack": "paper_layers@8829a2d7",
+        "colormap": "paper_layers",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g8/paper_layers/paper_layers__c06",
+      "picker": "showcase_g8",
+      "picked": [
+        {
+          "row": "paper_layers",
+          "key": "paper_layers__c06"
+        }
+      ],
+      "label": "c06 · entry paper_layers · knobs as tuned · zoom x1.25",
+      "image": "showcase_g8__paper_layers__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31_zoom_in",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0008920010648239227"
+          },
+          "maxiter": 17672
+        },
+        "style": "paper_layers",
+        "stack": "paper_layers@8829a2d7",
+        "colormap": "paper_layers",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g8/paper_layers/paper_layers__c17",
+      "picker": "showcase_g8",
+      "picked": [
+        {
+          "row": "paper_layers",
+          "key": "paper_layers__c17"
+        }
+      ],
+      "label": "c17 · entry paper_layers · knobs as tuned · cap 5,000 (was 9,997)",
+      "image": "showcase_g8__paper_layers__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "2.16438122656e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "paper_layers",
+        "stack": "paper_layers@8829a2d7",
+        "colormap": "paper_layers",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_cut_paper_poster_r1/paper_layers/formulations/paper_a__p_tia__00_phoenix_fc131a7f",
       "picker": "style_cut_paper_poster_r1",
       "picked": [

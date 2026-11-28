@@ -19,7 +19,9 @@ as a custom mode for the explorer's dropdown:
                 "note": "<the card's footnote>",
                 "palettes": [{"colormap": "<map>", "values": {...}, "keeps": [...],
                               "score": 1-5}, ...],
-                "aliases": ["<a style name merged into this mode>", ...]}]}
+                "aliases": ["<a style name merged into this mode>", ...],
+                "showcase": {"passes": 0-10, "item": "<queue item>", "note": "<Matt's
+                             picker note>", "held": "<why it waits for a try-again>"}}]}
 
 A row is a **mode**: one stack (its style file) and its palette set, the default first
 (`style_palettes.py` has an entry's shape and the merge rule); its score is its best
@@ -28,6 +30,12 @@ palette's. An alias is a style merged into the mode, which still opens by that n
 `references` names every reference file (in `fractal-drive-sync/style-refs/`) the mode
 answers, including those whose entries kept nothing, so `style refs --unused` can say
 which pictures Matt marked for a mode no row has tried yet.
+
+`showcase` is the final showcase's reading (Matt, 2026-11-26/27): every published mode
+drawn at the same ten locations, `passes` the cells Matt picked, which rank the modes
+(tiers stay his call). A mode with no pass was deleted unless `held` for a later
+try-again (a mode with passes may be held too); each picked cell is a keep, shown after
+the mode's earlier keeps.
 
 `public` is a published mode's alone, and its knobs are named here and defined in the
 style file (`data/styles/README.md`'s *Public knobs*), so `check` holds the two to
@@ -184,6 +192,7 @@ def check(catalog: dict[str, Any]) -> list[str]:
             elif "stack" not in keeps[shown["keep"]]["render"]:
                 # The bundle and the parity run draw a shown keep from its stack.
                 problems.append(f"{name}: shows '{shown['keep']}', a named-mode baseline keep")
+        problems += [f"{name}: {problem}" for problem in check_showcase(row)]
         public = row.get("public")
         if row.get("status") != "publish":
             if public or "tier" in row:
@@ -213,6 +222,33 @@ def check(catalog: dict[str, Any]) -> list[str]:
             problems.append(f"{name}: {len(knobs)} public knobs, not {low} to {high} ({tier})")
         if knobs:
             problems += [f"{name}: {problem}" for problem in styles.check_public(document)]
+    return problems
+
+
+#: A `showcase` reading's fields; `passes` and `item` are required.
+SHOWCASE_FIELDS = {"passes", "item", "note", "held"}
+
+#: The showcase's locations: a mode passes at most this many.
+SHOWCASE_CELLS = 10
+
+
+def check_showcase(row: dict[str, Any]) -> list[str]:
+    """A row's showcase reading: a published mode's, its passes 0 to 10, and held when 0."""
+    showcase = row.get("showcase")
+    if showcase is None:
+        return []
+    if not isinstance(showcase, dict) or not {"passes", "item"} <= set(showcase):
+        return [f"a showcase reading is {{passes, item, ...}}, not {showcase}"]
+    problems = []
+    if set(showcase) - SHOWCASE_FIELDS:
+        problems.append(f"showcase fields {sorted(set(showcase) - SHOWCASE_FIELDS)} are unknown")
+    passes = showcase["passes"]
+    if type(passes) is not int or not 0 <= passes <= SHOWCASE_CELLS:
+        problems.append(f"showcase passes {passes!r} is not 0 to {SHOWCASE_CELLS}")
+    elif passes == 0 and not showcase.get("held"):
+        problems.append("a mode with no showcase pass is deleted unless held (Matt's ruling)")
+    if row.get("status") != "publish":
+        problems.append("only a published mode has a showcase reading")
     return problems
 
 
@@ -577,11 +613,20 @@ def swatches(row: dict[str, Any]) -> str:
     return f'\n <p class="sets">{"".join(chips)}</p>' if chips else ""
 
 
+def showcase_note(row: dict[str, Any]) -> str:
+    """Matt's showcase picker note for the card's footnote, escaped, or nothing."""
+    note = (row.get("showcase") or {}).get("note")
+    return f"<br>Showcase: {html.escape(note)}" if note else ""
+
+
 def card(row: dict[str, Any], document: dict[str, Any], images: dict[str, str]) -> str:
     """One mode's section: header and toggles, its line, the reference and keeps."""
     name = row["style"]
     esc = html.escape
     meta = f"item {row['item']} · kept: {row['kept']}" if row.get("kept") else f"item {row['item']}"
+    if "showcase" in row:
+        held = " (held)" if row["showcase"].get("held") else ""
+        meta += f" · showcase {row['showcase']['passes']}/{SHOWCASE_CELLS}{held}"
     reference = f"reference · {row['reference']}"
     title = f' title="{row["score"]}/5"' if "score" in row else ""
     figures = [
@@ -613,7 +658,7 @@ def card(row: dict[str, Any], document: dict[str, Any], images: dict[str, str]) 
         "</header>\n"
         f' <p class="what">{esc(row.get("what", document["description"]))}</p>\n'
         f' <div class="row">{"".join(figures)}</div>{swatches(row)}{public}\n'
-        f' <p class="foot">{esc(row.get("note", ""))}</p>\n'
+        f' <p class="foot">{esc(row.get("note", ""))}{showcase_note(row)}</p>\n'
         "</section>"
     )
 

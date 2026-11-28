@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import pytest
+from tests.test_styles import tunnel
 
 from fractal_wallpapers import cli, style_catalog, styles
 
@@ -42,28 +43,46 @@ def test_a_round_one_row_has_neither_score_nor_status():
 #: Shown keeps whose record carries a projection member a knob writes, at a value outside
 #: the knob's range, by (style, keep): a picture the page shows that no setting of its
 #: own slider draws. `docs/qa-findings.md` has each; what to do is Matt's call.
-OUT_OF_RANGE_SHOWN = {("teal_tunnel", "style_teal_tunnel_r1/shortlist/01_j_dendrite_beta")}
+#: Empty since 107 deleted `teal_tunnel`, the one mode that had one.
+OUT_OF_RANGE_SHOWN: set[tuple[str, str]] = set()
 
 
 @pytest.mark.parametrize("row", published(), ids=lambda row: row["style"])
 def test_a_shown_keep_is_one_its_own_knobs_can_draw(row):
     document = styles.load(row["style"])
     for shown in style_catalog.shown_of(row):
-        place = shown["location"].get("projection") or {}
-        outside = []
-        for knob in (document.get("public") or {}).get("knobs") or []:
-            for pointer in knob["set"]:
-                if not isinstance(pointer, str):
-                    continue  # a scaled write's member is not on the knob's own scale
-                steps = pointer.strip("/").split("/")
-                if steps[0] != "projection" or len(steps) != 3:
-                    continue
-                value = (place.get(steps[1]) or {}).get(steps[2])
-                low, high = knob["range"]
-                if value is not None and not low <= value <= high:
-                    outside.append((knob["name"], value))
+        outside = outside_its_knobs(document, shown["location"])
         named = (row["style"], shown.get("keep"))
         assert bool(outside) == (named in OUT_OF_RANGE_SHOWN), outside
+
+
+def outside_its_knobs(document: dict, location: dict) -> list[tuple[str, float]]:
+    """Each knob whose projection member the location carries outside the knob's range."""
+    place = location.get("projection") or {}
+    outside = []
+    for knob in (document.get("public") or {}).get("knobs") or []:
+        for pointer in knob["set"]:
+            if not isinstance(pointer, str):
+                continue  # a scaled write's member is not on the knob's own scale
+            steps = pointer.strip("/").split("/")
+            if steps[0] != "projection" or len(steps) != 3:
+                continue
+            value = (place.get(steps[1]) or {}).get(steps[2])
+            low, high = knob["range"]
+            if value is not None and not low <= value <= high:
+                outside.append((knob["name"], value))
+    return outside
+
+
+def test_a_record_past_its_knob_s_range_is_caught():
+    """No published mode's knob writes a projection member since 107 (the guard above reads
+    none), so its rule is held here on a log-polar stand-in: `turns` is 3 to 6."""
+    document = tunnel()
+    assert outside_its_knobs(document, {"projection": {"log_polar": {"turns": 8}}}) == [
+        ("turns", 8)
+    ]
+    assert outside_its_knobs(document, {"projection": {"log_polar": {"turns": 4}}}) == []
+    assert outside_its_knobs(document, {}) == []
 
 
 def test_a_catalog_garbled_by_hand_is_refused_not_raised(tmp_path, monkeypatch):
@@ -155,7 +174,8 @@ def test_a_published_mode_exposes_knobs_whose_defaults_are_its_stack(row):
 
 
 def test_the_two_tiers_are_matt_s_ruling():
-    """Custom: the nine first published and the seven item 050 added; Custom (lab): every
+    """Custom: the nine first published and the seven item 050 added, less the three 107
+    deleted (no showcase pick); Custom (lab): every
     other mode Matt did not drop or discard. A round-one row has no status yet, and so
     no tier."""
     rows = style_catalog.load()["modes"]
@@ -172,11 +192,28 @@ def test_the_two_tiers_are_matt_s_ruling():
 
 
 CURATED = {
-    *("bronze_packing", "glossy_lobes", "floating_on_dreams", "yas", "teal_tunnel"),
-    *("ribbon_packing", "gilded_orbs", "shaded_blades", "lit_petals"),
+    *("bronze_packing", "glossy_lobes", "floating_on_dreams", "yas"),
+    *("ribbon_packing", "lit_petals"),
     *("soft_veils", "clockwork_rings", "molten_flow", "flame_wisp_frost", "crescent_lines"),
     *("glossy_spirals", "lace_holes"),
 }
+
+
+def test_a_showcase_reading_is_a_published_mode_s_passes_out_of_ten():
+    row = {"status": "publish", "showcase": {"passes": 3, "item": "107"}}
+    assert style_catalog.check_showcase(row) == []
+    assert style_catalog.check_showcase({"status": "publish"}) == []
+    held = {"passes": 0, "item": "107", "held": "a later pass", "note": "too dark"}
+    assert style_catalog.check_showcase({**row, "showcase": held}) == []
+    for bad in (
+        {"passes": 0, "item": "107"},
+        {"passes": 11, "item": "107"},
+        {"passes": 2.0, "item": "107"},
+        {"passes": 2},
+        {"passes": 2, "item": "107", "rank": 1},
+    ):
+        assert style_catalog.check_showcase({**row, "showcase": bad}), bad
+    assert style_catalog.check_showcase({**row, "status": "drop"})
 
 
 def test_an_example_is_a_lab_mode_s_and_names_a_place_and_a_map():
@@ -205,22 +242,27 @@ def test_every_knob_moves_its_stack_at_either_end(row):
 
 
 def test_a_knob_writes_every_target_and_refuses_what_it_does_not_offer():
-    document = styles.load("gilded_orbs")
-    turned = styles.with_knobs(document, {"orb_size": 0.3, "light_angle": 200})
+    # A wildcard write and a scaled one: `disc_size` sets every disc's radius, and its
+    # `largest` at 0.24 x - 0.008.
+    document = styles.load("clockwork_rings")
+    turned = styles.with_knobs(document, {"disc_size": 0.6})
     layers = turned["style"]["layers"]
-    assert {layers[i]["channel"]["bubble"]["radius"] for i in range(12, 17)} == {0.3}
-    assert {round(layers[i]["channel"]["bubble"]["largest"], 9) for i in range(12, 17)} == {0.25}
-    lights = [layer["light"]["azimuth"] for layer in layers if layer["kind"] == "light"]
-    assert lights and set(lights) == {200}
-    assert document["style"]["layers"][12]["channel"]["bubble"]["radius"] == 0.12
+    discs = [i for i, layer in enumerate(layers) if "bubble" in layer["channel"]]
+    assert discs and {layers[i]["channel"]["bubble"]["radius"] for i in discs} == {0.6}
+    assert {round(layers[i]["channel"]["bubble"]["largest"], 9) for i in discs} == {0.136}
+    assert document["style"]["layers"][discs[0]]["channel"]["bubble"]["radius"] == 0.45
     with pytest.raises(styles.StyleError, match="outside"):
-        styles.with_knobs(document, {"orb_size": 0.5})
+        styles.with_knobs(document, {"disc_size": 0.2})
     with pytest.raises(styles.StyleError, match="no knob"):
         styles.with_knobs(document, {"swirl": 0.2})
+    # A wildcard over layers: every light turns, whatever its index.
+    lit = styles.with_knobs(styles.load("glossy_lobes"), {"light_angle": 200})
+    lights = [layer["light"]["azimuth"] for layer in lit["style"]["layers"] if "light" in layer]
+    assert lights and set(lights) == {200}
 
 
 def test_a_whole_number_member_stays_whole():
-    turned = styles.with_knobs(styles.load("teal_tunnel"), {"turns": 3})
+    turned = styles.with_knobs(tunnel(), {"turns": 3})
     assert turned["style"]["projection"]["log_polar"]["turns"] == 3
     assert isinstance(turned["style"]["projection"]["log_polar"]["turns"], int)
     # A member a file happens to spell as `1` is still a number, not an on/off switch.

@@ -9,6 +9,88 @@
   "folder": "fractal-drive-sync/style-keeps/bokeh_bloom",
   "keeps": [
     {
+      "id": "showcase_g3/bokeh_bloom/bokeh_bloom__c06",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "bokeh_bloom",
+          "key": "bokeh_bloom__c06"
+        }
+      ],
+      "label": "c06 · entry bokeh_bloom · knobs as tuned · framing as located",
+      "image": "showcase_g3__bokeh_bloom__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0011150013310299034"
+          },
+          "maxiter": 17672
+        },
+        "style": "bokeh_bloom",
+        "stack": "bokeh_bloom@90a59ec1",
+        "colormap": "bokeh_bloom",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/bokeh_bloom/bokeh_bloom__c10",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "bokeh_bloom",
+          "key": "bokeh_bloom__c10"
+        }
+      ],
+      "label": "c10 · entry bokeh_bloom · knobs as tuned · cap 2,000 (c10 reframe)",
+      "image": "showcase_g3__bokeh_bloom__c10.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c10_dense_phoenix-classic_2ef353cb",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.44117424450399023",
+            "center_im": "-1.0633931165914965",
+            "width": "0.03045862475066717"
+          },
+          "maxiter": 2000
+        },
+        "style": "bokeh_bloom",
+        "stack": "bokeh_bloom@90a59ec1",
+        "colormap": "bokeh_bloom",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_shells_blooms_r1/bokeh_bloom/forms_a/bb_a_bb_veins",
       "picker": "style_shells_blooms_r1",
       "picked": [

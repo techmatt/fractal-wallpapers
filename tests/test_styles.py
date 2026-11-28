@@ -18,6 +18,26 @@ LOCATION = {
 }
 
 
+def tunnel() -> dict:
+    """A log-polar style with a whole-number `turns` knob: `yas` wrapped round a tunnel.
+
+    No published mode draws log-polar since 107 deleted `teal_tunnel`, whose projection and
+    knob these are; the engine and the module still carry the projection.
+    """
+    document = json.loads(json.dumps(styles.load("yas")))
+    document["style"]["projection"] = {"log_polar": {"turns": 5, "center": [0.36, 0.45]}}
+    turns = {
+        "name": "turns",
+        "label": "Arm count",
+        "what": "how many times the plane wraps round the tunnel",
+        "default": 5.0,
+        "range": [3.0, 6.0],
+        "set": ["/projection/log_polar/turns"],
+    }
+    document["public"] = {**(document.get("public") or {}), "knobs": [turns]}
+    return document
+
+
 @pytest.mark.parametrize("name", styles.names())
 def test_every_style_file_reads_and_names_a_map_that_exists(name):
     document = styles.load(name)
@@ -26,7 +46,7 @@ def test_every_style_file_reads_and_names_a_map_that_exists(name):
 
 
 def test_there_is_a_style():
-    assert {"floating_on_dreams", "yas", "teal_tunnel"} <= set(styles.names())
+    assert {"floating_on_dreams", "yas", "bronze_packing"} <= set(styles.names())
 
 
 def test_the_tonal_check_holds_a_band_and_two_ceilings():
@@ -100,7 +120,7 @@ def test_a_sequential_map_is_folded_only_when_a_layer_repeats_it(tmp_path):
 
 
 def test_a_location_lays_its_own_twist_and_ring_over_the_style_projection(tmp_path):
-    document = styles.load("teal_tunnel")
+    document = tunnel()
     own = document["style"]["projection"]["log_polar"]
     row = {**LOCATION, "projection": {"log_polar": {"twist": 0.25, "ring": 4.0}}}
     spec = styles.spec_of(row, document, tmp_path / "x.png")
@@ -194,8 +214,8 @@ def test_a_draft_that_does_not_read_is_refused_not_raised(tmp_path):
 
 
 def test_a_knob_asked_for_wins_over_the_records_own_projection(tmp_path):
-    """`teal_tunnel`'s keeps carry `turns`, which once silenced its `turns` knob."""
-    document = styles.load("teal_tunnel")
+    """A keep's record carrying `turns` once silenced the mode's `turns` knob."""
+    document = tunnel()
     row = {**LOCATION, "projection": {"log_polar": {"turns": 8, "twist": 0.1}}}
     plain = styles.spec_of(row, document, tmp_path / "x.png")
     assert plain["style"]["projection"]["log_polar"]["turns"] == 8

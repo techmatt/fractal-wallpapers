@@ -9,6 +9,41 @@
   "folder": "fractal-drive-sync/style-keeps/flame_wisp_amber",
   "keeps": [
     {
+      "id": "showcase_g6/flame_wisp_amber/flame_wisp_amber__c08",
+      "picker": "showcase_g6",
+      "picked": [
+        {
+          "row": "flame_wisp_amber",
+          "key": "flame_wisp_amber__c08"
+        }
+      ],
+      "label": "c08 · entry flame_wisp_amber · knobs as tuned · zoom x1.25",
+      "image": "showcase_g6__flame_wisp_amber__c08.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c08_rim_mandelbrot_0b06de47_zoom_in",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-1.2514946371626112",
+            "center_im": "0.041108581786355486",
+            "width": "9.718740550259632e-07"
+          },
+          "maxiter": 3685
+        },
+        "style": "flame_wisp_amber",
+        "stack": "flame_wisp_amber@25f2f902",
+        "colormap": "flame_wisp_amber",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp",
       "picker": "style_flame_wisp_amber_resave",
       "picked": [
@@ -147,6 +182,355 @@
     }
   ],
   "stacks": {
+    "flame_wisp_amber@25f2f902": {
+      "name": "flame_wisp_amber",
+      "interior": {
+        "palette": 0.02
+      },
+      "tone": {
+        "median": 0.345,
+        "p10": 0.22,
+        "log_density": 8.0
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "palette": 0.08
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.3
+          },
+          "blend": "screen",
+          "opacity": 0.12
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.8,
+              "shift": [
+                -0.133,
+                -0.181
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.342
+          },
+          "blend": "screen",
+          "opacity": 0.12
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.951,
+              "shift": [
+                -0.096,
+                0.303
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.383
+          },
+          "blend": "screen",
+          "opacity": 0.12
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 1.131,
+              "shift": [
+                0.368,
+                -0.125
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.425
+          },
+          "blend": "screen",
+          "opacity": 0.12
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 190.0,
+              "zoom": 1.344,
+              "shift": [
+                -0.368,
+                -0.258
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.467
+          },
+          "blend": "screen",
+          "opacity": 0.12
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 327.5,
+              "zoom": 1.598,
+              "shift": [
+                0.01,
+                0.502
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.508
+          },
+          "blend": "screen",
+          "opacity": 0.12
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 105.0,
+              "zoom": 1.9,
+              "shift": [
+                0.437,
+                -0.334
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.12
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.72
+          },
+          "blend": "screen",
+          "opacity": 0.36
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.8,
+              "shift": [
+                -0.133,
+                -0.181
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.767
+          },
+          "blend": "screen",
+          "opacity": 0.36
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.951,
+              "shift": [
+                -0.096,
+                0.303
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.813
+          },
+          "blend": "screen",
+          "opacity": 0.36
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 1.131,
+              "shift": [
+                0.368,
+                -0.125
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.86
+          },
+          "blend": "screen",
+          "opacity": 0.36
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            },
+            "view": {
+              "turn": 190.0,
+              "zoom": 1.344,
+              "shift": [
+                -0.368,
+                -0.258
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.907
+          },
+          "blend": "screen",
+          "opacity": 0.36
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            },
+            "view": {
+              "turn": 327.5,
+              "zoom": 1.598,
+              "shift": [
+                0.01,
+                0.502
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.953
+          },
+          "blend": "screen",
+          "opacity": 0.36
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            },
+            "view": {
+              "turn": 105.0,
+              "zoom": 1.9,
+              "shift": [
+                0.437,
+                -0.334
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.36
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "radial": {
+              "center": [
+                0.5,
+                0.45
+              ]
+            }
+          },
+          "power": 3.0,
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.35
+        }
+      ]
+    },
     "flame_wisp_amber__close_views@0c5685a5": {
       "name": "flame_wisp_amber__close_views",
       "interior": {

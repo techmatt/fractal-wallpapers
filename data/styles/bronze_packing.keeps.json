@@ -9,6 +9,285 @@
   "folder": "fractal-drive-sync/style-keeps/bronze_packing",
   "keeps": [
     {
+      "id": "showcase_g3/bronze_packing/bronze_packing__c03",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "bronze_packing",
+          "key": "bronze_packing__c03"
+        }
+      ],
+      "label": "c03 · entry bronze_packing · knobs as tuned · framing as located",
+      "image": "showcase_g3__bronze_packing__c03.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c03_spiral_julia-multibrot4_03bb1789",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6187020985618776",
+            "center_im": "0.1416242909446768",
+            "width": "0.08860066258073733"
+          },
+          "maxiter": 10097
+        },
+        "style": "bronze_packing",
+        "stack": "bronze_packing@faa5f8fa",
+        "colormap": "bronze_packing",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/bronze_packing/bronze_packing__c09",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "bronze_packing",
+          "key": "bronze_packing__c09"
+        }
+      ],
+      "label": "c09 · entry bronze_packing · knobs as tuned · framing as located",
+      "image": "showcase_g3__bronze_packing__c09.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c09_dense_julia-multibrot4_8fe72981",
+          "family": {
+            "c": [
+              "0.021187082785644677",
+              "-0.7454317655920734"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.8563255424487223",
+            "center_im": "-0.3731878560790924",
+            "width": "0.18798837353340095"
+          },
+          "maxiter": 8795
+        },
+        "style": "bronze_packing",
+        "stack": "bronze_packing@faa5f8fa",
+        "colormap": "bronze_packing",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/bronze_packing/bronze_packing__c11",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "bronze_packing",
+          "key": "bronze_packing__c11"
+        }
+      ],
+      "label": "c11 · entry magma · knobs as tuned · framing as located",
+      "image": "showcase_g3__bronze_packing__c11.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c11_dense_julia-multibrot5_3419754c",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.6149843012079393",
+              "0.5310701294563551"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.1367938266766141",
+            "center_im": "-0.16122010789011787",
+            "width": "0.09342453562993397"
+          },
+          "maxiter": 3000
+        },
+        "style": "bronze_packing",
+        "stack": "bronze_packing@faa5f8fa",
+        "colormap": "magma",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/bronze_packing/bronze_packing__c12",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "bronze_packing",
+          "key": "bronze_packing__c12"
+        }
+      ],
+      "label": "c12 · entry bronze_packing · knobs as tuned · framing as located",
+      "image": "showcase_g3__bronze_packing__c12.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c12_dense_julia-mandelbrot_de99162c",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-0.1672358484368567",
+              "-0.6504049641617877"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "0.023747385478286524"
+          },
+          "maxiter": 1547
+        },
+        "style": "bronze_packing",
+        "stack": "bronze_packing@faa5f8fa",
+        "colormap": "bronze_packing",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/bronze_packing/bronze_packing__c14",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "bronze_packing",
+          "key": "bronze_packing__c14"
+        }
+      ],
+      "label": "c14 · entry bronze_packing · knobs as tuned · framing as located",
+      "image": "showcase_g3__bronze_packing__c14.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c14_lace_phoenix_62efdf3b",
+          "family": {
+            "c": [
+              "0.23053583532499533",
+              "0.14928369481268455"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.2440666959533996",
+              "-0.7108918620308173"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.10103429036388192",
+            "center_im": "-0.04557291666666671",
+            "width": "1.3213109797674565"
+          },
+          "maxiter": 5419
+        },
+        "style": "bronze_packing",
+        "stack": "bronze_packing@faa5f8fa",
+        "colormap": "bronze_packing",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/bronze_packing/bronze_packing__c17",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "bronze_packing",
+          "key": "bronze_packing__c17"
+        }
+      ],
+      "label": "c17 · entry magma · knobs as tuned · cap 5,000 (was 9,997)",
+      "image": "showcase_g3__bronze_packing__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "2.16438122656e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "bronze_packing",
+        "stack": "bronze_packing@faa5f8fa",
+        "colormap": "magma",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/bronze_packing/bronze_packing__c18",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "bronze_packing",
+          "key": "bronze_packing__c18"
+        }
+      ],
+      "label": "c18 · entry bronze_packing · knobs as tuned · cap 5,000 (was 17,304)",
+      "image": "showcase_g3__bronze_packing__c18.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c18_power_multibrot5_7bf95814",
+          "family": {
+            "degree": 5,
+            "kind": "multibrot"
+          },
+          "viewport": {
+            "center_re": "0.5242488448823401",
+            "center_im": "0.6378211713626364",
+            "width": "0.001378936736204261"
+          },
+          "maxiter": 5000
+        },
+        "style": "bronze_packing",
+        "stack": "bronze_packing@faa5f8fa",
+        "colormap": "bronze_packing",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_bronze_packing_r1/palettes/bronze_packing",
       "picker": "style_bronze_packing_r1",
       "picked": [

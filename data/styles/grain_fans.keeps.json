@@ -9,6 +9,128 @@
   "folder": "fractal-drive-sync/style-keeps/grain_fans",
   "keeps": [
     {
+      "id": "showcase_g7/grain_fans/grain_fans__c06",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "grain_fans",
+          "key": "grain_fans__c06"
+        }
+      ],
+      "label": "c06 · entry grain_fans · knobs as tuned · zoom x1.25",
+      "image": "showcase_g7__grain_fans__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31_zoom_in",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0008920010648239227"
+          },
+          "maxiter": 17672
+        },
+        "style": "grain_fans",
+        "stack": "grain_fans@fa0c27cc",
+        "colormap": "grain_fans",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g7/grain_fans/grain_fans__c10",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "grain_fans",
+          "key": "grain_fans__c10"
+        }
+      ],
+      "label": "c10 · entry grain_fans · knobs as tuned · zoom x0.80; cap 2,000 (c10 reframe)",
+      "image": "showcase_g7__grain_fans__c10.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c10_dense_phoenix-classic_2ef353cb_zoom_out",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.44117424450399023",
+            "center_im": "-1.0633931165914965",
+            "width": "0.03807328093833397"
+          },
+          "maxiter": 2000
+        },
+        "style": "grain_fans",
+        "stack": "grain_fans@fa0c27cc",
+        "colormap": "grain_fans",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g7/grain_fans/grain_fans__c11",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "grain_fans",
+          "key": "grain_fans__c11"
+        }
+      ],
+      "label": "c11 · entry grain_fans · knobs as tuned · zoom x0.80",
+      "image": "showcase_g7__grain_fans__c11.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c11_dense_julia-multibrot5_3419754c_zoom_out",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.6149843012079393",
+              "0.5310701294563551"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.1367938266766141",
+            "center_im": "-0.16122010789011787",
+            "width": "0.11678066953741746"
+          },
+          "maxiter": 3000
+        },
+        "style": "grain_fans",
+        "stack": "grain_fans@fa0c27cc",
+        "colormap": "grain_fans",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_classic_escape_texture_r1/grain_fans/formulations/fin_gA__g3_six__00_julia-mandelbrot_53dd5a48",
       "picker": "style_classic_escape_texture_r1",
       "picked": [
@@ -93,6 +215,132 @@
           },
           "sheet": {
             "bands": 12.0,
+            "edge": 0.15,
+            "fill": 0.35
+          },
+          "blend": "multiply",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 48.0
+            }
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.6,
+          "power": 1.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 48.0
+            }
+          },
+          "color": {
+            "palette": 0.4
+          },
+          "blend": "screen",
+          "opacity": 0.45,
+          "power": 5.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.84
+          },
+          "blend": "multiply",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.00015,
+          "color": {
+            "palette": 0.36
+          },
+          "blend": "screen",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.36
+          },
+          "blend": "screen",
+          "opacity": 0.6,
+          "power": 40.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 2.0
+          }
+        }
+      ]
+    },
+    "grain_fans@fa0c27cc": {
+      "name": "grain_fans",
+      "interior": {
+        "palette": 0.84
+      },
+      "tone": {
+        "median": 0.558,
+        "p10": 0.262
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 4.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 8.0,
             "edge": 0.15,
             "fill": 0.35
           },

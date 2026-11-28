@@ -1,0 +1,163 @@
+{
+  "schema": 1,
+  "name": "corkscrew_smooth",
+  "reference": {
+    "image": "corkscrew-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time deep zoom of a double spiral (exoteric.roach.org), 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/corkscrew_smooth",
+  "keeps": [
+    {
+      "id": "showcase_g8/corkscrew_smooth/corkscrew_smooth__c10",
+      "picker": "showcase_g8",
+      "picked": [
+        {
+          "row": "corkscrew_smooth",
+          "key": "corkscrew_smooth__c10"
+        }
+      ],
+      "label": "c10 · entry corkscrew_smooth · knobs as tuned · zoom x0.80; cap 2,000 (c10 reframe)",
+      "image": "showcase_g8__corkscrew_smooth__c10.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c10_dense_phoenix-classic_2ef353cb_zoom_out",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.44117424450399023",
+            "center_im": "-1.0633931165914965",
+            "width": "0.03807328093833397"
+          },
+          "maxiter": 2000
+        },
+        "style": "corkscrew_smooth",
+        "stack": "corkscrew_smooth@36a0aacb",
+        "colormap": "corkscrew_smooth",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g8/corkscrew_smooth/corkscrew_smooth__c17",
+      "picker": "showcase_g8",
+      "picked": [
+        {
+          "row": "corkscrew_smooth",
+          "key": "corkscrew_smooth__c17"
+        }
+      ],
+      "label": "c17 · entry corkscrew_smooth · knobs as tuned · cap 5,000 (was 9,997)",
+      "image": "showcase_g8__corkscrew_smooth__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "2.16438122656e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "corkscrew_smooth",
+        "stack": "corkscrew_smooth@36a0aacb",
+        "colormap": "corkscrew_smooth",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "corkscrew_smooth@36a0aacb": {
+      "name": "corkscrew_smooth",
+      "interior": {
+        "rgb": "#050a0a"
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 2.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#040a0a"
+          },
+          "blend": "multiply",
+          "opacity": 0.5
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 16.0,
+            "rings": 0.8,
+            "slope": 0.1,
+            "azimuth": 135.0,
+            "elevation": 50.0,
+            "ambient": 0.75,
+            "diffuse": 0.45,
+            "specular": 0.8,
+            "shininess": 40.0,
+            "rim": 0.0,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fffbe8"
+            }
+          }
+        }
+      ],
+      "tone": {
+        "median": 0.46,
+        "p10": 0.134
+      }
+    }
+  }
+}

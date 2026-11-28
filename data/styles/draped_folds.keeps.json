@@ -9,6 +9,169 @@
   "folder": "fractal-drive-sync/style-keeps/draped_folds",
   "keeps": [
     {
+      "id": "showcase_g5/draped_folds/draped_folds__c03",
+      "picker": "showcase_g5",
+      "picked": [
+        {
+          "row": "draped_folds",
+          "key": "draped_folds__c03"
+        }
+      ],
+      "label": "c03 · entry draped_folds · knobs as tuned · framing as located",
+      "image": "showcase_g5__draped_folds__c03.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c03_spiral_julia-multibrot4_03bb1789",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6187020985618776",
+            "center_im": "0.1416242909446768",
+            "width": "0.08860066258073733"
+          },
+          "maxiter": 10097
+        },
+        "style": "draped_folds",
+        "stack": "draped_folds@60bf45a0",
+        "colormap": "draped_folds",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g5/draped_folds/draped_folds__c11",
+      "picker": "showcase_g5",
+      "picked": [
+        {
+          "row": "draped_folds",
+          "key": "draped_folds__c11"
+        }
+      ],
+      "label": "c11 · entry draped_folds · knobs as tuned · zoom x1.25",
+      "image": "showcase_g5__draped_folds__c11.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c11_dense_julia-multibrot5_3419754c_zoom_in",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.6149843012079393",
+              "0.5310701294563551"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.1367938266766141",
+            "center_im": "-0.16122010789011787",
+            "width": "0.07473962850394718"
+          },
+          "maxiter": 3000
+        },
+        "style": "draped_folds",
+        "stack": "draped_folds@60bf45a0",
+        "colormap": "draped_folds",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g5/draped_folds/draped_folds__c14",
+      "picker": "showcase_g5",
+      "picked": [
+        {
+          "row": "draped_folds",
+          "key": "draped_folds__c14"
+        }
+      ],
+      "label": "c14 · entry draped_folds · knobs as tuned · framing as located",
+      "image": "showcase_g5__draped_folds__c14.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c14_lace_phoenix_62efdf3b",
+          "family": {
+            "c": [
+              "0.23053583532499533",
+              "0.14928369481268455"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.2440666959533996",
+              "-0.7108918620308173"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.10103429036388192",
+            "center_im": "-0.04557291666666671",
+            "width": "1.3213109797674565"
+          },
+          "maxiter": 5419
+        },
+        "style": "draped_folds",
+        "stack": "draped_folds@60bf45a0",
+        "colormap": "draped_folds",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g5/draped_folds/draped_folds__c17",
+      "picker": "showcase_g5",
+      "picked": [
+        {
+          "row": "draped_folds",
+          "key": "draped_folds__c17"
+        }
+      ],
+      "label": "c17 · entry draped_folds · knobs as tuned · cap 5,000 (was 9,997)",
+      "image": "showcase_g5__draped_folds__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "2.16438122656e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "draped_folds",
+        "stack": "draped_folds@60bf45a0",
+        "colormap": "draped_folds",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_one__00_julia-multibrot5_ff8bfbca",
       "picker": "style_classic_escape_texture_r1",
       "picked": [
@@ -305,6 +468,133 @@
             "field": {
               "kind": "stripe",
               "density": 2.0
+            }
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "power": 6.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0012,
+          "color": {
+            "palette": 0.78
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.00025,
+          "color": {
+            "palette": 0.52
+          },
+          "blend": "screen",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0005,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.4
+        }
+      ]
+    },
+    "draped_folds@60bf45a0": {
+      "name": "draped_folds",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.238,
+        "p10": 0.085
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.6,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 1.2,
+            "azimuth": 120.0,
+            "elevation": 40.0,
+            "ambient": 0.4,
+            "diffuse": 0.7,
+            "specular": 0.5,
+            "shininess": 14.0,
+            "rim": 0.2,
+            "rim_power": 2.5,
+            "highlight": {
+              "palette": 0.9
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.6,
+          "power": 2.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
             }
           },
           "color": {

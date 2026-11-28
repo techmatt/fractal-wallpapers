@@ -35,6 +35,14 @@ map to the entry's name, write the entry with `was` the old style name and `valu
 `aliases` and its references to the row's; move its keeps (records, stacks and pictures)
 into the mode's, then delete its style file, keeps file and catalog row.
 
+**Deleting a mode** (092, 107): its style file, keeps file and catalog row; each map in its
+set that nothing else uses (another row's entry or `public.palette`, a style file's
+`suggested_colormap`, a remaining keep's render) goes with its `data/palettes/<map>.json`
+and its rows in `carriers.jsonl` (the method header's `maps` and `carriers` recounted),
+`groups.jsonl` (its `admitted` row; no group id moves) and `palette_family_shares.csv`.
+Its kept pictures stay in `fractal-drive-sync/style-keeps/<mode>/`; a test or doc naming
+the mode is repointed. The deleted mode's shown keeps leave the parity run with it.
+
 `style gallery` rebuilds `fractal-drive-sync/custom-modes/`, one card per mode; `style
 bundle` (the website's `custom-modes.json`) carries each published mode's kept entries.
 **Re-drawing a shown keep** under a changed default is a one-row picker

@@ -9,6 +9,157 @@
   "folder": "fractal-drive-sync/style-keeps/frost_stipple",
   "keeps": [
     {
+      "id": "showcase_g1/frost_stipple/frost_stipple__c06",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "frost_stipple",
+          "key": "frost_stipple__c06"
+        }
+      ],
+      "label": "c06 · entry frost_stipple · knobs as tuned · zoom x1.25",
+      "image": "showcase_g1__frost_stipple__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31_zoom_in",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0008920010648239227"
+          },
+          "maxiter": 17672
+        },
+        "style": "frost_stipple",
+        "stack": "frost_stipple@e96f6649",
+        "colormap": "frost_stipple",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g1/frost_stipple/frost_stipple__c11",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "frost_stipple",
+          "key": "frost_stipple__c11"
+        }
+      ],
+      "label": "c11 · entry frost_stipple · knobs as tuned · zoom x1.25",
+      "image": "showcase_g1__frost_stipple__c11.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c11_dense_julia-multibrot5_3419754c_zoom_in",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.6149843012079393",
+              "0.5310701294563551"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.1367938266766141",
+            "center_im": "-0.16122010789011787",
+            "width": "0.07473962850394718"
+          },
+          "maxiter": 3000
+        },
+        "style": "frost_stipple",
+        "stack": "frost_stipple@e96f6649",
+        "colormap": "frost_stipple",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g1/frost_stipple/frost_stipple__c12",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "frost_stipple",
+          "key": "frost_stipple__c12"
+        }
+      ],
+      "label": "c12 · entry frost_stipple · knobs as tuned · framing as located",
+      "image": "showcase_g1__frost_stipple__c12.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c12_dense_julia-mandelbrot_de99162c",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-0.1672358484368567",
+              "-0.6504049641617877"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "0.023747385478286524"
+          },
+          "maxiter": 1547
+        },
+        "style": "frost_stipple",
+        "stack": "frost_stipple@e96f6649",
+        "colormap": "frost_stipple",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g1/frost_stipple/frost_stipple__c17",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "frost_stipple",
+          "key": "frost_stipple__c17"
+        }
+      ],
+      "label": "c17 · entry frost_stipple · knobs as tuned · zoom x1.25; cap 5,000 (was 9,997)",
+      "image": "showcase_g1__frost_stipple__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0_zoom_in",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "1.7315049812480003e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "frost_stipple",
+        "stack": "frost_stipple@e96f6649",
+        "colormap": "frost_stipple",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_classic_escape_texture_r1/frost_stipple/formulations/fin_sA__s3_dust__00_m2_seahorse_tail_spiral",
       "picker": "style_classic_escape_texture_r1",
       "picked": [

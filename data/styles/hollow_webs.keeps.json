@@ -9,6 +9,124 @@
   "folder": "fractal-drive-sync/style-keeps/hollow_webs",
   "keeps": [
     {
+      "id": "showcase_g8/hollow_webs/hollow_webs__c06",
+      "picker": "showcase_g8",
+      "picked": [
+        {
+          "row": "hollow_webs",
+          "key": "hollow_webs__c06"
+        }
+      ],
+      "label": "c06 · entry hollow_webs · knobs as tuned · framing as located",
+      "image": "showcase_g8__hollow_webs__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0011150013310299034"
+          },
+          "maxiter": 17672
+        },
+        "style": "hollow_webs",
+        "stack": "hollow_webs@89a19651",
+        "colormap": "hollow_webs",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g8/hollow_webs/hollow_webs__c14",
+      "picker": "showcase_g8",
+      "picked": [
+        {
+          "row": "hollow_webs",
+          "key": "hollow_webs__c14"
+        }
+      ],
+      "label": "c14 · entry hollow_webs · knobs as tuned · framing as located",
+      "image": "showcase_g8__hollow_webs__c14.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c14_lace_phoenix_62efdf3b",
+          "family": {
+            "c": [
+              "0.23053583532499533",
+              "0.14928369481268455"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.2440666959533996",
+              "-0.7108918620308173"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.10103429036388192",
+            "center_im": "-0.04557291666666671",
+            "width": "1.3213109797674565"
+          },
+          "maxiter": 5419
+        },
+        "style": "hollow_webs",
+        "stack": "hollow_webs@89a19651",
+        "colormap": "hollow_webs",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g8/hollow_webs/hollow_webs__c17",
+      "picker": "showcase_g8",
+      "picked": [
+        {
+          "row": "hollow_webs",
+          "key": "hollow_webs__c17"
+        }
+      ],
+      "label": "c17 · entry knit_webs · knobs as tuned · cap 5,000 (was 9,997)",
+      "image": "showcase_g8__hollow_webs__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "2.16438122656e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "hollow_webs",
+        "stack": "hollow_webs@0e437f30",
+        "colormap": "knit_webs",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_texture_lace_r1/hollow_webs/knit_webs/hw_a_e_knit_webs",
       "picker": "style_texture_lace_r1",
       "picked": [
@@ -94,6 +212,213 @@
   "stacks": {
     "e_knit_webs@e98cb880": {
       "name": "e_knit_webs",
+      "interior": {
+        "palette": 0.12
+      },
+      "tone": {
+        "median": 0.323,
+        "p10": 0.145
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 3.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            }
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "opacity": 0.08,
+          "power": 2.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            }
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.55,
+          "power": 3.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 16.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.8,
+              "shift": [
+                -0.133,
+                -0.181
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.65
+          },
+          "blend": "screen",
+          "opacity": 0.55,
+          "power": 3.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 16.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.951,
+              "shift": [
+                -0.096,
+                0.303
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.55,
+          "power": 3.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 16.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "color": {
+            "palette": 0.02
+          },
+          "blend": "multiply",
+          "opacity": 0.85,
+          "power": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 5.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.08,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "falloff": 0.0008
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.97
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "falloff": 0.0003
+        }
+      ]
+    },
+    "hollow_webs@0e437f30": {
+      "name": "hollow_webs",
       "interior": {
         "palette": 0.12
       },

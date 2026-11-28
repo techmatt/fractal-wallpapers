@@ -55,7 +55,7 @@ SPEED_SUPERSAMPLE = DRAFT_SUPERSAMPLE
 #: Node worker threads a parity run draws on, beside the native engine's renders, below
 #: normal priority. The whole run is as long as the longest of three things: its longest
 #: job (one keep's tiled draw), the module's work over the workers, and the native side
-#: (at `PARITY_NATIVE_THREADS`). The whole run, 223 jobs, reads 38 to 48 minutes at
+#: (at `PARITY_NATIVE_THREADS`). The whole run, 357 jobs, reads about 71 minutes at
 #: `--workers 3` (six threads with the native side), and is never shorter than its
 #: longest job (`style-wasm/README.md`'s *Parity: which run is owed*). The render pool's
 #: count, and its cap as `style cost`'s (Matt, 2026-11-25).

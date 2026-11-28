@@ -165,7 +165,7 @@ cargo build --release --target wasm32-unknown-unknown --manifest-path style-wasm
 
 Then the parity run it owes, once, after the last code change, read off
 `style-wasm/README.md`'s *Parity: which run is owed* table: the whole **`fractal-wallpapers
-style wasm-parity`** (38 to 48 minutes) only after engine or module code nothing cheaper
+style wasm-parity`** (about 71 minutes since 107) only after engine or module code nothing cheaper
 covers; **`style wasm-parity <name>`** after one style's change; **`--member <name>`**
 after a name-list edit; nothing for docs and metadata. An engine change also owes
 `identity` (`data/styles/README.md` step 2).

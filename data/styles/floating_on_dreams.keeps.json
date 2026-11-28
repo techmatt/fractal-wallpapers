@@ -9,6 +9,82 @@
   "folder": "fractal-drive-sync/style-keeps/floating_on_dreams",
   "keeps": [
     {
+      "id": "showcase_g1/floating_on_dreams/floating_on_dreams__c11",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "floating_on_dreams",
+          "key": "floating_on_dreams__c11"
+        }
+      ],
+      "label": "c11 · entry floating_on_dreams · knobs as tuned · framing as located",
+      "image": "showcase_g1__floating_on_dreams__c11.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c11_dense_julia-multibrot5_3419754c",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.6149843012079393",
+              "0.5310701294563551"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.1367938266766141",
+            "center_im": "-0.16122010789011787",
+            "width": "0.09342453562993397"
+          },
+          "maxiter": 3000
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@afb51c70",
+        "colormap": "floating_on_dreams",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g1/floating_on_dreams/floating_on_dreams__c17",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "floating_on_dreams",
+          "key": "floating_on_dreams__c17"
+        }
+      ],
+      "label": "c17 · entry floating_on_dreams · knobs as tuned · cap 5,000 (was 9,997)",
+      "image": "showcase_g1__floating_on_dreams__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "2.16438122656e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@afb51c70",
+        "colormap": "floating_on_dreams",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_floating_r1/palettes/00_d5_julia_ten_spokes__hsv",
       "picker": "style_floating_r1",
       "picked": [
@@ -626,6 +702,133 @@
       "name": "floating_on_dreams",
       "interior": {
         "palette": 1.0
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "light": {
+            "bands": 6.0,
+            "rings": 0.8,
+            "slope": 0.4,
+            "azimuth": 135.0,
+            "elevation": 50.0,
+            "ambient": 0.42,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 60.0,
+            "rim": 0.25,
+            "rim_power": 3.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "transform": "sqrt"
+          },
+          "light": {
+            "bands": 24.0,
+            "rings": 0.75,
+            "slope": 0.3,
+            "azimuth": 135.0,
+            "elevation": 50.0,
+            "ambient": 0.45,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 50.0,
+            "rim": 0.25,
+            "rim_power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "threads",
+              "sigma": 0.05
+            }
+          },
+          "power": 1.5,
+          "color": {
+            "rgb": "#ffffff"
+          },
+          "blend": "screen",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "power": 4.0,
+          "color": {
+            "rgb": "#ffffff"
+          },
+          "blend": "screen",
+          "opacity": 0.85
+        },
+        {
+          "kind": "pattern",
+          "checker": {
+            "per_iteration": 1.0,
+            "sectors": 2
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "multiply",
+          "opacity": 0.12,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              },
+              "transform": "sqrt"
+            },
+            "invert": true,
+            "power": 2.0
+          }
+        }
+      ]
+    },
+    "floating_on_dreams@afb51c70": {
+      "name": "floating_on_dreams",
+      "interior": {
+        "palette": 1.0
+      },
+      "tone": {
+        "median": 0.686,
+        "p10": 0.506
       },
       "layers": [
         {

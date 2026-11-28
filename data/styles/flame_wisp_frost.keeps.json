@@ -9,6 +9,204 @@
   "folder": "fractal-drive-sync/style-keeps/flame_wisp_frost",
   "keeps": [
     {
+      "id": "showcase_g7/flame_wisp_frost/flame_wisp_frost__c03",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "flame_wisp_frost",
+          "key": "flame_wisp_frost__c03"
+        }
+      ],
+      "label": "c03 · entry flame_wisp_frost · knobs as tuned · zoom x1.25",
+      "image": "showcase_g7__flame_wisp_frost__c03.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c03_spiral_julia-multibrot4_03bb1789_zoom_in",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6187020985618776",
+            "center_im": "0.1416242909446768",
+            "width": "0.07088053006458987"
+          },
+          "maxiter": 10097
+        },
+        "style": "flame_wisp_frost",
+        "stack": "flame_wisp_frost@7255734b",
+        "colormap": "flame_wisp_frost",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g7/flame_wisp_frost/flame_wisp_frost__c06",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "flame_wisp_frost",
+          "key": "flame_wisp_frost__c06"
+        }
+      ],
+      "label": "c06 · entry flame_wisp_frost · knobs as tuned · zoom x1.25",
+      "image": "showcase_g7__flame_wisp_frost__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31_zoom_in",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0008920010648239227"
+          },
+          "maxiter": 17672
+        },
+        "style": "flame_wisp_frost",
+        "stack": "flame_wisp_frost@7255734b",
+        "colormap": "flame_wisp_frost",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g7/flame_wisp_frost/flame_wisp_frost__c10",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "flame_wisp_frost",
+          "key": "flame_wisp_frost__c10"
+        }
+      ],
+      "label": "c10 · entry flame_wisp_frost · knobs as tuned · zoom x0.80; cap 2,000 (c10 reframe)",
+      "image": "showcase_g7__flame_wisp_frost__c10.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c10_dense_phoenix-classic_2ef353cb_zoom_out",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.44117424450399023",
+            "center_im": "-1.0633931165914965",
+            "width": "0.03807328093833397"
+          },
+          "maxiter": 2000
+        },
+        "style": "flame_wisp_frost",
+        "stack": "flame_wisp_frost@7255734b",
+        "colormap": "flame_wisp_frost",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g7/flame_wisp_frost/flame_wisp_frost__c11",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "flame_wisp_frost",
+          "key": "flame_wisp_frost__c11"
+        }
+      ],
+      "label": "c11 · entry flame_wisp_frost · knobs as tuned · zoom x1.25",
+      "image": "showcase_g7__flame_wisp_frost__c11.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c11_dense_julia-multibrot5_3419754c_zoom_in",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.6149843012079393",
+              "0.5310701294563551"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.1367938266766141",
+            "center_im": "-0.16122010789011787",
+            "width": "0.07473962850394718"
+          },
+          "maxiter": 3000
+        },
+        "style": "flame_wisp_frost",
+        "stack": "flame_wisp_frost@7255734b",
+        "colormap": "flame_wisp_frost",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g7/flame_wisp_frost/flame_wisp_frost__c17",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "flame_wisp_frost",
+          "key": "flame_wisp_frost__c17"
+        }
+      ],
+      "label": "c17 · entry flame_wisp_frost · knobs as tuned · zoom x1.25; cap 5,000 (was 9,997)",
+      "image": "showcase_g7__flame_wisp_frost__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0_zoom_in",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "1.7315049812480003e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "flame_wisp_frost",
+        "stack": "flame_wisp_frost@7255734b",
+        "colormap": "flame_wisp_frost",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_flame_wisps_r1/flame_wisp_frost/locations/frost__loc__03_phoenix_1b501757_flame_wisp_frost",
       "picker": "style_flame_wisps_r1",
       "picked": [

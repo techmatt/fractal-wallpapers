@@ -9,6 +9,53 @@
   "folder": "fractal-drive-sync/style-keeps/glossy_spirals",
   "keeps": [
     {
+      "id": "showcase_g8/glossy_spirals/glossy_spirals__c10_alt",
+      "picker": "showcase_g8",
+      "picked": [
+        {
+          "row": "glossy_spirals",
+          "key": "glossy_spirals__c10_alt"
+        }
+      ],
+      "label": "close call, second render: c10 · entry violet_star_arms · knobs as tuned · cap 2,000 (c10 reframe)",
+      "image": "showcase_g8__glossy_spirals__c10_alt.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c10_dense_phoenix-classic_2ef353cb",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.44117424450399023",
+            "center_im": "-1.0633931165914965",
+            "width": "0.03045862475066717"
+          },
+          "maxiter": 2000
+        },
+        "style": "glossy_spirals",
+        "stack": "glossy_spirals@8db2083c",
+        "colormap": "violet_star_arms",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_glossy_spirals_r1/copper_arms/locations/copper_arms__loc__05_multibrot3_f95d4b63_copper_arms",
       "picker": "style_glossy_spirals_r1",
       "picked": [

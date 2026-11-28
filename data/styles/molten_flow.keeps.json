@@ -9,6 +9,159 @@
   "folder": "fractal-drive-sync/style-keeps/molten_flow",
   "keeps": [
     {
+      "id": "showcase_g7/molten_flow/molten_flow__c06",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "molten_flow",
+          "key": "molten_flow__c06"
+        }
+      ],
+      "label": "c06 · entry molten_flow · knobs as tuned · framing as located",
+      "image": "showcase_g7__molten_flow__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0011150013310299034"
+          },
+          "maxiter": 17672
+        },
+        "style": "molten_flow",
+        "stack": "molten_flow@fa7a5b16",
+        "colormap": "molten_flow",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g7/molten_flow/molten_flow__c08",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "molten_flow",
+          "key": "molten_flow__c08"
+        }
+      ],
+      "label": "c08 · entry molten_flow · knobs as tuned · framing as located",
+      "image": "showcase_g7__molten_flow__c08.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c08_rim_mandelbrot_0b06de47",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-1.2514946371626112",
+            "center_im": "0.041108581786355486",
+            "width": "1.214842568782454e-06"
+          },
+          "maxiter": 3685
+        },
+        "style": "molten_flow",
+        "stack": "molten_flow@fa7a5b16",
+        "colormap": "molten_flow",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g7/molten_flow/molten_flow__c10",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "molten_flow",
+          "key": "molten_flow__c10"
+        }
+      ],
+      "label": "c10 · entry molten_flow · knobs as tuned · zoom x1.25; cap 2,000 (c10 reframe)",
+      "image": "showcase_g7__molten_flow__c10.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c10_dense_phoenix-classic_2ef353cb_zoom_in",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.44117424450399023",
+            "center_im": "-1.0633931165914965",
+            "width": "0.024366899800533737"
+          },
+          "maxiter": 2000
+        },
+        "style": "molten_flow",
+        "stack": "molten_flow@fa7a5b16",
+        "colormap": "molten_flow",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g7/molten_flow/molten_flow__c17",
+      "picker": "showcase_g7",
+      "picked": [
+        {
+          "row": "molten_flow",
+          "key": "molten_flow__c17"
+        }
+      ],
+      "label": "c17 · entry molten_flow · knobs as tuned · zoom x1.25; cap 5,000 (was 9,997)",
+      "image": "showcase_g7__molten_flow__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0_zoom_in",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "1.7315049812480003e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "molten_flow",
+        "stack": "molten_flow@fa7a5b16",
+        "colormap": "molten_flow",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_classic_escape_texture_r1/draped_folds/formulations/base_dA__molten_flow__00_julia-multibrot5_ff8bfbca",
       "picker": "style_classic_escape_texture_r1",
       "picked": [

@@ -9,6 +9,88 @@
   "folder": "fractal-drive-sync/style-keeps/light_shafts",
   "keeps": [
     {
+      "id": "showcase_g1/light_shafts/light_shafts__c06",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "light_shafts",
+          "key": "light_shafts__c06"
+        }
+      ],
+      "label": "c06 · entry light_shafts · knobs as tuned · zoom x1.25",
+      "image": "showcase_g1__light_shafts__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31_zoom_in",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0008920010648239227"
+          },
+          "maxiter": 17672
+        },
+        "style": "light_shafts",
+        "stack": "light_shafts@3ba9430f",
+        "colormap": "light_shafts",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g1/light_shafts/light_shafts__c14",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "light_shafts",
+          "key": "light_shafts__c14"
+        }
+      ],
+      "label": "c14 · entry light_shafts · knobs as tuned · framing as located",
+      "image": "showcase_g1__light_shafts__c14.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c14_lace_phoenix_62efdf3b",
+          "family": {
+            "c": [
+              "0.23053583532499533",
+              "0.14928369481268455"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.2440666959533996",
+              "-0.7108918620308173"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.10103429036388192",
+            "center_im": "-0.04557291666666671",
+            "width": "1.3213109797674565"
+          },
+          "maxiter": 5419
+        },
+        "style": "light_shafts",
+        "stack": "light_shafts@3ba9430f",
+        "colormap": "light_shafts",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_light_beams_r1/light_shafts/locations/lsl_21",
       "picker": "style_light_beams_r1",
       "picked": [
@@ -300,6 +382,190 @@
             0.42
           ],
           "strength": 10.0
+        }
+      ],
+      "name": "light_shafts"
+    },
+    "light_shafts@3ba9430f": {
+      "interior": {
+        "palette": 0.02
+      },
+      "tone": {
+        "median": 0.12,
+        "p10": 0.026,
+        "log_density": 8.0
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "palette": 0.04
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "opacity": 0.06,
+          "power": 2.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            }
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.21,
+          "power": 6.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 5.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.8,
+              "shift": [
+                -0.133,
+                -0.181
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.6000000000000001
+          },
+          "blend": "screen",
+          "opacity": 0.21,
+          "power": 6.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 5.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.951,
+              "shift": [
+                -0.096,
+                0.303
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.65
+          },
+          "blend": "screen",
+          "opacity": 0.21,
+          "power": 6.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 5.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0015,
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.105
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.21
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 10
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "palette": 0.02
+          },
+          "opacity": 1.0
+        }
+      ],
+      "post": [
+        {
+          "kind": "rays",
+          "share": 0.008,
+          "spokes": 4,
+          "angle": 45.0,
+          "length": 0.1,
+          "center": [
+            0.5,
+            0.42
+          ],
+          "strength": 3.5
         }
       ],
       "name": "light_shafts"

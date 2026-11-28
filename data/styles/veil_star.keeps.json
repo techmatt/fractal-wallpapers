@@ -9,6 +9,180 @@
   "folder": "fractal-drive-sync/style-keeps/veil_star",
   "keeps": [
     {
+      "id": "showcase_g3/veil_star/veil_star__c03",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "veil_star",
+          "key": "veil_star__c03"
+        }
+      ],
+      "label": "c03 · entry veil_shards · knobs as tuned · zoom x1.25",
+      "image": "showcase_g3__veil_star__c03.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c03_spiral_julia-multibrot4_03bb1789_zoom_in",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6187020985618776",
+            "center_im": "0.1416242909446768",
+            "width": "0.07088053006458987"
+          },
+          "maxiter": 10097
+        },
+        "style": "veil_star",
+        "stack": "veil_star@a5e52169",
+        "colormap": "veil_shards",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/veil_star/veil_star__c10",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "veil_star",
+          "key": "veil_star__c10"
+        }
+      ],
+      "label": "c10 · entry bone_star · knobs as tuned · cap 2,000 (c10 reframe)",
+      "image": "showcase_g3__veil_star__c10.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c10_dense_phoenix-classic_2ef353cb",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.44117424450399023",
+            "center_im": "-1.0633931165914965",
+            "width": "0.03045862475066717"
+          },
+          "maxiter": 2000
+        },
+        "style": "veil_star",
+        "stack": "veil_star@a5e52169",
+        "colormap": "bone_star",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/veil_star/veil_star__c11",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "veil_star",
+          "key": "veil_star__c11"
+        }
+      ],
+      "label": "c11 · entry bone_star · knobs as tuned · framing as located",
+      "image": "showcase_g3__veil_star__c11.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c11_dense_julia-multibrot5_3419754c",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.6149843012079393",
+              "0.5310701294563551"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.1367938266766141",
+            "center_im": "-0.16122010789011787",
+            "width": "0.09342453562993397"
+          },
+          "maxiter": 3000
+        },
+        "style": "veil_star",
+        "stack": "veil_star@a5e52169",
+        "colormap": "bone_star",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/veil_star/veil_star__c14",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "veil_star",
+          "key": "veil_star__c14"
+        }
+      ],
+      "label": "c14 · entry bone_star · knobs as tuned · framing as located",
+      "image": "showcase_g3__veil_star__c14.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c14_lace_phoenix_62efdf3b",
+          "family": {
+            "c": [
+              "0.23053583532499533",
+              "0.14928369481268455"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.2440666959533996",
+              "-0.7108918620308173"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.10103429036388192",
+            "center_im": "-0.04557291666666671",
+            "width": "1.3213109797674565"
+          },
+          "maxiter": 5419
+        },
+        "style": "veil_star",
+        "stack": "veil_star@a5e52169",
+        "colormap": "bone_star",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_flame_veils_r1/veil_shards/bone_star/vs_star_e_bone_star",
       "picker": "style_flame_veils_r1",
       "picked": [

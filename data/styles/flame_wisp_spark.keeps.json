@@ -9,6 +9,164 @@
   "folder": "fractal-drive-sync/style-keeps/flame_wisp_spark",
   "keeps": [
     {
+      "id": "showcase_g3/flame_wisp_spark/flame_wisp_spark__c06",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "flame_wisp_spark",
+          "key": "flame_wisp_spark__c06"
+        }
+      ],
+      "label": "c06 · entry flame_wisp_spark · knobs as tuned · zoom x1.25",
+      "image": "showcase_g3__flame_wisp_spark__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31_zoom_in",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0008920010648239227"
+          },
+          "maxiter": 17672
+        },
+        "style": "flame_wisp_spark",
+        "stack": "flame_wisp_spark@e529e67b",
+        "colormap": "flame_wisp_spark",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/flame_wisp_spark/flame_wisp_spark__c09",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "flame_wisp_spark",
+          "key": "flame_wisp_spark__c09"
+        }
+      ],
+      "label": "c09 · entry flame_wisp_spark · knobs as tuned · zoom x1.25",
+      "image": "showcase_g3__flame_wisp_spark__c09.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c09_dense_julia-multibrot4_8fe72981_zoom_in",
+          "family": {
+            "c": [
+              "0.021187082785644677",
+              "-0.7454317655920734"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.8563255424487223",
+            "center_im": "-0.3731878560790924",
+            "width": "0.15039069882672076"
+          },
+          "maxiter": 8795
+        },
+        "style": "flame_wisp_spark",
+        "stack": "flame_wisp_spark@e529e67b",
+        "colormap": "flame_wisp_spark",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/flame_wisp_spark/flame_wisp_spark__c10",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "flame_wisp_spark",
+          "key": "flame_wisp_spark__c10"
+        }
+      ],
+      "label": "c10 · entry flame_wisp_spark · knobs as tuned · zoom x0.80; cap 2,000 (c10 reframe)",
+      "image": "showcase_g3__flame_wisp_spark__c10.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c10_dense_phoenix-classic_2ef353cb_zoom_out",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.44117424450399023",
+            "center_im": "-1.0633931165914965",
+            "width": "0.03807328093833397"
+          },
+          "maxiter": 2000
+        },
+        "style": "flame_wisp_spark",
+        "stack": "flame_wisp_spark@e529e67b",
+        "colormap": "flame_wisp_spark",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g3/flame_wisp_spark/flame_wisp_spark__c17",
+      "picker": "showcase_g3",
+      "picked": [
+        {
+          "row": "flame_wisp_spark",
+          "key": "flame_wisp_spark__c17"
+        }
+      ],
+      "label": "c17 · entry flame_wisp_spark · knobs as tuned · zoom x1.25; cap 5,000 (was 9,997)",
+      "image": "showcase_g3__flame_wisp_spark__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0_zoom_in",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "1.7315049812480003e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "flame_wisp_spark",
+        "stack": "flame_wisp_spark@e529e67b",
+        "colormap": "flame_wisp_spark",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_flame_wisps_r1/flame_wisp_spark/formulations/spark__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_spark",
       "picker": "style_flame_wisps_r1",
       "picked": [
@@ -146,6 +304,410 @@
     }
   ],
   "stacks": {
+    "flame_wisp_spark@e529e67b": {
+      "name": "flame_wisp_spark",
+      "interior": {
+        "palette": 0.02
+      },
+      "tone": {
+        "median": 0.32,
+        "p10": 0.155,
+        "log_density": 8.0
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "palette": 0.08
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.45
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.8,
+              "shift": [
+                -0.133,
+                -0.181
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.492
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.951,
+              "shift": [
+                -0.096,
+                0.303
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.533
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 1.131,
+              "shift": [
+                0.368,
+                -0.125
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.575
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 190.0,
+              "zoom": 1.344,
+              "shift": [
+                -0.368,
+                -0.258
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.617
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 327.5,
+              "zoom": 1.598,
+              "shift": [
+                0.01,
+                0.502
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.658
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 105.0,
+              "zoom": 1.9,
+              "shift": [
+                0.437,
+                -0.334
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.8,
+              "shift": [
+                -0.133,
+                -0.181
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.951,
+              "shift": [
+                -0.096,
+                0.303
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 1.131,
+              "shift": [
+                0.368,
+                -0.125
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 190.0,
+              "zoom": 1.344,
+              "shift": [
+                -0.368,
+                -0.258
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 327.5,
+              "zoom": 1.598,
+              "shift": [
+                0.01,
+                0.502
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 105.0,
+              "zoom": 1.9,
+              "shift": [
+                0.437,
+                -0.334
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0015,
+          "color": {
+            "rgb": "#ffc878"
+          },
+          "blend": "screen",
+          "opacity": 0.12
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.00025,
+          "color": {
+            "rgb": "#fff0d0"
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.8,
+              "shift": [
+                -0.133,
+                -0.181
+              ]
+            }
+          },
+          "falloff": 0.0015,
+          "color": {
+            "rgb": "#ffc878"
+          },
+          "blend": "screen",
+          "opacity": 0.12
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.8,
+              "shift": [
+                -0.133,
+                -0.181
+              ]
+            }
+          },
+          "falloff": 0.00025,
+          "color": {
+            "rgb": "#fff0d0"
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        }
+      ]
+    },
     "flame_wisp_spark__close_views@cc3fae69": {
       "name": "flame_wisp_spark__close_views",
       "interior": {

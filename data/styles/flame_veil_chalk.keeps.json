@@ -9,6 +9,133 @@
   "folder": "fractal-drive-sync/style-keeps/flame_veil_chalk",
   "keeps": [
     {
+      "id": "showcase_g5/flame_veil_chalk/flame_veil_chalk__c03",
+      "picker": "showcase_g5",
+      "picked": [
+        {
+          "row": "flame_veil_chalk",
+          "key": "flame_veil_chalk__c03"
+        }
+      ],
+      "label": "c03 · entry flame_veil_chalk · knobs as tuned · framing as located",
+      "image": "showcase_g5__flame_veil_chalk__c03.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c03_spiral_julia-multibrot4_03bb1789",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6187020985618776",
+            "center_im": "0.1416242909446768",
+            "width": "0.08860066258073733"
+          },
+          "maxiter": 10097
+        },
+        "style": "flame_veil_chalk",
+        "stack": "flame_veil_chalk@7784b637",
+        "colormap": "flame_veil_chalk",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g5/flame_veil_chalk/flame_veil_chalk__c09",
+      "picker": "showcase_g5",
+      "picked": [
+        {
+          "row": "flame_veil_chalk",
+          "key": "flame_veil_chalk__c09"
+        }
+      ],
+      "label": "c09 · entry flame_veil_chalk · knobs as tuned · zoom x1.25",
+      "image": "showcase_g5__flame_veil_chalk__c09.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c09_dense_julia-multibrot4_8fe72981_zoom_in",
+          "family": {
+            "c": [
+              "0.021187082785644677",
+              "-0.7454317655920734"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.8563255424487223",
+            "center_im": "-0.3731878560790924",
+            "width": "0.15039069882672076"
+          },
+          "maxiter": 8795
+        },
+        "style": "flame_veil_chalk",
+        "stack": "flame_veil_chalk@7784b637",
+        "colormap": "flame_veil_chalk",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g5/flame_veil_chalk/flame_veil_chalk__c10",
+      "picker": "showcase_g5",
+      "picked": [
+        {
+          "row": "flame_veil_chalk",
+          "key": "flame_veil_chalk__c10"
+        }
+      ],
+      "label": "c10 · entry flame_veil_chalk · knobs as tuned · zoom x1.25; cap 2,000 (c10 reframe)",
+      "image": "showcase_g5__flame_veil_chalk__c10.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c10_dense_phoenix-classic_2ef353cb_zoom_in",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.44117424450399023",
+            "center_im": "-1.0633931165914965",
+            "width": "0.024366899800533737"
+          },
+          "maxiter": 2000
+        },
+        "style": "flame_veil_chalk",
+        "stack": "flame_veil_chalk@7784b637",
+        "colormap": "flame_veil_chalk",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_flame_veil_chalk_r1/formulations/f_blades_only__01_vj_d3_r1.08_t0.124_whole_flame_veil_chalk",
       "picker": "style_flame_veil_chalk_r1",
       "picked": [

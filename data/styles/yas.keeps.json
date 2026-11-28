@@ -9,6 +9,117 @@
   "folder": "fractal-drive-sync/style-keeps/yas",
   "keeps": [
     {
+      "id": "showcase_g2/yas/yas__c06",
+      "picker": "showcase_g2",
+      "picked": [
+        {
+          "row": "yas",
+          "key": "yas__c06"
+        }
+      ],
+      "label": "c06 · entry Copper Fathom · knobs as tuned · framing as located",
+      "image": "showcase_g2__yas__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0011150013310299034"
+          },
+          "maxiter": 17672
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "Copper Fathom",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g2/yas/yas__c09",
+      "picker": "showcase_g2",
+      "picked": [
+        {
+          "row": "yas",
+          "key": "yas__c09"
+        }
+      ],
+      "label": "c09 · entry Copper Fathom · knobs as tuned · framing as located",
+      "image": "showcase_g2__yas__c09.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c09_dense_julia-multibrot4_8fe72981",
+          "family": {
+            "c": [
+              "0.021187082785644677",
+              "-0.7454317655920734"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.8563255424487223",
+            "center_im": "-0.3731878560790924",
+            "width": "0.18798837353340095"
+          },
+          "maxiter": 8795
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "Copper Fathom",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g2/yas/yas__c18",
+      "picker": "showcase_g2",
+      "picked": [
+        {
+          "row": "yas",
+          "key": "yas__c18"
+        }
+      ],
+      "label": "c18 · entry Copper Fathom · knobs as tuned · cap 5,000 (was 17,304)",
+      "image": "showcase_g2__yas__c18.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c18_power_multibrot5_7bf95814",
+          "family": {
+            "degree": 5,
+            "kind": "multibrot"
+          },
+          "viewport": {
+            "center_re": "0.5242488448823401",
+            "center_im": "0.6378211713626364",
+            "width": "0.001378936736204261"
+          },
+          "maxiter": 5000
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "Copper Fathom",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_yas_r1/baseline/03_d4_julia_seven_arm_rosette__floating_on_dreams",
       "picker": "style_yas_r1",
       "picked": [

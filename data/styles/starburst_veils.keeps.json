@@ -9,6 +9,117 @@
   "folder": "fractal-drive-sync/style-keeps/starburst_veils",
   "keeps": [
     {
+      "id": "showcase_g1/starburst_veils/starburst_veils__c06",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "starburst_veils",
+          "key": "starburst_veils__c06"
+        }
+      ],
+      "label": "c06 · entry starburst_veils · knobs as tuned · framing as located",
+      "image": "showcase_g1__starburst_veils__c06.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c06_rim_mandelbrot_30880b31",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7598099040404204",
+            "center_im": "-0.08534438576289138",
+            "width": "0.0011150013310299034"
+          },
+          "maxiter": 17672
+        },
+        "style": "starburst_veils",
+        "stack": "starburst_veils@d089ef89",
+        "colormap": "starburst_veils",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g1/starburst_veils/starburst_veils__c11",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "starburst_veils",
+          "key": "starburst_veils__c11"
+        }
+      ],
+      "label": "c11 · entry jade_starbursts · knobs as tuned · framing as located",
+      "image": "showcase_g1__starburst_veils__c11.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c11_dense_julia-multibrot5_3419754c",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.6149843012079393",
+              "0.5310701294563551"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.1367938266766141",
+            "center_im": "-0.16122010789011787",
+            "width": "0.09342453562993397"
+          },
+          "maxiter": 3000
+        },
+        "style": "starburst_veils",
+        "stack": "starburst_veils@c7ef6ade",
+        "colormap": "jade_starbursts",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "showcase_g1/starburst_veils/starburst_veils__c17",
+      "picker": "showcase_g1",
+      "picked": [
+        {
+          "row": "starburst_veils",
+          "key": "starburst_veils__c17"
+        }
+      ],
+      "label": "c17 · entry jade_starbursts · knobs as tuned · cap 5,000 (was 9,997)",
+      "image": "showcase_g1__starburst_veils__c17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c17_power_multibrot4_4e2d5dc0",
+          "family": {
+            "kind": "multibrot",
+            "degree": 4
+          },
+          "viewport": {
+            "center_re": "0.31861353035139867336881744536562759",
+            "center_im": "0.75021546603772324118049689506170909",
+            "width": "2.16438122656e-07"
+          },
+          "maxiter": 5000
+        },
+        "style": "starburst_veils",
+        "stack": "starburst_veils@c7ef6ade",
+        "colormap": "jade_starbursts",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_light_beams_r1/starburst_veils/entries/e_garnet_starbursts",
       "picker": "style_light_beams_r1",
       "picked": [
@@ -3290,6 +3401,313 @@
         }
       ],
       "name": "e_moss_starbursts__subtler"
+    },
+    "starburst_veils@c7ef6ade": {
+      "interior": {
+        "palette": 0.02
+      },
+      "tone": {
+        "median": 0.651,
+        "p10": 0.236,
+        "log_density": 8.0
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "palette": 0.04
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "color": {
+            "palette": 0.3
+          },
+          "blend": "screen",
+          "opacity": 0.1,
+          "power": 2.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "phase": 0.0,
+            "fill": 0.2,
+            "edge": 0.05
+          },
+          "color": {
+            "palette": 0.45
+          },
+          "blend": "screen",
+          "opacity": 0.35,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 4.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.8,
+              "shift": [
+                -0.133,
+                -0.181
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "phase": 0.37,
+            "fill": 0.2,
+            "edge": 0.05
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.35,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 4.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.951,
+              "shift": [
+                -0.096,
+                0.303
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "phase": 0.74,
+            "fill": 0.2,
+            "edge": 0.05
+          },
+          "color": {
+            "palette": 0.65
+          },
+          "blend": "screen",
+          "opacity": 0.35,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 4.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            }
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.25,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.8,
+              "shift": [
+                -0.133,
+                -0.181
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.74
+          },
+          "blend": "screen",
+          "opacity": 0.25,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.951,
+              "shift": [
+                -0.096,
+                0.303
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.7799999999999999
+          },
+          "blend": "screen",
+          "opacity": 0.25,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.002,
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.7,
+          "power": 90.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 6.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 10
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "palette": 0.02
+          },
+          "opacity": 1.0
+        }
+      ],
+      "post": [
+        {
+          "kind": "rays",
+          "share": 0.0003,
+          "spokes": 4,
+          "angle": 15.0,
+          "length": 0.03,
+          "strength": 1.2,
+          "color": {
+            "palette": 0.9
+          }
+        }
+      ],
+      "name": "starburst_veils"
     },
     "starburst_veils@d089ef89": {
       "interior": {

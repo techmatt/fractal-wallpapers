@@ -9,6 +9,53 @@
   "folder": "fractal-drive-sync/style-keeps/flame_veil_blue",
   "keeps": [
     {
+      "id": "showcase_g2/flame_veil_blue/flame_veil_blue__c10",
+      "picker": "showcase_g2",
+      "picked": [
+        {
+          "row": "flame_veil_blue",
+          "key": "flame_veil_blue__c10"
+        }
+      ],
+      "label": "c10 · entry flame_veil_blue · knobs as tuned · zoom x1.25; cap 2,000 (c10 reframe)",
+      "image": "showcase_g2__flame_veil_blue__c10.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "c10_dense_phoenix-classic_2ef353cb_zoom_in",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.44117424450399023",
+            "center_im": "-1.0633931165914965",
+            "width": "0.024366899800533737"
+          },
+          "maxiter": 2000
+        },
+        "style": "flame_veil_blue",
+        "stack": "flame_veil_blue@e9e33b9f",
+        "colormap": "flame_veil_blue",
+        "resolution": [
+          2560,
+          1440
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_flame_veil_blue_r1/locations/locations__05_vj_d2_r1.0_t0.196_whole_flame_veil_blue",
       "picker": "style_flame_veil_blue_r1",
       "picked": [
