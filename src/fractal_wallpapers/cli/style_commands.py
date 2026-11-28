@@ -1016,7 +1016,8 @@ def add_commands(subcommands) -> None:
         "sources",
         nargs="+",
         help="folders (their pictures by name), pictures, or .txt manifests of one picture "
-        "path per line, relative to the manifest's folder; in the order given",
+        "path per line, relative to the manifest's folder; in the order given (a relative "
+        "argument is the repository's, not the shell's working directory)",
     )
     sheet.add_argument(
         "--columns",

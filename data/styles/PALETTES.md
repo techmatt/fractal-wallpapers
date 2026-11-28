@@ -27,7 +27,11 @@ values, the entry moved first with none, the old map an entry with the old value
 `suggested_colormap`, for a published row). An existing entry taking a lever's values is
 written by hand. **Moving the stack's own constants** moves every entry that leaves those
 members to the stack: write each other entry the old value of every member moved, so it
-draws what it drew (106's teal re-tune; `style_palettes.apply` before and after proves it).
+draws what it drew (`style_palettes.apply` before and after proves it). **A round-one
+re-tune of the default is an entry, not a moved default**: draw it as a copy of the map
+carrying the re-tune as values, and move the default only once Matt keeps it over the old
+reading (106 moved teal's early and pinned eleven entries; 108 kept both and moved it back
+as `soft_veils_teal_echoes`).
 
 **Merging a style into a mode** (its kept stack is the mode's up to values): rename its
 map to the entry's name, write the entry with `was` the old style name and `values` from
