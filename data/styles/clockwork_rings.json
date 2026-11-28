@@ -58,7 +58,7 @@
       {
         "name": "heart",
         "label": "Heart glow",
-        "what": "the warm light spreading out from the centre of the set",
+        "what": "the warm light spreading out from the center of the set",
         "default": 0.85,
         "range": [0.2, 1.0],
         "set": ["/layers/13/opacity"]

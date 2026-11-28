@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "soft_veils_indigo",
+  "kind": "sequential",
+  "source": "a night indigo through cobalt to a pale ice blue, with an amber fold: the albedo of a soft_veils entry in soft_veils_ember's shape (a dark ground, a saturated haze at 0.4, a contrasting fold where the veils start, a bright veil hue, pale wisps), so the veils' faded echoes read against the ground",
+  "stops": [
+    [0.0, [6, 8, 20]],
+    [0.2, [18, 24, 64]],
+    [0.4, [50, 60, 160]],
+    [0.55, [170, 110, 60]],
+    [0.7, [110, 140, 230]],
+    [0.85, [190, 205, 245]],
+    [1.0, [240, 244, 255]]
+  ]
+}

@@ -25,7 +25,9 @@ values, the entry moved first with none, the old map an entry with the old value
 `suggested_colormap` and the row's `public.palette` renamed (`style_catalog.check` holds
 `public.palette` to the set's first entry; only `tests/test_style_catalog.py` holds
 `suggested_colormap`, for a published row). An existing entry taking a lever's values is
-written by hand.
+written by hand. **Moving the stack's own constants** moves every entry that leaves those
+members to the stack: write each other entry the old value of every member moved, so it
+draws what it drew (106's teal re-tune; `style_palettes.apply` before and after proves it).
 
 **Merging a style into a mode** (its kept stack is the mode's up to values): rename its
 map to the entry's name, write the entry with `was` the old style name and `values` from

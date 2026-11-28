@@ -52,7 +52,7 @@
       {
         "name": "haze",
         "label": "Rust haze",
-        "what": "the soft rust-coloured bloom round the set",
+        "what": "the soft rust-colored bloom round the set",
         "default": 0.5,
         "range": [
           0.0,

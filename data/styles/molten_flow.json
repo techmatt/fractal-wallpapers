@@ -42,7 +42,7 @@
       {
         "name": "heart_glow",
         "label": "Golden heart",
-        "what": "the bright gold glow towards the upper left of the frame",
+        "what": "the bright gold glow toward the upper left of the frame",
         "default": 0.8,
         "range": [0.0, 1.0],
         "set": ["/layers/4/opacity"]

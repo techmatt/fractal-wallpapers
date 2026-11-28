@@ -56,7 +56,7 @@
       {
         "name": "rim_glow",
         "label": "Hole rim glow",
-        "what": "how far the glow inside each hole's rim reaches towards its centre",
+        "what": "how far the glow inside each hole's rim reaches toward its center",
         "default": 6.0,
         "range": [
           2.5,

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "soft_veils_plum",
+  "kind": "sequential",
+  "source": "a dark plum through magenta to a pale pink, with a teal fold: the albedo of a soft_veils entry in soft_veils_ember's shape (a dark ground, a saturated haze at 0.4, a contrasting fold where the veils start, a bright veil hue, pale wisps), so the veils' faded echoes read against the ground",
+  "stops": [
+    [0.0, [14, 6, 16]],
+    [0.2, [44, 16, 48]],
+    [0.4, [120, 40, 110]],
+    [0.55, [60, 120, 140]],
+    [0.7, [210, 90, 160]],
+    [0.85, [230, 180, 210]],
+    [1.0, [250, 236, 244]]
+  ]
+}

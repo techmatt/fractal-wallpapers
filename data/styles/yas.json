@@ -30,7 +30,7 @@
       {
         "name": "swirl",
         "label": "Swirl",
-        "what": "how far the colour bends along the arms instead of falling away in rings",
+        "what": "how far the color bends along the arms instead of falling away in rings",
         "default": 0.3,
         "range": [
           0.1,
@@ -43,7 +43,7 @@
       {
         "name": "core_glow",
         "label": "Core glow",
-        "what": "the warm light at the centre",
+        "what": "the warm light at the center",
         "default": 0.2,
         "range": [
           0.0,

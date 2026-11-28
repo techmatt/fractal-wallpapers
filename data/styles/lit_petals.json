@@ -21,7 +21,7 @@
       {
         "name": "jewels",
         "label": "Jewels",
-        "what": "the cycled jewel colours crusting the petal edges",
+        "what": "the cycled jewel colors crusting the petal edges",
         "default": 0.9,
         "range": [
           0.4,

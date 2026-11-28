@@ -315,3 +315,7 @@
 {"schema": 1, "kind": "admitted", "map": "copper_feathers", "group": "map:copper_feathers", "joined": false, "nearest": "map:metal-emblem-25", "m1": 0.053757}
 {"schema": 1, "kind": "admitted", "map": "starburst_lace", "group": "map:starburst_lace", "joined": false, "nearest": "map:Cobalt & Coal", "m1": 0.055118}
 {"schema": 1, "kind": "admitted", "map": "knit_webs", "group": "map:knit_webs", "joined": false, "nearest": "map:cream_tubes", "m1": 0.052294}
+{"schema": 1, "kind": "admitted", "map": "soft_veils_plum", "group": "map:soft_veils_plum", "joined": false, "nearest": "map:dew_bloom", "m1": 0.044782}
+{"schema": 1, "kind": "admitted", "map": "soft_veils_indigo", "group": "map:soft_veils_indigo", "joined": false, "nearest": "map:wallhaven_wallhaven-g8ev1l", "m1": 0.055391}
+{"schema": 1, "kind": "admitted", "map": "soft_veils_smoke", "group": "map:soft_veils_smoke", "joined": false, "nearest": "map:copper_feathers", "m1": 0.040764}
+{"schema": 1, "kind": "admitted", "map": "soft_veils_forest", "group": "map:soft_veils_forest", "joined": false, "nearest": "map:Deco Lacquer", "m1": 0.055667}
